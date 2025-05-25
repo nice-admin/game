@@ -28,8 +28,11 @@ def remove_entity(grid, entity_states, gx, gy):
 # --- Main Game Loop ---
 def run_game():
     pygame.init()
-    resolution, flags = get_display_mode()
-    screen = pygame.display.set_mode(resolution, flags)
+    # Always use monitor resolution
+    info = pygame.display.Info()
+    resolution = (info.current_w, info.current_h)
+    flags = pygame.SCALED
+    screen = pygame.display.set_mode(resolution, flags=flags, vsync=1)
     pygame.display.set_caption("3D Artist Team Manager")
     clock = pygame.time.Clock()
 

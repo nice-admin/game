@@ -38,10 +38,37 @@ def draw_resources_panel(surface, font=None):
     for idx, (label, value) in enumerate(resources):
         row = idx // 8
         col = idx % 8
-        text = "-" if label == "-" and value == "-" else f"{label}: {value}"
-        img = font.render(text, True, TEXT1_COL)
-        rect = img.get_rect(center=(panel_x + col_w * col + col_w // 2, panel_y + row_h * row + row_h // 2))
-        surface.blit(img, rect)
+        # Custom color logic for Power Drain
+        if label == "Power Drain":
+            drain = game_state.total_power_drain
+            strength = game_state.total_breaker_strength
+            # Stay green until within 15 of breaker strength
+            if strength > 0:
+                safe_margin = 15
+                if drain <= strength - safe_margin:
+                    ratio = 0  # fully green
+                else:
+                    ratio = min(max((drain - (strength - safe_margin)) / safe_margin, 0), 1)
+            else:
+                ratio = 1
+            # Blend from green (safe, 0,255,0) to red (danger, 255,0,0)
+            import colorsys
+            hue = (120 * (1 - ratio)) / 360.0  # 0=red, 1/3=green
+            r_f, g_f, b_f = colorsys.hsv_to_rgb(hue, 1, 1)
+            r = int(r_f * 255)
+            g = int(g_f * 255)
+            b = int(b_f * 255)
+            color = (r, g, b)
+            text = f"{label}: {value}"
+            img = font.render(text, True, color)
+            rect = img.get_rect(center=(panel_x + col_w * col + col_w // 2, panel_y + row_h * row + row_h // 2))
+            surface.blit(img, rect)
+        else:
+            color = TEXT1_COL
+            text = "-" if label == "-" and value == "-" else f"{label}: {value}"
+            img = font.render(text, True, color)
+            rect = img.get_rect(center=(panel_x + col_w * col + col_w // 2, panel_y + row_h * row + row_h // 2))
+            surface.blit(img, rect)
 
     # Draw grid lines (vertical)
     for col in range(1, 8):
