@@ -5,7 +5,7 @@ from game_ui.profiler_panel import draw_profiler_panel
 from game_ui.entity_state_panel import draw_entity_state_panel
 from game_ui.resources_panel import draw_resources_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
-from game_ui.info_panel import draw_info_panel, get_info_panel_width, draw_hovered_entity_info
+from game_ui.info_panel import draw_info_panel, get_info_panel_width
 import pygame
 from game_core.entity_state import EntityStateList
 
@@ -25,9 +25,7 @@ def draw_all_ui(surface, selected_index, font, panel_x, panel_y, panel_width, pa
         draw_alert_panel(surface, font, surface.get_width() - info_panel_width, surface.get_height())
     if clock is not None:
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
-    draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid)
-    if hovered_entity is not None:
-        draw_hovered_entity_info(surface, font, surface.get_width(), surface.get_height(), hovered_entity)
+    draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid, hovered_entity=hovered_entity)
     # Future: draw other UI overlays here
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):

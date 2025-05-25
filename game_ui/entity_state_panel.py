@@ -22,6 +22,13 @@ def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5,
     lines = []
     if hovered_entity is not None:
         lines.append(f"Entity: {type(hovered_entity).__name__}")
+        # Show parent (base) class
+        bases = type(hovered_entity).__bases__
+        if bases:
+            parent = bases[0]
+            lines.append(f"Parent class: {parent.__module__}.{parent.__name__}")
+        else:
+            lines.append("Parent class: None")
         if hasattr(hovered_entity, 'get_public_attrs'):
             attrs = hovered_entity.get_public_attrs().items()
         else:

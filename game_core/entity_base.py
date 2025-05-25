@@ -1,6 +1,8 @@
 import pygame
 import re
 import random
+import time
+from .game_settings import *
 
 CELL_SIZE = 64  # Default cell size, can be overridden by main.py
 
@@ -35,6 +37,7 @@ class BaseEntity:
         self._icon_surface = None
         self.id = BaseEntity._id_counter
         BaseEntity._id_counter += 1
+        self.timestamp = time.strftime('%Y-%m-%d %H:%M:%S')  # Human-readable creation time       
 
     def count_entities_in_proximity(self, grid, entity_type, radius, predicate=None):
         count = 0
@@ -48,11 +51,16 @@ class BaseEntity:
                         match = any(isinstance(entity, t) for t in entity_type)
                     else:
                         match = to_type_from_classname(entity.__class__.__name__) == entity_type
+                    # Only count if is_satisfied == 1 (unless a predicate is provided)
                     if match:
                         dist = abs(entity.x - self.x) + abs(entity.y - self.y)
                         if dist <= radius:
-                            if predicate is None or predicate(entity):
-                                count += 1
+                            if predicate is not None:
+                                if predicate(entity):
+                                    count += 1
+                            else:
+                                if getattr(entity, 'is_satisfied', 1) == 1:
+                                    count += 1
         return count
 
     def update(self, grid):
@@ -113,9 +121,9 @@ class SatisfiableEntity(BaseEntity):
     _icon = None
     _icon_broken = None
     _BAR1_COL = (60, 60, 60)
-    _BAR1_COL_FILL_INIT = (120, 120, 120)
-    _BAR1_COL_FILL_UNSAT = (255, 0, 0)
-    _BAR1_COL_FILL_SAT = (80, 200, 80)
+    _BAR1_COL_FILL_INIT = STATUS_INIT_COL
+    _BAR1_COL_FILL_UNSAT = STATUS_MIDDLE_COL
+    _BAR1_COL_FILL_SAT = STATUS_GOOD_COL
     _BAR2_COL_BG = (100, 100, 100)
     _BAR2_COL_FILL = (203, 33, 255)
     _BAR_HEIGHT_RATIO = 0.15
@@ -214,7 +222,7 @@ class SatisfiableEntity(BaseEntity):
         ):
             x = self.x * cell_size + offset[0]
             y = self.y * cell_size + offset[1]
-            pygame.draw.rect(surface, (255, 0, 0), (x, y, cell_size, cell_size), 3)
+            pygame.draw.rect(surface, STATUS_MIDDLE_COL, (x, y, cell_size, cell_size), 3)
         if not static_only:
             if getattr(self, "has_bar1", True) and not getattr(self, 'bar1_hidden', False):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)

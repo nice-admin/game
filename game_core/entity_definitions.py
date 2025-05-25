@@ -20,10 +20,9 @@ class Monitor(SatisfiableEntity):
 
 class Artist(SatisfiableEntity):
     _icon = "data/graphics/artist.png"
-    satisfaction_check_type = 'router'
-    satisfaction_check_radius = 30
+    satisfaction_check_type = 'monitor'
+    satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
-
     is_person = True
 
 class EspressoMachine(BaseEntity):
@@ -56,15 +55,27 @@ class Breaker(SatisfiableEntity):
     breaker_strength = 5
 
     def on_satisfaction_check(self, count=1, threshold=1):
-        if not getattr(self, 'is_broken', False) and count >= threshold:
-            self.is_risky = 1
-            self.is_satisfied = 0
-            if random.random() < 0.1:
-                self.breaker_strength = 0
-                self.is_broken = True
-                self.is_risky = 0
-                play_breaker_break_sound()
-        else:
+        if getattr(self, 'is_broken', False):
             self.is_risky = 0
-            self.is_satisfied = 1
+            self.is_satisfied = 0
+            return
+        self.is_risky = int(count >= threshold)
+        self.is_satisfied = 1
+        if self.is_risky and random.random() < 0.1:
+            self.breaker_strength = 0
+            self.is_broken = True
+            self.is_risky = 0
+            self.is_satisfied = 0
+            play_breaker_break_sound()
         # Do not call super().on_satisfaction_check, as we handle is_satisfied here
+
+    def check_satisfaction(self, grid):
+        # Only count breakers with is_broken == 0
+        entity_type = getattr(self, 'satisfaction_check_type', None)
+        radius = getattr(self, 'satisfaction_check_radius', 2)
+        threshold = getattr(self, 'satisfaction_check_threshold', 1)
+        count = self.count_entities_in_proximity(
+            grid, entity_type, radius, predicate=lambda e: getattr(e, 'is_broken', 0) == 0
+        )
+        self.on_satisfaction_check(count, threshold)
+        return self.is_satisfied
