@@ -57,6 +57,7 @@ class Breaker(SatisfiableEntity):
     satisfaction_check_threshold = 5
     bar1_hidden = True
     is_satisfied = True
+    warning_hidden = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -66,8 +67,12 @@ class Breaker(SatisfiableEntity):
     def on_satisfaction_check(self, count=1, threshold=1):
         if not getattr(self, 'is_broken', False) and count >= threshold:
             self.is_risky = 1
+            self.is_satisfied = 0
             if random.random() < 0.1:
                 self.is_broken = True
                 self.is_risky = 0
                 play_breaker_break_sound()
-        super().on_satisfaction_check(count, threshold)
+        else:
+            self.is_risky = 0
+            self.is_satisfied = 1
+        # Do not call super().on_satisfaction_check, as we handle is_satisfied here
