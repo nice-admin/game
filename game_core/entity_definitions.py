@@ -1,6 +1,5 @@
 from .entity_base import *
 import random
-import os
 from game_other.audio import play_breaker_break_sound
 
 # --- Entity subclasses ---
@@ -51,28 +50,24 @@ class Router(BaseEntity):
 
 class Breaker(SatisfiableEntity):
     _icon = "data/graphics/breaker.png"
-
+    _icon_broken = "data/graphics/breaker-broken.png"
     has_satisfaction_check = True
     satisfaction_check_type = 'breaker'
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 5
     bar1_hidden = True
-    is_satisfied = True  # Default: satisfied (class attribute)
+    is_satisfied = True
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.breaker_strength = 5
-        # Predicate: only count breakers that are not broken
         self.satisfaction_check_predicate = lambda e: not getattr(e, 'is_broken', True)
 
     def on_satisfaction_check(self, count=1, threshold=1):
-        # If surrounded by 5+ unbroken breakers, set is_risky to 1
-        if not self.is_broken and count >= threshold:
+        if not getattr(self, 'is_broken', False) and count >= threshold:
             self.is_risky = 1
-            if random.random() < 0.1:  # 10% chance
-                self._icon = "data/graphics/breaker-broken.png"
+            if random.random() < 0.1:
                 self.is_broken = True
                 self.is_risky = 0
                 play_breaker_break_sound()
-        # Optionally, call base for is_satisfied logic
         super().on_satisfaction_check(count, threshold)

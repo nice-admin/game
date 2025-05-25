@@ -102,6 +102,8 @@ class BaseEntity:
         self.is_satisfied = count >= threshold
 
 class SatisfiableEntity(BaseEntity):
+    _icon = None
+    _icon_broken = None
     _BAR1_COL = (60, 60, 60)
     _BAR1_COL_FILL_INIT = (120, 120, 120)
     _BAR1_COL_FILL_UNSAT = (255, 0, 0)
@@ -182,8 +184,13 @@ class SatisfiableEntity(BaseEntity):
             if hasattr(self, '_bar2_spawn_attempted'):
                 del self._bar2_spawn_attempted
 
+    def get_icon_path(self):
+        if getattr(self, 'is_broken', False) and getattr(self, '_icon_broken', None):
+            return self._icon_broken
+        return self._icon
+
     def draw(self, surface, offset=(0, 0), cell_size=64, static_only=False):
-        icon_path = self._icon if hasattr(self, '_icon') else self.__class__._icon
+        icon_path = self.get_icon_path() if hasattr(self, 'get_icon_path') else (self._icon if hasattr(self, '_icon') else self.__class__._icon)
         if getattr(self, '_last_icon_path', None) != icon_path:
             self._icon_surface = get_icon_surface(icon_path)
             self._last_icon_path = icon_path
