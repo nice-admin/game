@@ -64,17 +64,14 @@ class Breaker(SatisfiableEntity):
     bar1_hidden = True
     is_satisfied = True
     warning_hidden = True
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.breaker_strength = 5
-        self.satisfaction_check_predicate = lambda e: not getattr(e, 'is_broken', True)
+    breaker_strength = 5
 
     def on_satisfaction_check(self, count=1, threshold=1):
         if not getattr(self, 'is_broken', False) and count >= threshold:
             self.is_risky = 1
             self.is_satisfied = 0
             if random.random() < 0.1:
+                self.breaker_strength = 0
                 self.is_broken = True
                 self.is_risky = 0
                 play_breaker_break_sound()
