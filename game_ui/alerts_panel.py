@@ -2,6 +2,7 @@ import pygame
 import time
 import random
 from game_core.entity_definitions import BaseEntity
+from game_core.game_settings import *
 
 # --- Configurable constants ---
 INFO_PANEL_WIDTH_FRAC = 0.15  # Fraction of screen width for info panel
@@ -23,9 +24,9 @@ _visible_alerts = []  # List of (message, timestamp, y_offset, x_offset)
 # --- Alert conditions: (condition_fn, message) ---
 ALERT_CONDITIONS = [
     (lambda grid: sum(1 for row in grid for e in row if isinstance(e, BaseEntity) and getattr(e, 'is_satisfied', 1) == 0 and hasattr(e, 'power_drain')) > 10,
-     "Warning: More than 10 computers are unsatisfied!"),
+     "The computers feel alone."),
     (lambda grid: any(getattr(e, 'is_broken', False) for row in grid for e in row if e),
-     "Alert: At least one breaker is broken!"),
+     "Electrical systems are not in a good shape."),
     # Add more conditions as needed
 ]
 
@@ -88,11 +89,20 @@ def draw_alert_panel(surface, font, screen_width, screen_height):
     for i, (alert, t, y_offset, x_offset) in enumerate(reversed(_visible_alerts)):
         y = panel_y + y_offset
         x = panel_x + x_offset
-        panel_rect = pygame.Rect(int(x), int(y), panel_width, panel_height)
-        pygame.draw.rect(surface, (200, 40, 40), panel_rect)
-        pygame.draw.rect(surface, (255, 255, 255), panel_rect, 3)
         if font is not None:
             text = font.render(alert, True, (255, 255, 255))
-            text_rect = text.get_rect(center=panel_rect.center)
+            text_rect = text.get_rect()
+            # Add padding to the text background
+            padding_x = 32
+            padding_y = 12
+            bg_width = text_rect.width + padding_x * 2
+            bg_height = max(panel_height, text_rect.height + padding_y * 2)
+            # Right-align the background
+            bg_rect = pygame.Rect(int(x + panel_width - bg_width), int(y), bg_width, bg_height)
+            # Use UI_BG1_COL and UI_BORDER1_COL for background and border
+            pygame.draw.rect(surface, UI_BG1_COL, bg_rect)
+            pygame.draw.rect(surface, UI_BORDER1_COL, bg_rect, 3)
+            # Right-align the text inside the background
+            text_rect.midright = (bg_rect.right - padding_x, bg_rect.centery)
             surface.blit(text, text_rect)
 

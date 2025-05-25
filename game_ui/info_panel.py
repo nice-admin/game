@@ -32,6 +32,57 @@ def get_entity_counts(grid):
                     icon_paths[cls] = icon_path
     return counts, icon_paths
 
+def draw_mid_status(surface, font, hovered_entity, box_x, box_y, icon_size):
+    messages = [
+        "Doesn't look good", "Having issues", "Has a problem", "Needs help", "Requires attention"
+    ]
+    color = (255, 255, 0)
+    conditions_list = [
+        [('is_initialized', '==', 1), ('is_broken', '==', 0), ('is_risky', '==', 1)],
+        [('is_initialized', '==', 1), ('is_broken', '==', 0), ('is_risky', '==', 0), ('is_satisfied', '==', 0)]
+    ]
+    for conditions in conditions_list:
+        _draw_status(
+            surface, font, messages, color, hovered_entity,
+            box_x=box_x, box_y=box_y, icon_size=icon_size,
+            require_cls=SatisfiableEntity,
+            conditions=conditions
+        )
+
+def draw_bad_status(surface, font, hovered_entity, box_x, box_y, icon_size):
+    messages = [
+        "Damaged beyond repair", "Is out for good", "Won't be back"
+    ]
+    color = (255, 80, 80)
+    _draw_status(
+        surface, font, messages, color, hovered_entity,
+        box_x=box_x, box_y=box_y, icon_size=icon_size,
+        conditions=[('is_broken', '==', 1)]
+    )
+
+def draw_init_status(surface, font, hovered_entity, box_x, box_y, icon_size):
+    messages = [
+        "Is preparing", "Getting ready", "Almost ready", "Busy soon", "Warming up", "Booting up"
+    ]
+    color = (200, 200, 200)
+    _draw_status(
+        surface, font, messages, color, hovered_entity,
+        box_x=box_x, box_y=box_y, icon_size=icon_size,
+        conditions=[('is_initialized', '==', 0), ('is_satisfied', '==', 0), ('is_risky', '==', 0)]
+    )
+
+def draw_good_status(surface, font, hovered_entity, box_x, box_y, icon_size):
+    messages = [
+        "Is okay", "Is good", "Seems fine", "Looking good", "No issues", "Checks out", "Keeping busy", "Doing well", "No trouble"
+    ]
+    color = (60, 220, 60)
+    _draw_status(
+        surface, font, messages, color, hovered_entity,
+        box_x=box_x, box_y=box_y, icon_size=icon_size,
+        require_cls=SatisfiableEntity,
+        conditions=[('is_satisfied', '==', 1), ('is_risky', '==', 0)]
+    )
+
 def _draw_status(surface, font, messages, color, entity, attr_name=None, box_x=0, box_y=0, icon_size=0, value=0, op='==', require_cls=None, always_show=False, conditions=None):
     """
     Draws a random message from messages in the given color if all conditions are met.
@@ -105,8 +156,8 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
     panel_x = screen_width - panel_width
     panel_y = int(screen_height * 0.15)
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
-    pygame.draw.rect(surface, (30, 30, 80), panel_rect)
-    pygame.draw.rect(surface, (255, 255, 255), panel_rect, 2)
+    pygame.draw.rect(surface, UI_BG1_COL, panel_rect)
+    pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, 2)
 
     # Draw hovered entity info box at the top of the panel if provided
     if hovered_entity is not None:
@@ -115,8 +166,8 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
         box_x = panel_x + 8
         box_y = panel_y + panel_height // 2
         box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
-        pygame.draw.rect(surface, (40, 40, 100), box_rect, border_radius=8)
-        pygame.draw.rect(surface, (255, 255, 255), box_rect, 2, border_radius=8)
+        pygame.draw.rect(surface, UI_BG1_COL, box_rect, border_radius=8)
+        # Removed border for hovered entity info box
         # Icon
         icon_path = getattr(hovered_entity, 'get_icon_path', None)
         if callable(icon_path):
@@ -141,45 +192,19 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
             status_rect = status_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 38))
             surface.blit(status_text, status_rect)
         # Show a random positive message in green if is_satisfied == 1 (only for SatisfiableEntity)
-        _draw_status(
-            surface, font,
-            ["Is okay", "Is good", "Seems fine", "Looking good", "No issues", "Checks out"],
-            (60, 220, 60),
-            hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
-            require_cls=SatisfiableEntity,
-            conditions=[('is_satisfied', '==', 1), ('is_risky', '==', 0)]
-        )
+        draw_good_status(surface, font, hovered_entity, box_x, box_y, icon_size)
         # Show a random preparing message in orange if is_initialized == 0 and is_satisfied == 0
-        _draw_status(
-            surface, font,
-            ["Is preparing", "Getting ready", "Almost ready", "Busy soon", "Warming up", "Booting up"],
-            (200, 200, 200),
-            hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
-            conditions=[('is_initialized', '==', 0), ('is_satisfied', '==', 0), ('is_risky', '==', 0)]
-        )
+        draw_init_status(surface, font, hovered_entity, box_x, box_y, icon_size)
         # Show a random negative message in red if is_satisfied == 0 and is_initialized == 1 (only for SatisfiableEntity)
-        _draw_status(
-            surface, font,
-            ["Doesn't look good", "Having issues", "Has a problem", "Needs help", "Requires attention"],
-            (255, 255, 0),
-            hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
-            require_cls=SatisfiableEntity,
-            conditions=[('is_initialized', '==', 1), ('is_broken', '==', 0), ('is_risky', '==', 1)]
-        )
+        draw_mid_status(surface, font, hovered_entity, box_x, box_y, icon_size)
         # Show a message if is_broken == 1
-        _draw_status(
-            surface, font,
-            ["Damaged beyond repair", "Is out for good", "Won't be back"],
-            (255, 80, 80),
-            hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
-            conditions=[('is_broken', '==', 1)]
-        )
+        draw_bad_status(surface, font, hovered_entity, box_x, box_y, icon_size)
         # Show a message for BaseEntity parent: 'Requires no attention'
         parent_bases = type(hovered_entity).__bases__
         if parent_bases and parent_bases[0] is BaseEntity and type(hovered_entity) is not BaseEntity:
             _draw_status(
                 surface, font,
-                ["Requires no attention"],
+                ["Requires no attention", "Of no interest", "Simply exists", "Nothing to check", "Very boring" ],
                 (180, 180, 180),
                 hovered_entity, '', box_x, box_y, icon_size, always_show=True
             )
