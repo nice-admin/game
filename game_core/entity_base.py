@@ -117,7 +117,8 @@ class SatisfiableEntity(BaseEntity):
     bar2_hidden = False  # New: allows hiding bar2
     is_satisfied = False
     is_initialized = False
-    is_risky = 0
+    is_risky = False
+    is_broken = False
 
     def __init__(self, x, y):
         super().__init__(x, y)

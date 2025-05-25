@@ -1,6 +1,5 @@
 # Standard library imports
 import os
-import json
 import inspect
 from typing import Optional, Tuple, List, Any
 
@@ -8,10 +7,11 @@ from typing import Optional, Tuple, List, Any
 from game_core.entity_state import EntityStateList
 from game_core.entity_definitions import to_type_from_classname, BaseEntity
 from game_core import entity_definitions
+import dill
 
 # Constants
 SAVE_FOLDER = '_save'
-SAVE_FILE = 'save.json'
+SAVE_FILE = 'save.pkl'
 DEFAULT_CELL_SIZE = 50
 DEFAULT_CAMERA_OFFSET = [0, 0]
 
@@ -48,8 +48,8 @@ def save_game(
         'cell_size': cell_size if cell_size is not None else DEFAULT_CELL_SIZE
     }
     try:
-        with open(save_path, 'w') as save_file:
-            json.dump(save_data, save_file, indent=4)
+        with open(save_path, 'wb') as save_file:
+            dill.dump(save_data, save_file)
         print(f"Game saved to {save_path}")
     except Exception as e:
         print(f"Error saving game: {e}")
@@ -65,8 +65,8 @@ def load_game(
         return EntityStateList(), DEFAULT_CAMERA_OFFSET.copy(), DEFAULT_CELL_SIZE
 
     try:
-        with open(save_path, 'r') as save_file:
-            data = json.load(save_file)
+        with open(save_path, 'rb') as save_file:
+            data = dill.load(save_file)
     except Exception as e:
         print(f"Error loading save file: {e}")
         return EntityStateList(), DEFAULT_CAMERA_OFFSET.copy(), DEFAULT_CELL_SIZE

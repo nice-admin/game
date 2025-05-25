@@ -23,6 +23,10 @@ class Monitor(SatisfiableEntity):
 
 class Artist(SatisfiableEntity):
     _icon = "data/graphics/artist.png"
+    has_satisfaction_check = True
+    satisfaction_check_type = 'router'
+    satisfaction_check_radius = 30
+    satisfaction_check_threshold = 1
 
     is_person = True
 
@@ -57,7 +61,6 @@ class Breaker(SatisfiableEntity):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.is_broken = False
         self.breaker_strength = 5
         # Predicate: only count breakers that are not broken
         self.satisfaction_check_predicate = lambda e: not getattr(e, 'is_broken', True)
