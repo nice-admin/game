@@ -6,11 +6,12 @@ from game_core.controls import handle_global_controls, CameraDrag, get_construct
 from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES, get_construction_panel_size
 from game_ui.ui import draw_all_ui, draw_entity_preview
 from game_core.entity_state import EntityStateList
-from game_ui.entity_state_panel import draw_entity_state_panel
+from game_ui.entity_state_panel import *
 import game_other.savegame as savegame
 import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
 from game_core.game_events import handle_event
+
 
 # --- Game Grid ---
 def create_grid():
@@ -136,18 +137,45 @@ def run_game():
         max_x = min(GRID_WIDTH, int((-state['camera_offset'][0] + screen.get_width()) // state['cell_size']) + 1)
         min_y = max(0, int(-state['camera_offset'][1] // state['cell_size']))
         max_y = min(GRID_HEIGHT, int((-state['camera_offset'][1] + screen.get_height()) // state['cell_size']) + 1)
+        grid_ref = state['grid']
+        cam_offset = state['camera_offset']
+        cell_sz = state['cell_size']
         for gy in range(min_y, max_y):
             for gx in range(min_x, max_x):
-                entity = state['grid'][gy][gx]
-                if entity and hasattr(entity, 'draw'):
-                    entity.draw(screen, state['camera_offset'], state['cell_size'], static_only=False)
+                entity = grid_ref[gy][gx]
+                if getattr(entity, 'draw', None):
+                    entity.draw(screen, cam_offset, cell_sz, static_only=False)
+        # --- Hovered entity detection ---
+        mx, my = pygame.mouse.get_pos()
+        gx = int((mx - cam_offset[0]) // cell_sz)
+        gy = int((my - cam_offset[1]) // cell_sz)
+        hovered_entity = grid_ref[gy][gx] if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT else None
         frame_end = pygame.time.get_ticks()
         frame_ms = frame_end - frame_start
         timings = {"Frame": frame_ms}
-        draw_all_ui(screen, state['selected_index'], font, panel_x, panel_y, panel_width, panel_height, clock, None, None, timings, grid=state['grid'])
-        draw_entity_preview(screen, state['selected_entity_type'], state['camera_offset'], state['cell_size'], GRID_WIDTH, GRID_HEIGHT, state['grid'])
+        # Draw UI, pass hovered_entity
+        draw_all_ui(
+            screen,
+            state['selected_index'],
+            font,
+            panel_x,
+            panel_y,
+            panel_width,
+            panel_height,
+            clock=clock,
+            draw_call_count=None,
+            tick_count=None,
+            timings=timings,
+            grid=grid_ref,
+            hovered_entity=hovered_entity
+        )
+        draw_entity_preview(screen, state['selected_entity_type'], cam_offset, cell_sz, GRID_WIDTH, GRID_HEIGHT, grid_ref)
         if feature_toggle.ENTITY_STATE_PANEL:
-            draw_entity_state_panel(screen, font, state['grid'], cell_size=state['cell_size'], camera_offset=state['camera_offset'])
+            draw_entity_state_panel(
+                screen,
+                font,
+                hovered_entity=hovered_entity
+            )
         draw_construction_panel(screen, state['selected_index'], font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
         pygame.display.flip()
         clock.tick(FPS)
