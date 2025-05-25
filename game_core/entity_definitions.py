@@ -17,8 +17,14 @@ class Monitor(SatisfiableEntity):
 
     has_bar2 = False
     has_satisfaction_check = True
-
     satisfaction_check_type = 'computer'
+    satisfaction_check_radius = 1
+    satisfaction_check_threshold = 1
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only count computers that are satisfied
+        self.satisfaction_check_predicate = lambda e: getattr(e, 'is_satisfied', False)
 
 class Artist(SatisfiableEntity):
     _icon = "data/graphics/artist.png"
