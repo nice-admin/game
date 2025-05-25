@@ -1,6 +1,6 @@
 import pygame
 from game_core import game_state
-from game_core.game_settings import FONT1, BG1_COL, BORDER1_COL, TEXT1_COL
+from game_core.game_settings import FONT1, UI_BG1_COL, UI_BORDER1_COL, TEXT1_COL
 
 # Draws a resources panel at the top of the screen, showing all game_state variables
 
@@ -16,8 +16,8 @@ def draw_resources_panel(surface, font=None):
     panel_x = (w - panel_width) // 2
     panel_y = 0
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
-    pygame.draw.rect(surface, BG1_COL, panel_rect)
-    pygame.draw.rect(surface, BORDER1_COL, panel_rect, 2)
+    pygame.draw.rect(surface, UI_BG1_COL, panel_rect)
+    pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, 2)
 
     if font is None:
         font = pygame.font.Font(FONT1, int(panel_height * 0.4))
@@ -73,7 +73,7 @@ def draw_resources_panel(surface, font=None):
     # Draw grid lines (vertical)
     for col in range(1, 8):
         x = panel_x + col * col_w
-        pygame.draw.line(surface, BORDER1_COL, (x, panel_y), (x, panel_y + panel_height), 1)
+        pygame.draw.line(surface, UI_BORDER1_COL, (x, panel_y), (x, panel_y + panel_height), 1)
     # Draw grid lines (horizontal)
     y = panel_y + row_h
-    pygame.draw.line(surface, BORDER1_COL, (panel_x, y), (panel_x + panel_width, y), 1)
+    pygame.draw.line(surface, UI_BORDER1_COL, (panel_x, y), (panel_x + panel_width, y), 1)

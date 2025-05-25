@@ -18,6 +18,7 @@ ENTITY_CHOICES = [
     and issubclass(obj, entities_mod.BaseEntity)
     and obj is not entities_mod.BaseEntity
     and obj is not getattr(entities_mod, 'SatisfiableEntity', None)
+    and obj.__module__ == entities_mod.__name__  # Only top-level classes from entity_definitions.py
 ]
 
 def get_construction_panel_size(screen_width, screen_height):

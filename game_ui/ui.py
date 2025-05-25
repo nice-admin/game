@@ -4,12 +4,23 @@ from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES
 from game_ui.profiler_panel import draw_profiler_panel
 from game_ui.entity_state_panel import draw_entity_state_panel
 from game_ui.resources_panel import draw_resources_panel
+from game_ui.alerts_panel import draw_alert_panel, check_alerts
 import pygame
 from game_core.entity_state import EntityStateList
 
 # Add more UI elements here as your game grows
 
-def draw_all_ui(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None):
+def draw_alerts_panel(surface, font, grid):
+    """
+    Standalone function to check and draw alerts panel if needed.
+    Call this from your main UI draw function, passing the grid.
+    """
+    from game_ui.alerts_panel import check_alerts, draw_alert_panel
+    if grid is not None:
+        check_alerts(grid, surface.get_width())
+        draw_alert_panel(surface, font, surface.get_width(), surface.get_height())
+
+def draw_all_ui(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None):
     """
     Draw all UI elements that are on top of the game area.
     Extend this function to include more UI overlays as needed.
@@ -18,6 +29,7 @@ def draw_all_ui(surface, selected_index, font, panel_x, panel_y, panel_width, pa
     draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
     if clock is not None:
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
+    draw_alerts_panel(surface, font, grid)
     # Future: draw other UI overlays here
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):

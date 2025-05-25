@@ -144,7 +144,7 @@ def run_game():
         frame_end = pygame.time.get_ticks()
         frame_ms = frame_end - frame_start
         timings = {"Frame": frame_ms}
-        draw_all_ui(screen, state['selected_index'], font, panel_x, panel_y, panel_width, panel_height, clock, None, None, timings)
+        draw_all_ui(screen, state['selected_index'], font, panel_x, panel_y, panel_width, panel_height, clock, None, None, timings, grid=state['grid'])
         draw_entity_preview(screen, state['selected_entity_type'], state['camera_offset'], state['cell_size'], GRID_WIDTH, GRID_HEIGHT, state['grid'])
         if feature_toggle.ENTITY_STATE_PANEL:
             draw_entity_state_panel(screen, font, state['grid'], cell_size=state['cell_size'], camera_offset=state['camera_offset'])

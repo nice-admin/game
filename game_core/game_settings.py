@@ -15,8 +15,8 @@ FULLSCREEN = True  # Set to True for fullscreen windowed mode
 RESOLUTION = (0, 0)
 
 # Colors
-BG1_COL = (40, 40, 40)        # Some grey color
-BORDER1_COL = (100, 100, 100) # Some light grey color
+UI_BG1_COL = (40, 40, 40)        # Some grey color
+UI_BORDER1_COL = (100, 100, 100) # Some light grey color
 TEXT1_COL = (180, 180, 180)   # Standard text color
 GRID_BG_COL = (80, 80, 80)    # Grid background color (main play area)
 GRID_BORDER_COL = (120, 120, 120) # Grid line color (main play area)
