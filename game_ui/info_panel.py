@@ -147,7 +147,7 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
             (60, 220, 60),
             hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
             require_cls=SatisfiableEntity,
-            conditions=[('is_satisfied', '==', 1)]
+            conditions=[('is_satisfied', '==', 1), ('is_risky', '==', 0)]
         )
         # Show a random preparing message in orange if is_initialized == 0 and is_satisfied == 0
         _draw_status(
@@ -155,7 +155,7 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
             ["Is preparing", "Getting ready", "Almost ready", "Busy soon", "Warming up", "Booting up"],
             (200, 200, 200),
             hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
-            conditions=[('is_initialized', '==', 0), ('is_satisfied', '==', 0)]
+            conditions=[('is_initialized', '==', 0), ('is_satisfied', '==', 0), ('is_risky', '==', 0)]
         )
         # Show a random negative message in red if is_satisfied == 0 and is_initialized == 1 (only for SatisfiableEntity)
         _draw_status(
@@ -164,7 +164,7 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
             (255, 255, 0),
             hovered_entity, box_x=box_x, box_y=box_y, icon_size=icon_size,
             require_cls=SatisfiableEntity,
-            conditions=[('is_satisfied', '==', 0), ('is_initialized', '==', 1), ('is_broken', '==', 0)]
+            conditions=[('is_initialized', '==', 1), ('is_broken', '==', 0), ('is_risky', '==', 1)]
         )
         # Show a message if is_broken == 1
         _draw_status(

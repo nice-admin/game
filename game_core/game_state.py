@@ -6,6 +6,8 @@ total_breaker_strength = 0
 total_employees = 0
 total_risky_entities = 0
 total_broken_entities = 0
+is_internet_online = 1
+is_wifi_online = 1
 
 def summarize_entities(grid):
     """

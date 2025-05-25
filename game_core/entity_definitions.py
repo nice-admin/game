@@ -51,7 +51,7 @@ class Breaker(SatisfiableEntity):
     satisfaction_check_threshold = 5
     bar1_hidden = True
     is_satisfied = True
-    warning_hidden = True
+    warning_hidden = False
     breaker_strength = 5
 
     def on_satisfaction_check(self, count=1, threshold=1):

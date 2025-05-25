@@ -213,16 +213,18 @@ class SatisfiableEntity(BaseEntity):
         if self._icon_surface and not static_only:
             icon = pygame.transform.smoothscale(self._icon_surface, (cell_size, cell_size))
             surface.blit(icon, (self.x * cell_size + offset[0], self.y * cell_size + offset[1]))
-        # Draw red rectangle overlay if initialized and unsatisfied, and warning_hidden is False
+        # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is False
+        highlight_color = None
         if (
-            getattr(self, 'is_initialized', False)
-            and not getattr(self, 'is_satisfied', True)
-            and not getattr(self, 'warning_hidden', False)
-            and not static_only
+            getattr(self, 'is_initialized', False) and not getattr(self, 'is_satisfied', True)
         ):
+            highlight_color = STATUS_MIDDLE_COL
+        if getattr(self, 'is_broken', False):
+            highlight_color = STATUS_BAD_COL
+        if highlight_color and not getattr(self, 'warning_hidden', False) and not static_only:
             x = self.x * cell_size + offset[0]
             y = self.y * cell_size + offset[1]
-            pygame.draw.rect(surface, STATUS_MIDDLE_COL, (x, y, cell_size, cell_size), 3)
+            pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
         if not static_only:
             if getattr(self, "has_bar1", True) and not getattr(self, 'bar1_hidden', False):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
