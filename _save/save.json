@@ -1,0 +1,16 @@
+{
+    "entities": [
+        {
+            "type": "breaker",
+            "x": 18,
+            "y": 11,
+            "display_name": "Breaker",
+            "id": 0,
+            "is_initialized": false,
+            "bar1": 0.2866666666666667,
+            "bar1_timer": 86,
+            "bar2": null,
+            "bar2_timer": null,
+            "is_broken": false,
+            "breaker_strength": 5,
+            "satisfaction_check_predicate": 

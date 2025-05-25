@@ -1,0 +1,4 @@
+I'm making a lightweight python game in which you manage teams of 3D artists to create a project.
+It's mostly about selecting entities like computers, monitor screens, artists and project managers and yuu place them on a game grid composed of square fields.
+Each placed entity has some properties, for example timer which periodically checks whether the entitiy's satisfaction is met and so on.
+The goal is to make projects a do it efficiently, this means putting good teams together composed of various entities, satisfy them and let them perform.
