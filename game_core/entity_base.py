@@ -117,6 +117,7 @@ class SatisfiableEntity(BaseEntity):
     has_bar2 = False
     bar1_hidden = False  # New: allows hiding bar1
     bar2_hidden = False  # New: allows hiding bar2
+    warning_hidden = False
     is_satisfied = False
     is_initialized = False
     is_risky = False
@@ -197,6 +198,16 @@ class SatisfiableEntity(BaseEntity):
         if self._icon_surface and not static_only:
             icon = pygame.transform.smoothscale(self._icon_surface, (cell_size, cell_size))
             surface.blit(icon, (self.x * cell_size + offset[0], self.y * cell_size + offset[1]))
+        # Draw red rectangle overlay if initialized and unsatisfied, and warning_hidden is False
+        if (
+            getattr(self, 'is_initialized', False)
+            and not getattr(self, 'is_satisfied', True)
+            and not getattr(self, 'warning_hidden', False)
+            and not static_only
+        ):
+            x = self.x * cell_size + offset[0]
+            y = self.y * cell_size + offset[1]
+            pygame.draw.rect(surface, (255, 0, 0), (x, y, cell_size, cell_size), 3)
         if not static_only:
             if getattr(self, "has_bar1", True) and not getattr(self, 'bar1_hidden', False):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
