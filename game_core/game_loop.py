@@ -86,6 +86,7 @@ def run_game():
         game_state.total_breaker_strength = game_state.sum_breaker_strength(grid)
         game_state.total_risky_entities = game_state.count_risky_entities(grid)
         game_state.total_power_drain = game_state.sum_power_drain(grid)
+        game_state.total_broken_entities = game_state.count_broken_entities(grid)
 
     frame_count = 0
     running = True

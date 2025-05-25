@@ -5,6 +5,7 @@ total_power_drain = 0
 total_breaker_strength = 0
 total_employees = 0
 total_risky_entities = 0
+total_broken_entities = 0
 
 def summarize_entities(grid):
     """
@@ -53,6 +54,17 @@ def count_risky_entities(grid):
     for row in grid:
         for entity in row:
             if entity is not None and getattr(entity, 'is_risky', 0) == 1:
+                count += 1
+    return count
+
+def count_broken_entities(grid):
+    """
+    Returns the number of entities on the grid with is_risky == 1.
+    """
+    count = 0
+    for row in grid:
+        for entity in row:
+            if entity is not None and getattr(entity, 'is_broken', 0) == 1:
                 count += 1
     return count
 

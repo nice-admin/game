@@ -6,6 +6,7 @@ from game_ui.entity_state_panel import draw_entity_state_panel
 from game_ui.resources_panel import draw_resources_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
 from game_ui.info_panel import draw_info_panel, get_info_panel_width
+from game_other.feature_toggle import ALLOW_RESOURCES_PANEL
 import pygame
 from game_core.entity_state import EntityStateList
 
@@ -14,7 +15,8 @@ def draw_all_ui(surface, selected_index, font, panel_x, panel_y, panel_width, pa
     Draw all UI elements that are on top of the game area.
     Extend this function to include more UI overlays as needed.
     """
-    draw_resources_panel(surface, font)
+    if ALLOW_RESOURCES_PANEL:
+        draw_resources_panel(surface, font)
     draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
     # Draw info panel and get its width
     info_panel_width = get_info_panel_width(surface.get_width())
