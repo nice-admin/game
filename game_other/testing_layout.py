@@ -1,5 +1,5 @@
 import pygame
-from game_core.entity_definitions import Computer, Monitor, Artist, Outlet, Breaker, ProjectManager
+from game_core.entity_definitions import *
 import threading
 import time
 import random
@@ -44,7 +44,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT):
                 threading.Thread(target=spawn_entity, args=(Outlet, x, y_outlet), daemon=True).start()
             # Computers
             if 0 <= x < GRID_WIDTH and 0 <= y_computer < GRID_HEIGHT and grid[y_computer][x] is None:
-                threading.Thread(target=spawn_entity, args=(Computer, x, y_computer), daemon=True).start()
+                threading.Thread(target=spawn_entity, args=(BasicComputer, x, y_computer), daemon=True).start()
             # Monitors
             if 0 <= x < GRID_WIDTH and 0 <= y_monitor < GRID_HEIGHT and grid[y_monitor][x] is None:
                 threading.Thread(target=spawn_entity, args=(Monitor, x, y_monitor), daemon=True).start()

@@ -40,11 +40,19 @@ class BaseEntity:
         count = 0
         for row in grid:
             for entity in row:
-                if entity is not None and to_type_from_classname(entity.__class__.__name__) == entity_type:
-                    dist = abs(entity.x - self.x) + abs(entity.y - self.y)
-                    if dist <= radius:
-                        if predicate is None or predicate(entity):
-                            count += 1
+                if entity is not None:
+                    # Accept class or string for entity_type
+                    if isinstance(entity_type, type):
+                        match = isinstance(entity, entity_type)
+                    elif isinstance(entity_type, (list, tuple)) and all(isinstance(t, type) for t in entity_type):
+                        match = any(isinstance(entity, t) for t in entity_type)
+                    else:
+                        match = to_type_from_classname(entity.__class__.__name__) == entity_type
+                    if match:
+                        dist = abs(entity.x - self.x) + abs(entity.y - self.y)
+                        if dist <= radius:
+                            if predicate is None or predicate(entity):
+                                count += 1
         return count
 
     def update(self, grid):
@@ -153,12 +161,11 @@ class SatisfiableEntity(BaseEntity):
                             self.bar2_timer = 0
                         self._bar2_spawned = True
                 self.is_satisfied = self.check_satisfaction(grid)
-                if getattr(self, 'has_satisfaction_check', False):
-                    entity_type = getattr(self, 'satisfaction_check_type', None)
-                    radius = getattr(self, 'satisfaction_check_radius', 2)
-                    if entity_type:
-                        count = self.count_entities_in_proximity(grid, entity_type, radius)
-                        self.on_satisfaction_check(count, getattr(self, 'satisfaction_check_threshold', 1))
+                entity_type = getattr(self, 'satisfaction_check_type', None)
+                radius = getattr(self, 'satisfaction_check_radius', 2)
+                if entity_type:
+                    count = self.count_entities_in_proximity(grid, entity_type, radius)
+                    self.on_satisfaction_check(count, getattr(self, 'satisfaction_check_threshold', 1))
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -263,3 +270,9 @@ class SatisfiableEntity(BaseEntity):
         if entity_type:
             count = self.count_entities_in_proximity(grid, entity_type, radius, predicate)
             self.on_satisfaction_check(count, threshold)
+
+class ComputerEntity(SatisfiableEntity):
+    has_bar2 = True
+    power_drain = 1
+    satisfaction_check_type = 'outlet'
+    # You can override satisfaction_check_radius, threshold, etc. in subclasses
