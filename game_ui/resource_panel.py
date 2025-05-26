@@ -266,13 +266,11 @@ def draw_icons(surface, font=None):
     font = font or get_font1(18)
     gs = GameState()
     is_internet_online = gs.is_internet_online
-
     # Only update icon surfaces if state changed or never initialized
     if (not hasattr(update_icon_surfaces, "_icon_state") or
         update_icon_surfaces._icon_state != is_internet_online):
         update_icon_surfaces(is_internet_online, font)
     icon_surfaces = update_icon_surfaces._icon_surfaces
-
     # Get baked panel and system cell positions
     baked = get_baked_panel(font)
     system_grid = baked['system_grid']
@@ -285,12 +283,19 @@ def draw_icons(surface, font=None):
     surf_x = baked['surf_x'] or 0
     surf_y = baked['surf_y'] or 0
     icon_size = 40
-    icon_idx = 0
-    for row_idx, row in enumerate(system_grid):
-        for col_idx, cell in enumerate(row):
-            x = surf_x + system_x + col_idx * SystemCell().cell_width + 10
-            y = surf_y + start_y + row_idx * SystemCell().cell_height + (SystemCell().cell_height - icon_size) // 2
-            surface.blit(icon_surfaces[icon_idx], (x, y))
-            icon_idx += 1
+    # Cache icon positions for performance
+    if not hasattr(draw_icons, '_icon_positions'):
+        icon_positions = []
+        icon_idx = 0
+        for row_idx, row in enumerate(system_grid):
+            for col_idx, cell in enumerate(row):
+                x = surf_x + system_x + col_idx * SystemCell().cell_width + 10
+                y = surf_y + start_y + row_idx * SystemCell().cell_height + (SystemCell().cell_height - icon_size) // 2
+                icon_positions.append((x, y))
+                icon_idx += 1
+        draw_icons._icon_positions = icon_positions
+    icon_positions = draw_icons._icon_positions
+    for icon_idx, (x, y) in enumerate(icon_positions):
+        surface.blit(icon_surfaces[icon_idx], (x, y))
 
 
