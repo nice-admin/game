@@ -1,39 +1,44 @@
 import threading
 import random
 import time
-import game_core.game_state
+from game_core.game_state import GameState
 import game_other.audio
 
 class BaseSituation:
     def maybe_trigger(self):
         pass
 
-class InternetFluctuationSituation(BaseSituation):
+class InternetOutage(BaseSituation):
+    RESTORE_DELAY = 10  # seconds
+    WIFI_RESTORE_DELAY = 2  # seconds
+
     def __init__(self):
-        self.cooldown = 0
         self._restoring = False
 
     def maybe_trigger(self):
-        from game_core.game_state import GameState
         state = GameState()
         if state.is_internet_online == 1 and random.random() < 0.2 and not self._restoring:
             state.is_internet_online = 0
+            state.is_wifi_online = 0
             self._restoring = True
             game_other.audio.play_internet_outage_sound()
-            threading.Timer(10, self.restore_internet).start()
+            threading.Timer(self.RESTORE_DELAY, self.restore_internet).start()
             return True
         return False
 
     def restore_internet(self):
-        from game_core.game_state import GameState
         state = GameState()
         state.is_internet_online = 1
+        game_other.audio.play_internet_reconnect_sound()
+        threading.Timer(self.WIFI_RESTORE_DELAY, self.restore_wifi).start()
         self._restoring = False
 
-# Add more situation classes here as needed
+    def restore_wifi(self):
+        state = GameState()
+        state.is_wifi_online = 1
 
 SITUATIONS = [
-    InternetFluctuationSituation(),
+    InternetOutage(),
     # Add more situation instances here...
 ]
 

@@ -1,4 +1,3 @@
-# Singleton class for game state
 class GameState:
     _instance = None
 
@@ -16,9 +15,6 @@ class GameState:
         return cls._instance
 
     def summarize_entities(self, grid):
-        """
-        Returns a list of dicts summarizing all entities on the grid and their public properties.
-        """
         summary = []
         for row in grid:
             for entity in row:
@@ -32,66 +28,33 @@ class GameState:
                         })
         return summary
 
-    def count_employees(self, grid):
-        """
-        Returns the number of entities on the grid with is_person == 1.
-        """
+    def _count_entities(self, grid, attr, sum_mode=False):
         count = 0
         for row in grid:
             for entity in row:
-                if entity is not None and getattr(entity, 'is_person', 0) == 1:
-                    count += 1
+                if entity is not None:
+                    if sum_mode and hasattr(entity, attr):
+                        count += getattr(entity, attr, 0)
+                    elif not sum_mode and getattr(entity, attr, 0) == 1:
+                        count += 1
         return count
+
+    def count_employees(self, grid):
+        return self._count_entities(grid, 'is_person')
 
     def count_breaker_strength(self, grid):
-        """
-        Returns the sum of breaker_strength for all entities on the grid that have this attribute.
-        """
-        total = 0
-        for row in grid:
-            for entity in row:
-                if entity is not None and hasattr(entity, 'breaker_strength'):
-                    total += getattr(entity, 'breaker_strength', 0)
-        return total
+        return self._count_entities(grid, 'breaker_strength', sum_mode=True)
 
     def count_risky_entities(self, grid):
-        """
-        Returns the number of entities on the grid with is_risky == 1.
-        """
-        count = 0
-        for row in grid:
-            for entity in row:
-                if entity is not None and getattr(entity, 'is_risky', 0) == 1:
-                    count += 1
-        return count
+        return self._count_entities(grid, 'is_risky')
 
     def count_broken_entities(self, grid):
-        """
-        Returns the number of entities on the grid with is_risky == 1.
-        """
-        count = 0
-        for row in grid:
-            for entity in row:
-                if entity is not None and getattr(entity, 'is_broken', 0) == 1:
-                    count += 1
-        return count
+        return self._count_entities(grid, 'is_broken')
 
     def count_power_drain(self, grid):
-        """
-        Returns the sum of power_drain for all entities on the grid that have this attribute.
-        """
-        total = 0
-        for row in grid:
-            for entity in row:
-                if entity is not None and hasattr(entity, 'power_drain'):
-                    total += getattr(entity, 'power_drain', 0)
-        return total
+        return self._count_entities(grid, 'power_drain', sum_mode=True)
 
     def update_totals_from_grid(self, grid):
-        """
-        Updates all global total_* variables based on the current grid state.
-        Call this whenever the grid changes.
-        """
         self.total_employees = self.count_employees(grid)
         self.total_power_drain = self.count_power_drain(grid)
         self.total_breaker_strength = self.count_breaker_strength(grid)
@@ -99,9 +62,6 @@ class GameState:
         self.total_broken_entities = self.count_broken_entities(grid)
 
     def get_totals_dict(self):
-        """
-        Returns a dict of the current values of all global total_* variables for debug or UI use.
-        """
         return {
             'total_money': self.total_money,
             'total_power_drain': self.total_power_drain,
@@ -113,22 +73,8 @@ class GameState:
             'is_wifi_online': self.is_wifi_online,
         }
 
-# Module-level helper functions for compatibility
-
 def get_totals_dict():
-    """
-    Returns a dict of the current values of all global total_* variables for debug or UI use.
-    """
     return GameState().get_totals_dict()
 
 def update_totals_from_grid(grid):
-    """
-    Updates all global total_* variables based on the current grid state.
-    Call this whenever the grid changes.
-    """
     GameState().update_totals_from_grid(grid)
-
-# Usage: state = GameState()
-# state.total_money += 100
-# state.update_totals_from_grid(grid)
-
