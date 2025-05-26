@@ -48,13 +48,16 @@ class BasicCell:
         y = 13
         return x, y
 
-    def draw_value(self, value, base_font, color=(255,255,255)):
+    def draw_value(self, value, base_font, color=(255,255,255), extra_key=None):
         """
-        Draws/updates the value surface only if the value has changed.
+        Draws/updates the value surface only if the value or extra_key has changed.
         """
-        if value == self.last_value and self.value_surface is not None:
+        if (value == self.last_value and self.value_surface is not None
+            and (not hasattr(self, 'last_extra_key') or extra_key == getattr(self, 'last_extra_key', None))):
             return  # No need to redraw
         self.last_value = value
+        if extra_key is not None:
+            self.last_extra_key = extra_key
         value_str = str(value)
         font = self.get_value_font(base_font)
         x, y = self.get_value_pos(font, value_str)
@@ -209,22 +212,50 @@ def draw_resource_panel(surface, font=None):
     baked['surf_x'] = surf_x
     baked['surf_y'] = surf_y
     gs = GameState()
+    breaker_strength = gs.total_breaker_strength
+    power_drain = gs.total_power_drain
     for key, cell, cell_x, cell_y in baked['cell_map']:
         if key == 'employees':
             value = gs.total_employees
+            color = (255,255,255)
+            extra_key = None
         elif key == 'money':
             value = gs.total_money
+            color = (255,255,255)
+            extra_key = None
         elif key == 'power drain':
-            value = gs.total_power_drain
+            value = power_drain
+            margin = 15
+            if breaker_strength <= 0:
+                color = (255, 0, 0)  # Gray if no breaker strength
+            else:
+                diff = breaker_strength - power_drain
+                t = min(max(1 - (diff / margin), 0), 1)
+                import colorsys
+                hue = (120 - 120 * t) / 360
+                r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
+                color = (int(r*255), int(g*255), int(b*255))
+            extra_key = breaker_strength
         elif key == 'breaker strength':
-            value = gs.total_breaker_strength
+            value = breaker_strength
+            color = (255,255,255)
+            extra_key = None
         elif key == 'risk factor':
             value = gs.total_risky_entities
+            color = (255,255,255)
+            extra_key = None
         elif key == 'problems':
             value = gs.total_broken_entities
+            color = (255,255,255)
+            extra_key = None
         else:
             value = 0
-        cell.draw_value(value, font or get_font1(18))
+            color = (255,255,255)
+            extra_key = None
+        if key == 'power drain':
+            cell.draw_value(value, font or get_font1(18), color=color, extra_key=extra_key)
+        else:
+            cell.draw_value(value, font or get_font1(18), color=color)
         cell.blit_to(panel_surface, (cell_x, cell_y))
     surface.blit(panel_surface, (surf_x, surf_y))
 

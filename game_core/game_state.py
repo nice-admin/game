@@ -72,6 +72,7 @@ class GameState:
             'total_broken_entities': self.total_broken_entities,
             'is_internet_online': self.is_internet_online,
             'is_wifi_online': self.is_wifi_online,
+            'is_nas_running': self.is_nas_running,  # Added NAS status
         }
 
 def get_totals_dict():
