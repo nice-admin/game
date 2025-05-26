@@ -4,7 +4,7 @@ from game_core.entity_definitions import *
 from game_core.game_settings import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_BG_COL, GRID_BORDER_COL, BG_OUTSIDE_GRID_COL
 from game_core.controls import handle_global_controls, CameraDrag, get_construction_panel_key, handle_construction_panel_selection, PaintBrush, handle_entity_pickup
 from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES, get_construction_panel_size
-from game_ui.ui import draw_all_ui, draw_entity_preview
+from game_ui.ui import *
 from game_core.entity_state import EntityStateList
 from game_ui.entity_state_panel import *
 import game_other.savegame as savegame
@@ -163,7 +163,7 @@ def run_game():
         frame_ms = frame_end - frame_start
         timings = {"Frame": frame_ms}
         # Draw UI, pass hovered_entity
-        draw_all_ui(
+        draw_all_panels(
             screen,
             state['selected_index'],
             font,

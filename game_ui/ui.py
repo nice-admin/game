@@ -13,7 +13,7 @@ from game_ui.resource_panel import *
 # Store the baked panel as a module-level variable
 _baked_panel_surface = None
 
-def draw_all_ui(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None):
+def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None):
     """
     Draw all UI elements that are on top of the game area.
     Extend this function to include more UI overlays as needed.
