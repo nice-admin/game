@@ -154,23 +154,14 @@ def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=
     """
     font = font or get_font1(18)
     gap = 10
-    # Label for Employees cell is just 'Employees:'
     general_labels = ["Money", "Power Drain", "Breaker Strength", "Employees"] + ["" for _ in range(6)]
     general_grid = [[GeneralCell(label=general_labels[row*5+col], font=font) for col in range(5)] for row in range(2)]
     problems_labels = ["Risk Factor", "Problems", "", ""]
     problems_grid = [[ProblemCell(label=problems_labels[row*2+col], font=font) for col in range(2)] for row in range(2)]
-    # Load icons for all SystemCells (no try/except, icons are always present)
-    icon_internet = pygame.image.load("data/graphics/internet.png").convert_alpha()
-    icon_nas = pygame.image.load("data/graphics/nas.png").convert_alpha()
-    icon_wifi = pygame.image.load("data/graphics/wifi.png").convert_alpha()
-    icon_storage = pygame.image.load("data/graphics/storage.png").convert_alpha()
+    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
     system_labels = ["Connected", "Running", "Connected", "15 / 25 TB"]
-    system_icons = [icon_internet, icon_nas, icon_wifi, icon_storage]
-    system_grid = [
-        [SystemCell(label=system_labels[row*2+col], font=font, icon=system_icons[row*2+col]) for col in range(2)]
-        for row in range(2)
-    ]
-
+    system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
+    system_grid = [[SystemCell(label=system_labels[row*2+col], font=font, icon=system_icons[row*2+col]) for col in range(2)] for row in range(2)]
     general_width = 5 * GeneralCell().cell_width
     problems_width = 2 * ProblemCell().cell_width
     system_width = 2 * SystemCell().cell_width
@@ -179,37 +170,29 @@ def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=
     panel_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
     start_x = 0
     start_y = Header.header_height
-
     def draw_grid(grid, start_x, start_y, cell_cls):
         for row_idx, row in enumerate(grid):
             for col_idx, cell in enumerate(row):
                 x = start_x + col_idx * (cell_cls().cell_width)
                 y = start_y + row_idx * (cell_cls().cell_height)
                 panel_surface.blit(cell.surface, (x, y))
-
     # Draw headers and all grids
-    general_header = Header(general_width, text="GENERAL INFORMATION", font=font)
-    panel_surface.blit(general_header.get_surface(), (start_x, 0))
-    draw_grid(general_grid, start_x, start_y, GeneralCell)
-
+    for header_text, width, x, grid, cell_cls in [
+        ("GENERAL INFORMATION", general_width, start_x, general_grid, GeneralCell),
+        ("WARNING PANEL", problems_width, start_x + general_width + gap, problems_grid, ProblemCell),
+        ("SYSTEM HEALTH", system_width, start_x + general_width + gap + problems_width + gap, system_grid, SystemCell)
+    ]:
+        header = Header(width, text=header_text, font=font)
+        panel_surface.blit(header.get_surface(), (x, 0))
+        draw_grid(grid, x, start_y, cell_cls)
     problems_x = start_x + general_width + gap
-    problems_header = Header(problems_width, text="WARNING PANEL", font=font)
-    panel_surface.blit(problems_header.get_surface(), (problems_x, 0))
-    draw_grid(problems_grid, problems_x, start_y, ProblemCell)
-
-    system_x = problems_x + problems_width + gap
-    system_header = Header(system_width, text="SYSTEM HEALTH", font=font)
-    panel_surface.blit(system_header.get_surface(), (system_x, 0))
-    draw_grid(system_grid, system_x, start_y, SystemCell)
-
-    # Refactored: Use a mapping for cell keys and positions
     cell_map = [
-        ('employees', general_grid[0][3], start_x + 3 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
-        ('money', general_grid[0][0], start_x + 0 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
-        ('power drain', general_grid[0][1], start_x + 1 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
-        ('breaker strength', general_grid[0][2], start_x + 2 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
-        ('risk factor', problems_grid[0][0], problems_x + 0 * ProblemCell().cell_width, start_y + 0 * ProblemCell().cell_height),
-        ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell().cell_width, start_y + 0 * ProblemCell().cell_height),
+        ('employees', general_grid[0][3], start_x + 3 * GeneralCell().cell_width, start_y),
+        ('money', general_grid[0][0], start_x, start_y),
+        ('power drain', general_grid[0][1], start_x + 1 * GeneralCell().cell_width, start_y),
+        ('breaker strength', general_grid[0][2], start_x + 2 * GeneralCell().cell_width, start_y),
+        ('risk factor', problems_grid[0][0], problems_x, start_y),
+        ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell().cell_width, start_y),
     ]
     cell_refs = {key: (x, y, cell) for key, cell, x, y in cell_map}
     return panel_surface, cell_refs
