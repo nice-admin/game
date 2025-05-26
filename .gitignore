@@ -1,3 +1,6 @@
 _save/
 _trash/
 _output/
+__pycache__/
+*.py[cod]
+**/__pycache__/

@@ -23,7 +23,7 @@ class Artist(SatisfiableEntity):
     satisfaction_check_type = 'monitor'
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
-    is_person = True
+    is_person = TrueP
 
 class EspressoMachine(BaseEntity):
     _icon = "data/graphics/coffee-machine.png"
