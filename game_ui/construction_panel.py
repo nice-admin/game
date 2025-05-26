@@ -4,7 +4,7 @@ import pygame
 import inspect
 import game_core.entity_definitions as entities_mod
 from game_core.entity_definitions import to_display_name_from_classname, get_icon_surface
-from game_core.game_settings import FONT1
+from game_core.game_settings import FONT1_PATH, get_font1
 
 # Build ENTITY_CHOICES once at import
 ENTITY_CHOICES = [
@@ -30,7 +30,7 @@ def get_construction_panel_size(screen_width, screen_height):
 
 def draw_construction_panel(surface, selected_index, font, x=10, y=10, width=220, height=200):
     if font is None:
-        font = pygame.font.Font(FONT1, int(height * 0.18))
+        font = pygame.font.Font(FONT1_PATH, int(height * 0.18))
     panel_rect = pygame.Rect(x, y, width, height)
     pygame.draw.rect(surface, (40, 40, 40), panel_rect)
     pygame.draw.rect(surface, (80, 80, 80), panel_rect, 2)

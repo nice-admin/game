@@ -80,3 +80,30 @@ def sum_power_drain(grid):
             if entity is not None and hasattr(entity, 'power_drain'):
                 total += getattr(entity, 'power_drain', 0)
     return total
+
+def update_totals_from_grid(grid):
+    """
+    Updates all global total_* variables based on the current grid state.
+    Call this whenever the grid changes.
+    """
+    global total_employees, total_power_drain, total_breaker_strength, total_risky_entities, total_broken_entities
+    total_employees = count_employees(grid)
+    total_power_drain = sum_power_drain(grid)
+    total_breaker_strength = sum_breaker_strength(grid)
+    total_risky_entities = count_risky_entities(grid)
+    total_broken_entities = count_broken_entities(grid)
+
+def get_totals_dict():
+    """
+    Returns a dict of the current values of all global total_* variables for debug or UI use.
+    """
+    return {
+        'total_money': total_money,
+        'total_power_drain': total_power_drain,
+        'total_breaker_strength': total_breaker_strength,
+        'total_employees': total_employees,
+        'total_risky_entities': total_risky_entities,
+        'total_broken_entities': total_broken_entities,
+        'is_internet_online': is_internet_online,
+        'is_wifi_online': is_wifi_online,
+    }

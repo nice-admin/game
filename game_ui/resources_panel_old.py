@@ -1,6 +1,6 @@
 import pygame
 from game_core import game_state
-from game_core.game_settings import *
+from game_core.game_settings import FONT1_PATH, UI_BG1_COL, UI_BORDER1_COL, TEXT1_COL
 
 DESCRIPTION_SIZE = 0.3  # Multiplier for row_h for the label
 VALUE_SIZE = 0.4        # Multiplier for row_h for the value
@@ -14,13 +14,13 @@ _label_font_cache = {}
 def get_number_font(row_h):
     size = int(row_h * VALUE_SIZE)
     if size not in _number_font_cache:
-        _number_font_cache[size] = pygame.font.Font(FONT1, size)
+        _number_font_cache[size] = pygame.font.Font(FONT1_PATH, size)
     return _number_font_cache[size]
 
 def get_label_font(row_h):
     size = int(row_h * DESCRIPTION_SIZE)
     if size not in _label_font_cache:
-        _label_font_cache[size] = pygame.font.Font(FONT1, size)
+        _label_font_cache[size] = pygame.font.Font(FONT1_PATH, size)
     return _label_font_cache[size]
 
 def _draw_panel_block(surface, panel, cols, col_w, row_h, x, y, special_color_fn=None):
@@ -132,7 +132,7 @@ def draw_internet_panel(surface, panel_x, panel_y, panel_height, panel_w, col_w,
         except Exception:
             pass
 
-def draw_resources_panel(surface, font=None):
+def draw_resources_panel_old(surface, font=None):
     w, h = surface.get_width(), surface.get_height()
     panel_width = int(w * 0.6)
     panel_height = h * 0.08

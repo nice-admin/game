@@ -28,7 +28,14 @@ STATUS_MIDDLE_COL = (255, 220, 0)
 STATUS_GOOD_COL = (0, 255, 0) 
 
 # Font
-FONT1 = "data/fonts/font1.ttf"
+FONT1_PATH = "data/fonts/font1.ttf"
+
+def get_font1(size=18):
+    """
+    Returns a pygame.font.Font object for FONT1_PATH at the given size.
+    Call only after pygame.init().
+    """
+    return pygame.font.Font(FONT1_PATH, size)
 
 # Audio settings
 MIXER_NUM_CHANNELS = 32  # Allow up to 32 simultaneous sound effects

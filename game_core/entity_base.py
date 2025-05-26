@@ -30,6 +30,7 @@ class BaseEntity:
     _icon = None
     _id_counter = 0
     is_person = 0  # Default: not a person
+    state = "Basic"
 
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -138,6 +139,7 @@ class SatisfiableEntity(BaseEntity):
     is_initialized = False
     is_risky = False
     is_broken = False
+    state = "Init"
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -174,6 +176,11 @@ class SatisfiableEntity(BaseEntity):
                 if entity_type:
                     count = self.count_entities_in_proximity(grid, entity_type, radius)
                     self.on_satisfaction_check(count, getattr(self, 'satisfaction_check_threshold', 1))
+                # Set state to "Sat" if satisfied, else "Init"
+                if self.is_satisfied:
+                    self.state = "Sat"
+                else:
+                    self.state = "Init"
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None

@@ -11,6 +11,7 @@ import game_other.savegame as savegame
 import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
 from game_core.game_events import handle_event
+from game_core.game_state import update_totals_from_grid
 
 
 # --- Game Grid ---
@@ -124,6 +125,8 @@ def run_game():
                 background_surface = pygame.Surface((GRID_WIDTH * state['cell_size'], GRID_HEIGHT * state['cell_size']))
             bake_static_entities()
             prev_cell_size = state['cell_size']
+            # Update all game state totals when grid changes
+            update_totals_from_grid(state['grid'])
         prev_camera_offset = state['camera_offset']
         # --- Update Entities ---
         if frame_count % 2 == 0:
