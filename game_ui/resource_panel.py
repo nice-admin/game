@@ -239,21 +239,17 @@ def draw_resource_panel(surface, baked_panel_surface_and_cells, font=None):
     surf_y = 0  # or wherever you want it
     surface.blit(baked_panel_surface, (surf_x, surf_y))
     totals = get_totals_dict()
+    # Map cell keys to totals keys
+    key_map = {
+        'employees': 'total_employees',
+        'money': 'total_money',
+        'power drain': 'total_power_drain',
+        'breaker strength': 'total_breaker_strength',
+        'risk factor': 'total_risky_entities',
+        'problems': 'total_broken_entities',
+    }
     for key, (cell_x, cell_y, cell) in cell_references.items():
-        if key == 'employees':
-            value = totals.get('total_employees', 0)
-        elif key == 'money':
-            value = totals.get('total_money', 0)
-        elif key == 'power drain':
-            value = totals.get('total_power_drain', 0)
-        elif key == 'breaker strength':
-            value = totals.get('total_breaker_strength', 0)
-        elif key == 'risk factor':
-            value = totals.get('total_risky_entities', 0)
-        elif key == 'problems':
-            value = totals.get('total_broken_entities', 0)
-        else:
-            value = 0
+        value = totals.get(key_map.get(key, ''), 0)
         cell.draw_value(value, font)
         cell.blit_to(surface, (surf_x + cell_x, surf_y + cell_y))
 
