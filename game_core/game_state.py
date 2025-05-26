@@ -37,7 +37,7 @@ def count_employees(grid):
                 count += 1
     return count
 
-def sum_breaker_strength(grid):
+def count_breaker_strength(grid):
     """
     Returns the sum of breaker_strength for all entities on the grid that have this attribute.
     """
@@ -70,7 +70,7 @@ def count_broken_entities(grid):
                 count += 1
     return count
 
-def sum_power_drain(grid):
+def count_power_drain(grid):
     """
     Returns the sum of power_drain for all entities on the grid that have this attribute.
     """
@@ -88,8 +88,8 @@ def update_totals_from_grid(grid):
     """
     global total_employees, total_power_drain, total_breaker_strength, total_risky_entities, total_broken_entities
     total_employees = count_employees(grid)
-    total_power_drain = sum_power_drain(grid)
-    total_breaker_strength = sum_breaker_strength(grid)
+    total_power_drain = count_power_drain(grid)
+    total_breaker_strength = count_breaker_strength(grid)
     total_risky_entities = count_risky_entities(grid)
     total_broken_entities = count_broken_entities(grid)
 

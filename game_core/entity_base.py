@@ -96,7 +96,7 @@ class SatisfiableEntity(BaseEntity):
     _icon_broken = None
     _BAR1_COL = (60, 60, 60)
     _BAR1_COL_FILL_INIT = STATUS_INIT_COL
-    _BAR1_COL_FILL_UNSAT = STATUS_MIDDLE_COL
+    _BAR1_COL_FILL_UNSAT = STATUS_MID_COL
     _BAR1_COL_FILL_SAT = STATUS_GOOD_COL
     _BAR2_COL_BG = (100, 100, 100)
     _BAR2_COL_FILL = (203, 33, 255)
@@ -151,14 +151,22 @@ class SatisfiableEntity(BaseEntity):
         # Set is_satisfied to True if count >= threshold, else False
         self.is_satisfied = count >= threshold
 
+    def _set_status(self):
+        # Set to 'Mid' if (not satisfied AND initialized AND not broken) OR risky
+        if ((self.is_satisfied == 0 and self.is_initialized == 1 and self.is_broken == 0) or self.is_risky == 1):
+            self.state = "Mid"
+        elif self.is_satisfied and self.is_initialized:
+            self.state = "Good"
+        elif self.is_broken:
+            self.state = "Bad"
+
     def update(self, grid):
         self._progress_bar_frame_counter += 1
         if self._progress_bar_frame_counter >= self._BAR_REFRESH_RATE:
             self._progress_bar_frame_counter = 0
             self._update_bar1(grid)
             self._update_bar2(grid)
-        if self.is_risky:
-            self.state = "Mid"
+        self._set_status()
 
     def _update_bar1(self, grid):
         if self.has_bar1:
@@ -179,11 +187,6 @@ class SatisfiableEntity(BaseEntity):
                 if entity_type:
                     count = self.count_entities_in_proximity(grid, entity_type, radius)
                     self.on_satisfaction_check(count, getattr(self, 'satisfaction_check_threshold', 1))
-                # Set state to "Sat" if satisfied, else "Init"
-                if self.is_satisfied:
-                    self.state = "Sat"
-                else:
-                    self.state = "Unsat"
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -228,7 +231,7 @@ class SatisfiableEntity(BaseEntity):
         if (
             getattr(self, 'is_initialized', False) and not getattr(self, 'is_satisfied', True)
         ):
-            highlight_color = STATUS_MIDDLE_COL
+            highlight_color = STATUS_MID_COL
         if getattr(self, 'is_broken', False):
             highlight_color = STATUS_BAD_COL
         if highlight_color and not getattr(self, 'warning_hidden', False) and not static_only:

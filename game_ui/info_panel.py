@@ -33,55 +33,44 @@ def get_entity_counts(grid):
     return counts, icon_paths
 
 def draw_mid_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    messages = [
-        "Doesn't look good", "Having issues", "Has a problem", "Needs help", "Requires attention"
-    ]
-    color = (255, 255, 0)
-    conditions_list = [
-        [('is_initialized', '==', 1), ('is_broken', '==', 0), ('is_risky', '==', 1)],
-        [('is_initialized', '==', 1), ('is_broken', '==', 0), ('is_risky', '==', 0), ('is_satisfied', '==', 0)]
-    ]
-    for conditions in conditions_list:
+    if getattr(hovered_entity, 'state', None) == "Mid":
         _draw_status(
-            surface, font, messages, color, hovered_entity,
+            surface, font,
+            ["Doesn't look good", "Having issues", "Has a problem", "Needs help", "Requires attention"],
+            STATUS_MID_COL, hovered_entity,
             box_x=box_x, box_y=box_y, icon_size=icon_size,
-            require_cls=SatisfiableEntity,
-            conditions=conditions
+            always_show=True
         )
 
 def draw_bad_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    messages = [
-        "Damaged beyond repair", "Is out for good", "Won't be back"
-    ]
-    color = (255, 80, 80)
-    _draw_status(
-        surface, font, messages, color, hovered_entity,
-        box_x=box_x, box_y=box_y, icon_size=icon_size,
-        conditions=[('is_broken', '==', 1)]
-    )
+    if getattr(hovered_entity, 'state', None) == "Bad":
+        _draw_status(
+            surface, font,
+            ["Beyond repair", "Is out for good", "Won't be back", "Totalled", "Out of order", "Needs replacement"],
+            STATUS_BAD_COL, hovered_entity,
+            box_x=box_x, box_y=box_y, icon_size=icon_size,
+            always_show=True
+        )
 
 def draw_init_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    messages = [
-        "Is preparing", "Getting ready", "Almost ready", "Busy soon", "Warming up", "Booting up"
-    ]
-    color = (200, 200, 200)
-    _draw_status(
-        surface, font, messages, color, hovered_entity,
-        box_x=box_x, box_y=box_y, icon_size=icon_size,
-        conditions=[('is_initialized', '==', 0), ('is_satisfied', '==', 0), ('is_risky', '==', 0)]
-    )
+    if getattr(hovered_entity, 'state', None) == "Init":
+        _draw_status(
+            surface, font,
+            ["Is preparing", "Getting ready", "Almost ready", "Busy soon", "Warming up", "Booting up"],
+            STATUS_INIT_COL, hovered_entity,
+            box_x=box_x, box_y=box_y, icon_size=icon_size,
+            always_show=True
+        )
 
 def draw_good_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    messages = [
-        "Is okay", "Is good", "Seems fine", "Looking good", "No issues", "Checks out", "Keeping busy", "Doing well", "No trouble"
-    ]
-    color = (60, 220, 60)
-    _draw_status(
-        surface, font, messages, color, hovered_entity,
-        box_x=box_x, box_y=box_y, icon_size=icon_size,
-        require_cls=SatisfiableEntity,
-        conditions=[('is_satisfied', '==', 1), ('is_risky', '==', 0)]
-    )
+    if isinstance(hovered_entity, SatisfiableEntity) and getattr(hovered_entity, 'state', None) == "Good":
+        _draw_status(
+            surface, font,
+            ["Is okay", "Is good", "Seems fine", "Looking good", "No issues", "Checks out", "Keeping busy", "Doing well", "No trouble"],
+            STATUS_GOOD_COL, hovered_entity,
+            box_x=box_x, box_y=box_y, icon_size=icon_size,
+            always_show=True
+        )
 
 def _draw_status(surface, font, messages, color, entity, attr_name=None, box_x=0, box_y=0, icon_size=0, value=0, op='==', require_cls=None, always_show=False, conditions=None):
     """
