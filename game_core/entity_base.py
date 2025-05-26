@@ -157,6 +157,8 @@ class SatisfiableEntity(BaseEntity):
             self._progress_bar_frame_counter = 0
             self._update_bar1(grid)
             self._update_bar2(grid)
+        if self.is_risky:
+            self.state = "Mid"
 
     def _update_bar1(self, grid):
         if self.has_bar1:
