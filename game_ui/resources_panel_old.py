@@ -48,11 +48,13 @@ def _draw_panel_block(surface, panel, cols, col_w, row_h, x, y, special_color_fn
     pygame.draw.line(surface, UI_BORDER1_COL, (x, yline), (x + col_w * cols, yline), 1)
 
 def draw_general_panel(surface, panel_x, panel_y, panel_height, general_w):
+    from game_core.game_state import GameState
+    state = GameState()
     panel = [
-        ("Money", game_state.total_money),
-        ("Power Drain", game_state.total_power_drain),
-        ("Breaker Strength", game_state.total_breaker_strength),
-        ("Employees", game_state.total_employees),
+        ("Money", state.total_money),
+        ("Power Drain", state.total_power_drain),
+        ("Breaker Strength", state.total_breaker_strength),
+        ("Employees", state.total_employees),
         *( ("-", "-") for _ in range(6) )
     ]
     cols = 5
@@ -62,7 +64,7 @@ def draw_general_panel(surface, panel_x, panel_y, panel_height, general_w):
     pygame.draw.rect(surface, UI_BG1_COL, rect)
     pygame.draw.rect(surface, UI_BORDER1_COL, rect, 2)
     def power_drain_color():
-        d, s = game_state.total_power_drain, game_state.total_breaker_strength
+        d, s = state.total_power_drain, state.total_breaker_strength
         ratio = 0 if s > 0 and d <= s-15 else min(max((d-(s-15))/15,0),1) if s>0 else 1
         import colorsys
         r,g,b = [int(x*255) for x in colorsys.hsv_to_rgb((120*(1-ratio))/360,1,1)]
@@ -70,9 +72,11 @@ def draw_general_panel(surface, panel_x, panel_y, panel_height, general_w):
     _draw_panel_block(surface, panel, cols, col_w, row_h, panel_x, panel_y, special_color_fn=power_drain_color)
 
 def draw_problems_panel(surface, panel_x, panel_y, panel_height, problems_w, col_w):
+    from game_core.game_state import GameState
+    state = GameState()
     panel = [
-        ("Risk Factor", game_state.total_risky_entities),
-        ("Problems", game_state.total_broken_entities),
+        ("Risk Factor", state.total_risky_entities),
+        ("Problems", state.total_broken_entities),
         ("-", "-"),
         ("-", "-"),
         ("-", "-")

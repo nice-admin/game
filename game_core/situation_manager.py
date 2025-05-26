@@ -14,8 +14,10 @@ class InternetFluctuationSituation(BaseSituation):
         self._restoring = False
 
     def maybe_trigger(self):
-        if game_core.game_state.is_internet_online == 1 and random.random() < 0.2 and not self._restoring:
-            game_core.game_state.is_internet_online = 0
+        from game_core.game_state import GameState
+        state = GameState()
+        if state.is_internet_online == 1 and random.random() < 0.2 and not self._restoring:
+            state.is_internet_online = 0
             self._restoring = True
             game_other.audio.play_internet_outage_sound()
             threading.Timer(10, self.restore_internet).start()
@@ -23,7 +25,9 @@ class InternetFluctuationSituation(BaseSituation):
         return False
 
     def restore_internet(self):
-        game_core.game_state.is_internet_online = 1
+        from game_core.game_state import GameState
+        state = GameState()
+        state.is_internet_online = 1
         self._restoring = False
 
 # Add more situation classes here as needed
