@@ -202,33 +202,17 @@ def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=
     panel_surface.blit(system_header.get_surface(), (system_x, 0))
     draw_grid(system_grid, system_x, start_y, SystemCell)
 
-    # Return the baked panel and the actual Employees and Money cell instances for dynamic value drawing
-    employees_cell = general_grid[0][3]  # row 0, col 3 is Employees cell
-    employees_cell_x = start_x + 3 * GeneralCell().cell_width
-    employees_cell_y = start_y + 0 * GeneralCell().cell_height
-    money_cell = general_grid[0][0]  # row 0, col 0 is Money cell
-    money_cell_x = start_x + 0 * GeneralCell().cell_width
-    money_cell_y = start_y + 0 * GeneralCell().cell_height
-    power_drain_cell = general_grid[0][1]  # row 0, col 1 is Power Drain cell
-    power_drain_cell_x = start_x + 1 * GeneralCell().cell_width
-    power_drain_cell_y = start_y + 0 * GeneralCell().cell_height
-    breaker_strength_cell = general_grid[0][2]  # row 0, col 2 is Breaker Strength cell
-    breaker_strength_cell_x = start_x + 2 * GeneralCell().cell_width
-    breaker_strength_cell_y = start_y + 0 * GeneralCell().cell_height
-    risk_factor_cell = problems_grid[0][0]  # row 0, col 0 is Risk Factor cell
-    risk_factor_cell_x = problems_x + 0 * ProblemCell().cell_width
-    risk_factor_cell_y = start_y + 0 * ProblemCell().cell_height
-    problems_cell = problems_grid[0][1]  # row 0, col 1 is Problems cell
-    problems_cell_x = problems_x + 1 * ProblemCell().cell_width
-    problems_cell_y = start_y + 0 * ProblemCell().cell_height
-    return panel_surface, {
-        'employees': (employees_cell_x, employees_cell_y, employees_cell),
-        'money': (money_cell_x, money_cell_y, money_cell),
-        'power drain': (power_drain_cell_x, power_drain_cell_y, power_drain_cell),
-        'breaker strength': (breaker_strength_cell_x, breaker_strength_cell_y, breaker_strength_cell),
-        'risk factor': (risk_factor_cell_x, risk_factor_cell_y, risk_factor_cell),
-        'problems': (problems_cell_x, problems_cell_y, problems_cell)
-    }
+    # Refactored: Use a mapping for cell keys and positions
+    cell_map = [
+        ('employees', general_grid[0][3], start_x + 3 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
+        ('money', general_grid[0][0], start_x + 0 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
+        ('power drain', general_grid[0][1], start_x + 1 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
+        ('breaker strength', general_grid[0][2], start_x + 2 * GeneralCell().cell_width, start_y + 0 * GeneralCell().cell_height),
+        ('risk factor', problems_grid[0][0], problems_x + 0 * ProblemCell().cell_width, start_y + 0 * ProblemCell().cell_height),
+        ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell().cell_width, start_y + 0 * ProblemCell().cell_height),
+    ]
+    cell_refs = {key: (x, y, cell) for key, cell, x, y in cell_map}
+    return panel_surface, cell_refs
 
 
 def draw_cell_value(cell, value, surface, font, surf_x, surf_y, color=(255,255,255)):
