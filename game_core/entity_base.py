@@ -40,30 +40,6 @@ class BaseEntity:
         BaseEntity._id_counter += 1
         self.timestamp = time.strftime('%Y-%m-%d %H:%M:%S')  # Human-readable creation time       
 
-    def count_entities_in_proximity(self, grid, entity_type, radius, predicate=None):
-        count = 0
-        for row in grid:
-            for entity in row:
-                if entity is not None:
-                    # Accept class or string for entity_type
-                    if isinstance(entity_type, type):
-                        match = isinstance(entity, entity_type)
-                    elif isinstance(entity_type, (list, tuple)) and all(isinstance(t, type) for t in entity_type):
-                        match = any(isinstance(entity, t) for t in entity_type)
-                    else:
-                        match = to_type_from_classname(entity.__class__.__name__) == entity_type
-                    # Only count if is_satisfied == 1 (unless a predicate is provided)
-                    if match:
-                        dist = abs(entity.x - self.x) + abs(entity.y - self.y)
-                        if dist <= radius:
-                            if predicate is not None:
-                                if predicate(entity):
-                                    count += 1
-                            else:
-                                if getattr(entity, 'is_satisfied', 1) == 1:
-                                    count += 1
-        return count
-
     def update(self, grid):
         pass  # No-op for base class, avoids AttributeError in main loop
 
@@ -114,9 +90,6 @@ class BaseEntity:
             d[k] = getattr(self, k, getattr(self.__class__, k, None))
         return d
 
-    def on_satisfaction_check(self, count = 1, threshold = 1):
-        # Set is_satisfied to True if count >= threshold, else False
-        self.is_satisfied = count >= threshold
 
 class SatisfiableEntity(BaseEntity):
     _icon = None
@@ -150,6 +123,34 @@ class SatisfiableEntity(BaseEntity):
         self.bar2_timer = 0 if self.has_bar2 else None
         self._progress_bar_frame_counter = 0
 
+    def count_entities_in_proximity(self, grid, entity_type, radius, predicate=None):
+        count = 0
+        for row in grid:
+            for entity in row:
+                if entity is not None:
+                    # Accept class or string for entity_type
+                    if isinstance(entity_type, type):
+                        match = isinstance(entity, entity_type)
+                    elif isinstance(entity_type, (list, tuple)) and all(isinstance(t, type) for t in entity_type):
+                        match = any(isinstance(entity, t) for t in entity_type)
+                    else:
+                        match = to_type_from_classname(entity.__class__.__name__) == entity_type
+                    # Only count if is_satisfied == 1 (unless a predicate is provided)
+                    if match:
+                        dist = abs(entity.x - self.x) + abs(entity.y - self.y)
+                        if dist <= radius:
+                            if predicate is not None:
+                                if predicate(entity):
+                                    count += 1
+                            else:
+                                if getattr(entity, 'is_satisfied', 1) == 1:
+                                    count += 1
+        return count
+
+    def on_satisfaction_check(self, count = 1, threshold = 1):
+        # Set is_satisfied to True if count >= threshold, else False
+        self.is_satisfied = count >= threshold
+
     def update(self, grid):
         self._progress_bar_frame_counter += 1
         if self._progress_bar_frame_counter >= self._BAR_REFRESH_RATE:
@@ -180,7 +181,7 @@ class SatisfiableEntity(BaseEntity):
                 if self.is_satisfied:
                     self.state = "Sat"
                 else:
-                    self.state = "Init"
+                    self.state = "Unsat"
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -270,14 +271,7 @@ class SatisfiableEntity(BaseEntity):
     def satisfaction_check(self, grid):
         """
         Universal satisfaction check method. Checks for a specific entity type within a given radius.
-        Entities can override or configure:
-            - self.satisfaction_check_enabled (bool)
-            - self.satisfaction_check_type (str, type name to look for)
-            - self.satisfaction_check_radius (int)
-            - self.satisfaction_check_threshold (int)
-            - self.satisfaction_check_predicate (callable)
-            - self.on_satisfaction_check(count) (callback for result)
-        """
+        Entities can override or configure."""
         if not getattr(self, 'satisfaction_check_enabled', False):
             return
         entity_type = getattr(self, 'satisfaction_check_type', None)

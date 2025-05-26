@@ -12,7 +12,7 @@ def toggle_entity_panel():
 
 def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5, y_offset=20, font_size=15, col_spacing=150):
     """
-    Draws a debug panel in the top right corner showing the contents of the hovered entity.
+    Draws a debug panel in the bottom left corner showing the contents of the hovered entity.
     font_size: If font is not provided, creates a font of this size.
     """
     if not ENTITY_PANEL_VISIBLE:
@@ -37,19 +37,19 @@ def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5,
             lines.append(f"    {k}: {v}")
     else:
         lines.append("No entity under cursor")
-    # Render lines
-    y = y_offset
+    # Render lines in bottom left
     x = x_offset
-    max_height = surface.get_height() - y_offset
-    for line in lines:
+    y = surface.get_height() - y_offset
+    max_height = y_offset  # The topmost y position allowed
+    for line in reversed(lines):
         img = font.render(line, True, (200, 220, 255))
-        rect = img.get_rect(topright=(surface.get_width() - x, y))
-        if y + img.get_height() > max_height:
-            y = y_offset
+        rect = img.get_rect(topleft=(x, y - img.get_height()))
+        if y - img.get_height() < max_height:
+            y = surface.get_height() - y_offset
             x += col_spacing
-            rect = img.get_rect(topright=(surface.get_width() - x, y))
+            rect = img.get_rect(topleft=(x, y - img.get_height()))
         surface.blit(img, rect)
-        y += img.get_height() + 1
+        y -= img.get_height() + 1
 
 def handle_panel_toggle_event(event):
     if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
