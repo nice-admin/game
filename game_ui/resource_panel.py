@@ -229,46 +229,68 @@ def draw_resource_panel(surface, font=None):
     surface.blit(panel_surface, (surf_x, surf_y))
 
 
+def update_icon_surfaces(is_internet_online, font=None):
+    """
+    Tint and cache the icon surfaces for the current is_internet_online state.
+    This should be called only at game start and when is_internet_online changes.
+    """
+    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
+    icon_size = 40
+    if not hasattr(update_icon_surfaces, "_icon_cache"):
+        update_icon_surfaces._icon_cache = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
+    system_icons = update_icon_surfaces._icon_cache
+    def tint_icon(icon, color):
+        icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))
+        tinted = icon.copy()
+        arr = pygame.surfarray.pixels3d(tinted)
+        arr[:, :, 0] = color[0]
+        arr[:, :, 1] = color[1]
+        arr[:, :, 2] = color[2]
+        del arr
+        return tinted
+    ONLINE = (0, 255, 0)
+    OFFLINE = (0, 0, 0)
+    icon_surfaces = []
+    for idx, icon in enumerate(system_icons):
+        if idx in (0, 2):
+            color = ONLINE if is_internet_online else OFFLINE
+        else:
+            color = ONLINE
+        icon_surfaces.append(tint_icon(icon, color))
+    update_icon_surfaces._icon_surfaces = icon_surfaces
+    update_icon_surfaces._icon_state = is_internet_online
+
+
 def draw_icons(surface, font=None):
-    """
-    Draws the system icons (internet, nas, wifi, storage) at their expected locations on the given surface.
-    This does NOT bake them; it draws them live each call.
-    Internet and wifi icons are black if offline, otherwise green.
-    """
     from game_core.game_state import GameState
     font = font or get_font1(18)
-    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
-    system_labels = ["Connected", "Running", "Connected", "15 / 25 TB"]
-    system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
-    icon_size = 40
-    gap = 10
+    gs = GameState()
+    is_internet_online = gs.is_internet_online
+
+    # Only update icon surfaces if state changed or never initialized
+    if (not hasattr(update_icon_surfaces, "_icon_state") or
+        update_icon_surfaces._icon_state != is_internet_online):
+        update_icon_surfaces(is_internet_online, font)
+    icon_surfaces = update_icon_surfaces._icon_surfaces
+
+    # Get baked panel and system cell positions
+    baked = get_baked_panel(font)
+    system_grid = baked['system_grid']
     general_width = 5 * GeneralCell().cell_width
     problems_width = 2 * ProblemCell().cell_width
-    system_width = 2 * SystemCell().cell_width
-    total_width = general_width + gap + problems_width + gap + system_width
+    gap = 10
     start_x = 0
     start_y = Header.header_height
     system_x = start_x + general_width + gap + problems_width + gap
-    gs = GameState()
-    is_internet_online = gs.is_internet_online
-    # Draw each icon at its expected cell location in the system grid (2x2)
-    for idx, icon in enumerate(system_icons):
-        row = idx // 2
-        col = idx % 2
-        x = system_x + col * SystemCell().cell_width + 10  # 10px padding from left of cell
-        y = start_y + row * SystemCell().cell_height + (SystemCell().cell_height - icon_size) // 2
-        icon_surf = pygame.transform.smoothscale(icon, (icon_size, icon_size))
-        arr = pygame.surfarray.pixels3d(icon_surf)
-        # Internet (idx==0) and wifi (idx==2) icons: black if offline, green if online
-        if (idx == 0 or idx == 2) and not is_internet_online:
-            arr[:, :, 0] = 0
-            arr[:, :, 1] = 0
-            arr[:, :, 2] = 0
-        else:
-            arr[:, :, 0] = 0
-            arr[:, :, 1] = 255
-            arr[:, :, 2] = 0
-        del arr
-        surface.blit(icon_surf, (x, y))
+    surf_x = baked['surf_x'] or 0
+    surf_y = baked['surf_y'] or 0
+    icon_size = 40
+    icon_idx = 0
+    for row_idx, row in enumerate(system_grid):
+        for col_idx, cell in enumerate(row):
+            x = surf_x + system_x + col_idx * SystemCell().cell_width + 10
+            y = surf_y + start_y + row_idx * SystemCell().cell_height + (SystemCell().cell_height - icon_size) // 2
+            surface.blit(icon_surfaces[icon_idx], (x, y))
+            icon_idx += 1
 
 
