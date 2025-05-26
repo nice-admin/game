@@ -17,6 +17,7 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
     """
     if ALLOW_RESOURCES_PANEL:
         draw_resource_panel(surface, font)
+        draw_icons(surface, font)
     # Draw new resource panel below the original one (standalone feature)
     draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
     # Draw info panel and get its width

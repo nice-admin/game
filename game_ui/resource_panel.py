@@ -64,6 +64,7 @@ class BasicCell:
         self.value_surface.blit(value_surf, (x, y))
 
     def blit_to(self, target_surface, pos):
+        # Always blit the baked cell first, then the value overlay
         target_surface.blit(self.surface, pos)
         if self.value_surface:
             target_surface.blit(self.value_surface, pos)
@@ -82,36 +83,14 @@ class ProblemCell(GeneralCell):
 
 class SystemCell(GeneralCell):
     def __init__(self, cell_width=160, label="Connected", font=None, text_color=None, value_font_size=25, label_text_size=15, icon=None):
-        # Use default text color (TEXT1_COL) for label text
         super().__init__(cell_width, label=None, font=font, text_color=text_color if text_color is not None else TEXT1_COL, value_font_size=value_font_size, label_text_size=label_text_size)
         self.custom_label = label
         self.icon = icon  # icon should be a pygame.Surface or None
         self._draw_text()
 
     def _draw_icon(self):
-        from game_core.game_state import GameState
-        x_offset = 10
-        if self.icon:
-            is_online = GameState().is_internet_online
-            icon_size = 40
-            icon_surf = pygame.transform.smoothscale(self.icon, (icon_size, icon_size))
-            arr = pygame.surfarray.pixels3d(icon_surf)
-            # Default: all icons are green
-            arr[:, :, 0] = 0   # R
-            arr[:, :, 1] = 255 # G
-            arr[:, :, 2] = 0   # B
-            # Special case: internet icon offline = black
-            if self.custom_label == "Connected" and not is_online:
-                arr[:, :, 0] = 0
-                arr[:, :, 1] = 0
-                arr[:, :, 2] = 0
-            del arr
-            icon_rect = icon_surf.get_rect()
-            icon_rect.left = x_offset
-            icon_rect.centery = self.cell_height // 2
-            self.surface.blit(icon_surf, icon_rect)
-            x_offset += icon_rect.width + 6  # 6px gap after icon
-        return x_offset
+        # Icon rendering is now handled by draw_icons; do nothing here
+        return 10
 
     def _draw_text(self):
         x_offset = self._draw_icon()
@@ -146,23 +125,15 @@ class Header:
         return self.surface
 
 # --- Panel Baking and Drawing ---
-def draw_cell_value(cell, value, surface, font, surf_x, surf_y, color=(255,255,255)):
-    """
-    Draws a value centered in the given cell on the surface, using the cell's font logic and centering.
-    """
-    value_str = str(value)
-    value_font = cell.get_value_font(font)
-    value_x, value_y = cell.get_value_pos(value_font, value_str)
-    value_pos = (surf_x + value_x, surf_y + value_y)
-    value_surf = value_font.render(value_str, True, color)
-    surface.blit(value_surf, value_pos)
 
-def draw_resource_panel(surface, font=None):
+# Store baked panel cells and headers globally
+_baked_panel = None
+
+
+def bake_resource_panel(font=None):
     """
-    Draws the entire resource panel (headers, cells, values) directly to the target surface each frame.
-    No pre-baked panel is used; everything is redrawn live.
+    Bake the static resource panel (cells, headers, icons) ONCE and return the structure.
     """
-    from game_core.game_state import GameState
     font = font or get_font1(18)
     gap = 10
     general_labels = ["Money", "Power Drain", "Breaker Strength", "Employees"] + ["" for _ in range(6)]
@@ -178,8 +149,6 @@ def draw_resource_panel(surface, font=None):
     system_width = 2 * SystemCell().cell_width
     total_width = general_width + gap + problems_width + gap + system_width
     total_height = 2 * GeneralCell().cell_height + Header.header_height
-    surf_x = (surface.get_width() - total_width) // 2
-    surf_y = 0
     panel_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
     start_x = 0
     start_y = Header.header_height
@@ -206,8 +175,41 @@ def draw_resource_panel(surface, font=None):
         ('risk factor', problems_grid[0][0], problems_x, start_y),
         ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell().cell_width, start_y),
     ]
+    return {
+        'panel_surface': panel_surface,
+        'cell_map': cell_map,
+        'general_grid': general_grid,
+        'problems_grid': problems_grid,
+        'system_grid': system_grid,
+        'start_x': start_x,
+        'start_y': start_y,
+        'surf_x': None,  # to be set at draw time
+        'surf_y': None,
+        'total_width': total_width,
+        'total_height': total_height,
+    }
+
+
+def get_baked_panel(font=None):
+    global _baked_panel
+    if _baked_panel is None:
+        _baked_panel = bake_resource_panel(font)
+    return _baked_panel
+
+
+def draw_resource_panel(surface, font=None):
+    """
+    Draws the resource panel by blitting the baked static panel, then updating and blitting only the value overlays.
+    """
+    from game_core.game_state import GameState
+    baked = get_baked_panel(font)
+    panel_surface = baked['panel_surface'].copy()  # Copy so we can blit values on top
+    surf_x = (surface.get_width() - baked['total_width']) // 2
+    surf_y = 0
+    baked['surf_x'] = surf_x
+    baked['surf_y'] = surf_y
     gs = GameState()
-    for key, cell, cell_x, cell_y in cell_map:
+    for key, cell, cell_x, cell_y in baked['cell_map']:
         if key == 'employees':
             value = gs.total_employees
         elif key == 'money':
@@ -222,8 +224,51 @@ def draw_resource_panel(surface, font=None):
             value = gs.total_broken_entities
         else:
             value = 0
-        cell.draw_value(value, font)
+        cell.draw_value(value, font or get_font1(18))
         cell.blit_to(panel_surface, (cell_x, cell_y))
     surface.blit(panel_surface, (surf_x, surf_y))
+
+
+def draw_icons(surface, font=None):
+    """
+    Draws the system icons (internet, nas, wifi, storage) at their expected locations on the given surface.
+    This does NOT bake them; it draws them live each call.
+    Internet and wifi icons are black if offline, otherwise green.
+    """
+    from game_core.game_state import GameState
+    font = font or get_font1(18)
+    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
+    system_labels = ["Connected", "Running", "Connected", "15 / 25 TB"]
+    system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
+    icon_size = 40
+    gap = 10
+    general_width = 5 * GeneralCell().cell_width
+    problems_width = 2 * ProblemCell().cell_width
+    system_width = 2 * SystemCell().cell_width
+    total_width = general_width + gap + problems_width + gap + system_width
+    start_x = 0
+    start_y = Header.header_height
+    system_x = start_x + general_width + gap + problems_width + gap
+    gs = GameState()
+    is_internet_online = gs.is_internet_online
+    # Draw each icon at its expected cell location in the system grid (2x2)
+    for idx, icon in enumerate(system_icons):
+        row = idx // 2
+        col = idx % 2
+        x = system_x + col * SystemCell().cell_width + 10  # 10px padding from left of cell
+        y = start_y + row * SystemCell().cell_height + (SystemCell().cell_height - icon_size) // 2
+        icon_surf = pygame.transform.smoothscale(icon, (icon_size, icon_size))
+        arr = pygame.surfarray.pixels3d(icon_surf)
+        # Internet (idx==0) and wifi (idx==2) icons: black if offline, green if online
+        if (idx == 0 or idx == 2) and not is_internet_online:
+            arr[:, :, 0] = 0
+            arr[:, :, 1] = 0
+            arr[:, :, 2] = 0
+        else:
+            arr[:, :, 0] = 0
+            arr[:, :, 1] = 255
+            arr[:, :, 2] = 0
+        del arr
+        surface.blit(icon_surf, (x, y))
 
 
