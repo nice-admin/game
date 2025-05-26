@@ -10,19 +10,13 @@ import pygame
 from game_core.entity_state import EntityStateList
 from game_ui.resource_panel import *
 
-# Store the baked panel as a module-level variable
-_baked_panel_surface = None
-
 def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None):
     """
     Draw all UI elements that are on top of the game area.
     Extend this function to include more UI overlays as needed.
     """
-    global _baked_panel_surface
-    if _baked_panel_surface is None:
-        _baked_panel_surface = bake_panel_design()
     if ALLOW_RESOURCES_PANEL:
-        draw_resource_panel(surface, _baked_panel_surface, font)
+        draw_resource_panel(surface, font)
     # Draw new resource panel below the original one (standalone feature)
     draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
     # Draw info panel and get its width

@@ -1,6 +1,6 @@
 import pygame
 from game_core.game_settings import *
-from game_core.game_state import get_totals_dict
+from game_core.game_state import GameState
 from game_core.game_settings import get_font1
 
 # --- UI Resource Panel Cells and Header ---
@@ -89,17 +89,23 @@ class SystemCell(GeneralCell):
         self._draw_text()
 
     def _draw_icon(self):
+        from game_core.game_state import GameState
         x_offset = 10
         if self.icon:
-            # Resize icon to 40x40px
-            icon_surf = pygame.transform.smoothscale(self.icon, (40, 40))
-            # Tint icon to bright green, preserving alpha
+            is_online = GameState().is_internet_online
+            icon_size = 40
+            icon_surf = pygame.transform.smoothscale(self.icon, (icon_size, icon_size))
             arr = pygame.surfarray.pixels3d(icon_surf)
+            # Default: all icons are green
             arr[:, :, 0] = 0   # R
             arr[:, :, 1] = 255 # G
-            arr[:, :, 2] = 80  # B
-            del arr  # unlock the surface
-            # Alpha is preserved
+            arr[:, :, 2] = 0   # B
+            # Special case: internet icon offline = black
+            if self.custom_label == "Connected" and not is_online:
+                arr[:, :, 0] = 0
+                arr[:, :, 1] = 0
+                arr[:, :, 2] = 0
+            del arr
             icon_rect = icon_surf.get_rect()
             icon_rect.left = x_offset
             icon_rect.centery = self.cell_height // 2
@@ -140,18 +146,23 @@ class Header:
         return self.surface
 
 # --- Panel Baking and Drawing ---
-def make_cell_grid(cell_width, cell_height, row_spacing=0, col_spacing=0, cell_extra_spacing=10):
+def draw_cell_value(cell, value, surface, font, surf_x, surf_y, color=(255,255,255)):
     """
-    Creates a 2D list (2 rows x 9 columns) of BasicCell objects.
+    Draws a value centered in the given cell on the surface, using the cell's font logic and centering.
     """
-    return [[BasicCell(cell_width, cell_height) for _ in range(9)] for _ in range(2)], row_spacing, col_spacing, cell_extra_spacing
+    value_str = str(value)
+    value_font = cell.get_value_font(font)
+    value_x, value_y = cell.get_value_pos(value_font, value_str)
+    value_pos = (surf_x + value_x, surf_y + value_y)
+    value_surf = value_font.render(value_str, True, color)
+    surface.blit(value_surf, value_pos)
 
-def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=0, cell_extra_spacing=10, font=None):
+def draw_resource_panel(surface, font=None):
     """
-    Creates and returns the static resource panel surface. Call this ONCE and reuse the returned surface.
-    The Employees cell will be labeled 'Employees:' and the value will be drawn dynamically.
-    Uses FONT1 as the default font if none is provided.
+    Draws the entire resource panel (headers, cells, values) directly to the target surface each frame.
+    No pre-baked panel is used; everything is redrawn live.
     """
+    from game_core.game_state import GameState
     font = font or get_font1(18)
     gap = 10
     general_labels = ["Money", "Power Drain", "Breaker Strength", "Employees"] + ["" for _ in range(6)]
@@ -167,6 +178,8 @@ def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=
     system_width = 2 * SystemCell().cell_width
     total_width = general_width + gap + problems_width + gap + system_width
     total_height = 2 * GeneralCell().cell_height + Header.header_height
+    surf_x = (surface.get_width() - total_width) // 2
+    surf_y = 0
     panel_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
     start_x = 0
     start_y = Header.header_height
@@ -176,7 +189,6 @@ def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=
                 x = start_x + col_idx * (cell_cls().cell_width)
                 y = start_y + row_idx * (cell_cls().cell_height)
                 panel_surface.blit(cell.surface, (x, y))
-    # Draw headers and all grids
     for header_text, width, x, grid, cell_cls in [
         ("GENERAL INFORMATION", general_width, start_x, general_grid, GeneralCell),
         ("WARNING PANEL", problems_width, start_x + general_width + gap, problems_grid, ProblemCell),
@@ -194,46 +206,24 @@ def bake_panel_design(cell_width=64, cell_height=64, row_spacing=0, col_spacing=
         ('risk factor', problems_grid[0][0], problems_x, start_y),
         ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell().cell_width, start_y),
     ]
-    cell_refs = {key: (x, y, cell) for key, cell, x, y in cell_map}
-    return panel_surface, cell_refs
-
-
-def draw_cell_value(cell, value, surface, font, surf_x, surf_y, color=(255,255,255)):
-    """
-    Draws a value centered in the given cell on the surface, using the cell's font logic and centering.
-    """
-    value_str = str(value)
-    value_font = cell.get_value_font(font)
-    value_x, value_y = cell.get_value_pos(value_font, value_str)
-    value_pos = (surf_x + value_x, surf_y + value_y)
-    value_surf = value_font.render(value_str, True, color)
-    surface.blit(value_surf, value_pos)
-
-def draw_resource_panel(surface, baked_panel_surface_and_cells, font=None):
-    """
-    Blits the pre-baked static resource panel to the main surface (centered horizontally),
-    and overlays the current values in the dynamic cells (e.g. Employees, Money).
-    Only the value layer is updated when the value changes.
-    """
-    font = font or get_font1(18)
-    baked_panel_surface, cell_references = baked_panel_surface_and_cells
-    total_width = baked_panel_surface.get_width()
-    surf_x = (surface.get_width() - total_width) // 2
-    surf_y = 0  # or wherever you want it
-    surface.blit(baked_panel_surface, (surf_x, surf_y))
-    totals = get_totals_dict()
-    # Map cell keys to totals keys
-    key_map = {
-        'employees': 'total_employees',
-        'money': 'total_money',
-        'power drain': 'total_power_drain',
-        'breaker strength': 'total_breaker_strength',
-        'risk factor': 'total_risky_entities',
-        'problems': 'total_broken_entities',
-    }
-    for key, (cell_x, cell_y, cell) in cell_references.items():
-        value = totals.get(key_map.get(key, ''), 0)
+    gs = GameState()
+    for key, cell, cell_x, cell_y in cell_map:
+        if key == 'employees':
+            value = gs.total_employees
+        elif key == 'money':
+            value = gs.total_money
+        elif key == 'power drain':
+            value = gs.total_power_drain
+        elif key == 'breaker strength':
+            value = gs.total_breaker_strength
+        elif key == 'risk factor':
+            value = gs.total_risky_entities
+        elif key == 'problems':
+            value = gs.total_broken_entities
+        else:
+            value = 0
         cell.draw_value(value, font)
-        cell.blit_to(surface, (surf_x + cell_x, surf_y + cell_y))
+        cell.blit_to(panel_surface, (cell_x, cell_y))
+    surface.blit(panel_surface, (surf_x, surf_y))
 
 
