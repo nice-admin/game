@@ -12,6 +12,7 @@ import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
 from game_core.game_events import handle_event
 from game_core.game_state import update_totals_from_grid
+import game_core.situation_manager
 
 
 # --- Game Grid ---
@@ -37,6 +38,9 @@ def run_game():
     screen = pygame.display.set_mode(resolution, flags=flags, vsync=1)
     pygame.display.set_caption("3D Artist Team Manager")
     clock = pygame.time.Clock()
+
+    # Start situation manager (random events)
+    game_core.situation_manager.start_situation_manager()
 
     grid = create_grid()
     # Load game state if available

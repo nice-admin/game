@@ -63,3 +63,17 @@ def play_breaker_break_sound(sound_path=None):
         print(f"Played breaker break sound: {os.path.basename(sound_path)}")
     except Exception as e:
         print(f"Failed to play breaker break sound {sound_path}: {e}")
+
+def play_internet_outage_sound(sound_path=None):
+    """
+    Play an internet outage sound effect from the given path using pygame.mixer.Sound.
+    If sound_path is None, defaults to 'data/audio/sounds/internet-outage1.wav'.
+    """
+    if sound_path is None:
+        sound_path = os.path.join('data', 'audio', 'sounds', 'internet-outage1.wav')
+    try:
+        sound = pygame.mixer.Sound(sound_path)
+        sound.play()
+        print(f"Played internet outage sound: {os.path.basename(sound_path)}")
+    except Exception as e:
+        print(f"Failed to play internet outage sound {sound_path}: {e}")

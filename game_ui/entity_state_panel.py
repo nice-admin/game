@@ -12,7 +12,8 @@ def toggle_entity_panel():
 
 def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5, y_offset=20, font_size=15, col_spacing=150):
     """
-    Draws a debug panel in the bottom left corner showing the contents of the hovered entity.
+    Draws a debug panel in the bottom left corner showing the contents of the hovered entity
+    and the current game_state global variables.
     font_size: If font is not provided, creates a font of this size.
     """
     if not ENTITY_PANEL_VISIBLE:
@@ -20,9 +21,9 @@ def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5,
     if font is None:
         font = pygame.font.SysFont(None, font_size)
     lines = []
+    # Show hovered entity info
     if hovered_entity is not None:
         lines.append(f"Entity: {type(hovered_entity).__name__}")
-        # Show parent (base) class
         bases = type(hovered_entity).__bases__
         if bases:
             parent = bases[0]
@@ -37,6 +38,17 @@ def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5,
             lines.append(f"    {k}: {v}")
     else:
         lines.append("No entity under cursor")
+    # Add a separator
+    lines.append("-")
+    # Show game_state global variables
+    try:
+        from game_core.game_state import get_totals_dict
+        totals = get_totals_dict()
+        lines.append("Game State Totals:")
+        for k, v in totals.items():
+            lines.append(f"    {k}: {v}")
+    except Exception as e:
+        lines.append(f"[Game state unavailable: {e}]")
     # Render lines in bottom left
     x = x_offset
     y = surface.get_height() - y_offset
