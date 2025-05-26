@@ -1,7 +1,7 @@
 import pygame
 import math
 
-# entity_state_panel.py
+# hidden_info_panel.py (renamed from entity_state_panel.py)
 # Helper function to display the contents of entity_states in the top right corner for debugging.
 
 ENTITY_PANEL_VISIBLE = True

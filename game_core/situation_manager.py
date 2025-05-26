@@ -5,7 +5,7 @@ from game_core.game_state import GameState
 import game_other.audio
 
 class BaseSituation:
-    def maybe_trigger(self):
+    def trigger(self):
         pass
 
 class InternetOutage(BaseSituation):
@@ -15,9 +15,9 @@ class InternetOutage(BaseSituation):
     def __init__(self):
         self._restoring = False
 
-    def maybe_trigger(self):
+    def trigger(self):
         state = GameState()
-        if state.is_internet_online == 1 and random.random() < 0.2 and not self._restoring:
+        if state.is_internet_online == 1 and not self._restoring:
             state.is_internet_online = 0
             state.is_wifi_online = 0
             self._restoring = True
@@ -37,16 +37,30 @@ class InternetOutage(BaseSituation):
         state = GameState()
         state.is_wifi_online = 1
 
+class NasCrashed(BaseSituation):
+    def __init__(self):
+        self._crashed = False
+
+    def trigger(self):
+        state = GameState()
+        if state.is_nas_running == 1 and not self._crashed:
+            state.is_nas_running = 0
+            self._crashed = True
+            # Optionally play a sound or log the event here
+            return True
+        return False
+
 SITUATIONS = [
     InternetOutage(),
+    NasCrashed(),
     # Add more situation instances here...
 ]
 
 def start_situation_manager():
     def situation_loop():
         while True:
-            for situation in SITUATIONS:
-                situation.maybe_trigger()
-            time.sleep(1)
+            situation = random.choice(SITUATIONS)
+            situation.trigger()
+            time.sleep(random.uniform(5, 10))
     thread = threading.Thread(target=situation_loop, daemon=True)
     thread.start()

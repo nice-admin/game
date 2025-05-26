@@ -2,7 +2,7 @@
 
 from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES
 from game_ui.profiler_panel import draw_profiler_panel
-from game_ui.entity_state_panel import draw_entity_state_panel
+from game_ui.hidden_info_panel import draw_entity_state_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
 from game_ui.info_panel import draw_info_panel, get_info_panel_width
 from game_other.feature_toggle import ALLOW_RESOURCES_PANEL

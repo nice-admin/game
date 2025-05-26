@@ -6,7 +6,7 @@ from game_core.controls import handle_global_controls, CameraDrag, get_construct
 from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES, get_construction_panel_size
 from game_ui.ui import *
 from game_core.entity_state import EntityStateList
-from game_ui.entity_state_panel import *
+from game_ui.hidden_info_panel import *
 import game_other.savegame as savegame
 import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout

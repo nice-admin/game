@@ -12,6 +12,7 @@ class GameState:
             cls._instance.total_broken_entities = 0
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
+            cls._instance.is_nas_running = 1
         return cls._instance
 
     def summarize_entities(self, grid):

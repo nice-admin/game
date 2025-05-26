@@ -94,7 +94,7 @@ class SystemCell(GeneralCell):
 
     def _draw_text(self):
         x_offset = self._draw_icon()
-        x_offset += 4  # Add 4px offset to the right for the text
+        x_offset += 50  # Add 4px offset to the right for the text
         if self.custom_label:
             label_font = get_font1(self.label_text_size)
             surf = label_font.render(str(self.custom_label), True, self.text_color)
