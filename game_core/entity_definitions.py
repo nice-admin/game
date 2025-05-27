@@ -52,6 +52,7 @@ class Breaker(SatisfiableEntity):
     is_satisfied = 1
     warning_hidden = 0
     breaker_strength = 5
+    purchase_cost = 100
 
     def satisfaction_check(self, grid):
         # Use DRY proximity check for unbroken breakers in radius 1 (including self)

@@ -66,6 +66,8 @@ class GameState:
         self.total_breaker_strength = self.count_breaker_strength(grid)
         self.total_risky_entities = self.count_risky_entities(grid)
         self.total_broken_entities = self.count_broken_entities(grid)
+        from game_core.situation_manager import power_outage
+        power_outage.trigger()
 
     def get_totals_dict(self):
         # Return all public (non-callable, non-underscore) attributes as a dict

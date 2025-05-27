@@ -18,27 +18,31 @@ def play_random_music_wav(music_dir=None):
     except Exception as e:
         print(f"Failed to play {chosen}: {e}")
 
-def play_sound_effect(default_path, sound_path=None, label=None):
+def play_sound_effect(default_path, sound_path=None):
     path = sound_path or default_path
     try:
         sound = pygame.mixer.Sound(path)
         sound.play()
-        if label:
-            print(f"Played {label} sound: {os.path.basename(path)}")
     except Exception as e:
-        print(f"Failed to play {label or 'sound'} {path}: {e}")
+        print(f"Failed to play sound {path}: {e}")
 
 def play_build_sound(sound_path=None):
-    play_sound_effect('data/audio/sounds/build1.wav', sound_path, 'build')
+    play_sound_effect('data/audio/sounds/build1.wav', sound_path)
 
 def play_pipette_sound(sound_path=None):
-    play_sound_effect('data/audio/sounds/pipette1.wav', sound_path, 'pipette')
+    play_sound_effect('data/audio/sounds/pipette1.wav', sound_path)
 
 def play_breaker_break_sound(sound_path=None):
-    play_sound_effect('data/audio/sounds/breaker-break1.wav', sound_path, 'breaker break')
+    play_sound_effect('data/audio/sounds/breaker-break1.wav', sound_path)
 
-def play_system_out(sound_path=None):
-    play_sound_effect('data/audio/sounds/system-out1.wav', sound_path, 'internet outage')
+def play_system_out_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/system-out1.wav', sound_path)
 
-def play_system_back(sound_path=None):
-    play_sound_effect('data/audio/sounds/system-back1.wav', sound_path, 'internet reconnect')
+def play_system_back_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/system-back1.wav', sound_path)
+
+def play_power_outage_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/power-outage1.wav', sound_path)
+
+def play_power_up_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/power-up1.wav', sound_path)

@@ -37,6 +37,8 @@ def handle_event(event, state, remove_entity, place_entity):
     def place(e):
         if hasattr(e, 'load_icon'): e.load_icon()
         place_entity(state['grid'], state['entity_states'], e)
+        if hasattr(e, 'on_built'):
+            e.on_built()
     if placed_entity is not None:
         place(placed_entity)
         grid_changed = True
@@ -62,6 +64,8 @@ def handle_event(event, state, remove_entity, place_entity):
         else:
             if state['grid'][gy][gx] is None:
                 place_entity(state['grid'], state['entity_states'], entity)
+                if hasattr(entity, 'on_built'):
+                    entity.on_built()
                 grid_changed = True
     if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
         from game_ui.hidden_info_panel import handle_panel_toggle_event

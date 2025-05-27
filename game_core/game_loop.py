@@ -167,6 +167,7 @@ def update_game_logic(state, frame_count, update_game_state):
         else:
             if state['grid'][gy][gx] is None:
                 place_entity(state['grid'], state['entity_states'], entity)
+                entity.on_built()
                 grid_changed = True
     # --- Update Entities ---
     if frame_count % 2 == 0:

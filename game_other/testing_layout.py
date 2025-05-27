@@ -29,6 +29,8 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT):
                 grid[y][x] = entity
                 if entity_states is not None:
                     entity_states.add_entity(entity)
+                if hasattr(entity, 'on_built'):
+                    entity.on_built()
 
         for i in range(n):
             if i == mid:

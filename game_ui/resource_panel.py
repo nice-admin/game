@@ -240,6 +240,10 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
                 color = (int(r*255), int(g*255), int(b*255))
             extra_key = breaker_strength
             cell.draw_value(value, font or get_font1(18), color=color, extra_key=extra_key)
+        elif key == 'money':
+            value, color, extra_key = key_map.get(key, (0, (255,255,255), None))
+            value_str = f"${value}"
+            cell.draw_value(value_str, font or get_font1(18), color=color)
         else:
             value, color, extra_key = key_map.get(key, (0, (255,255,255), None))
             cell.draw_value(value, font or get_font1(18), color=color)

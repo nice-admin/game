@@ -33,6 +33,7 @@ class BaseEntity:
     _id_counter = 0
     is_person = 0  # Default: not a person
     state = "Basic"
+    purchase_cost = 0
 
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -108,6 +109,10 @@ class BaseEntity:
             d[k] = getattr(self, k, getattr(self.__class__, k, None))
         return d
 
+    def on_built(self):
+        """Call this after the entity is actually built/placed to deduct its purchase cost from total_money."""
+        gs = GameState()
+        gs.total_money -= getattr(self, 'purchase_cost', 0)
 
 class SatisfiableEntity(BaseEntity):
     _icon = None

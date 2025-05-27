@@ -9,6 +9,7 @@ from game_other.feature_toggle import ALLOW_RESOURCES_PANEL, ENTITY_STATE_PANEL
 import pygame
 from game_ui.resource_panel import draw_resource_panel, draw_icons, get_baked_panel
 from game_ui.render_queue_panel import draw_render_queue_panel
+from game_core.situation_manager import power_outage
 
 
 def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None):
@@ -41,6 +42,8 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     # Draw render queue panel at the top, centered, below resource panel
     draw_render_queue_panel(surface, font, surface.get_width(), resource_panel_height)
+    # Draw power outage overlay LAST if active
+    power_outage.draw_overlay(surface)
 
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
