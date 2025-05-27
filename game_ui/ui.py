@@ -10,7 +10,7 @@ import pygame
 from game_core.entity_state import EntityStateList
 from game_ui.resource_panel import *
 
-def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None):
+def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None):
     """
     Draw all UI elements that are on top of the game area.
     Extend this function to include more UI overlays as needed.
@@ -18,11 +18,8 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
     if ALLOW_RESOURCES_PANEL:
         draw_resource_panel(surface, font)
         draw_icons(surface, font)
-    # Draw new resource panel below the original one (standalone feature)
     draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
-    # Draw info panel and get its width
     info_panel_width = get_info_panel_width(surface.get_width())
-    # Offset alerts panel by the actual info panel width
     from game_ui.alerts_panel import check_alerts, draw_alert_panel
     if grid is not None:
         check_alerts(grid, surface.get_width())
@@ -30,6 +27,9 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
     if clock is not None:
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid, hovered_entity=hovered_entity)
+    # Draw entity preview overlay
+    if selected_entity_type and camera_offset is not None and cell_size is not None and GRID_WIDTH is not None and GRID_HEIGHT is not None and grid is not None:
+        draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     # Future: draw other UI overlays here
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
