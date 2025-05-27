@@ -170,12 +170,12 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
         icon_size = 48
         if icon_surf:
             icon_surf = pygame.transform.smoothscale(icon_surf, (icon_size, icon_size))
-            icon_rect = icon_surf.get_rect(topleft=(box_x + 8, box_y - 5 + (box_height - icon_size) // 2))
+            icon_rect = icon_surf.get_rect(topleft=(box_x + 8, box_y - 3 + (box_height - icon_size) // 2))
             surface.blit(icon_surf, icon_rect)
         # Name
         name = getattr(hovered_entity, 'display_name', hovered_entity.__class__.__name__)
         name_text = font.render(name, True, (255, 255, 255))
-        name_rect = name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 20))
+        name_rect = name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 18))
         surface.blit(name_text, name_rect)
         # Optionally, show more info (e.g., status, power, etc.)
         status = getattr(hovered_entity, 'status', None)

@@ -64,6 +64,9 @@ def handle_event(event, state, remove_entity, place_entity):
                 place_entity(state['grid'], state['entity_states'], entity)
                 grid_changed = True
     if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
-        from game_ui.entity_state_panel import handle_panel_toggle_event
+        from game_ui.hidden_info_panel import handle_panel_toggle_event
+        from game_ui.profiler_panel import handle_profiler_panel_toggle
         handle_panel_toggle_event(event)
+        handle_profiler_panel_toggle()
+        return None, grid_changed
     return None, grid_changed

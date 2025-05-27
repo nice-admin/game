@@ -13,12 +13,20 @@ DP_PAD_X = 16
 DP_PAD_Y = 16
 DP_WIDTH = 250
 
+_profiler_panel_visible = True
+
+def handle_profiler_panel_toggle():
+    global _profiler_panel_visible
+    _profiler_panel_visible = not _profiler_panel_visible
+
 def _get_ms_history():
     if not hasattr(_get_ms_history, 'history'):
         _get_ms_history.history = []  # list of (timestamp, ms)
     return _get_ms_history.history
 
 def draw_profiler_panel(screen, clock, font, draw_call_count=None, tick_count=None, timings=None):
+    if not _profiler_panel_visible:
+        return
     """
     Draws a profiler panel showing FPS, draw calls, tick count, and timings in the top left area of the screen.
     Renders both the background and text onto a semi-transparent surface, then blits it to the main screen.
@@ -61,3 +69,4 @@ def draw_profiler_panel(screen, clock, font, draw_call_count=None, tick_count=No
             surf.blit(text_surf, (DP_PAD_X, y))
         y += DP_ROW_SPACING
     screen.blit(surf, (px, py))
+
