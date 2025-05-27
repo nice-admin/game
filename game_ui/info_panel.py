@@ -10,7 +10,7 @@ _last_hovered_entity_id = None
 _last_ok_message = None
 
 def get_info_panel_width(screen_width):
-    """Return the width of the info panel in pixels (fixed 300px)."""
+    """Return the width of the info panel in pixels (fixed 260px)."""
     return 260
 
 
@@ -23,54 +23,33 @@ def get_entity_counts(grid):
             if e is not None:
                 cls = type(e)
                 counts[cls] += 1
-                icon_path = getattr(e, 'get_icon_path', None)
-                if callable(icon_path):
-                    icon_path = icon_path()
-                else:
-                    icon_path = getattr(e, '_icon', None)
-                if icon_path:
-                    icon_paths[cls] = icon_path
+                icon_paths[cls] = get_entity_icon_path(e)
     return counts, icon_paths
 
-def draw_mid_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    if getattr(hovered_entity, 'state', None) == "Mid":
-        _draw_status(
-            surface, font,
-            ["Doesn't look good", "Having issues", "Has a problem", "Needs help", "Requires attention"],
-            STATUS_MID_COL, hovered_entity,
-            box_x=box_x, box_y=box_y, icon_size=icon_size,
-            always_show=True
-        )
+def get_entity_icon_path(entity):
+    """Helper to get the icon path from an entity."""
+    icon_path = getattr(entity, 'get_icon_path', None)
+    if callable(icon_path):
+        return icon_path()
+    return getattr(entity, '_icon', None)
 
-def draw_bad_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    if getattr(hovered_entity, 'state', None) == "Bad":
-        _draw_status(
-            surface, font,
-            ["Beyond repair", "Is out for good", "Won't be back", "Totalled", "Out of order", "Needs replacement"],
-            STATUS_BAD_COL, hovered_entity,
-            box_x=box_x, box_y=box_y, icon_size=icon_size,
-            always_show=True
-        )
-
-def draw_init_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    if getattr(hovered_entity, 'state', None) == "Init":
-        _draw_status(
-            surface, font,
-            ["Is preparing", "Getting ready", "Almost ready", "Busy soon", "Warming up", "Booting up"],
-            STATUS_INIT_COL, hovered_entity,
-            box_x=box_x, box_y=box_y, icon_size=icon_size,
-            always_show=True
-        )
-
-def draw_good_status(surface, font, hovered_entity, box_x, box_y, icon_size):
-    if isinstance(hovered_entity, SatisfiableEntity) and getattr(hovered_entity, 'state', None) == "Good":
-        _draw_status(
-            surface, font,
-            ["Is okay", "Is good", "Seems fine", "Looking good", "No issues", "Checks out", "Keeping busy", "Doing well", "No trouble"],
-            STATUS_GOOD_COL, hovered_entity,
-            box_x=box_x, box_y=box_y, icon_size=icon_size,
-            always_show=True
-        )
+def draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size):
+    """Draws a status message based on the entity's state."""
+    state_messages = {
+        'Good': (['Is okay', 'Is good', 'Seems fine', 'Looking good', 'No issues', 'Checks out', 'Keeping busy', 'Doing well', 'No trouble'], STATUS_GOOD_COL, SatisfiableEntity),
+        'Init': (['Is preparing', 'Getting ready', 'Almost ready', 'Busy soon', 'Warming up', 'Booting up'], STATUS_INIT_COL, None),
+        'Mid': (['Doesn\'t look good', 'Having issues', 'Has a problem', 'Needs help', 'Requires attention'], STATUS_MID_COL, None),
+        'Bad': (['Beyond repair', 'Is out for good', "Won't be back", 'Totalled', 'Out of order', 'Needs replacement'], STATUS_BAD_COL, None),
+        'Basic': (["Requires no attention", "Of no interest", "Simply exists", "Nothing to check", "Very boring"],  STATUS_BASIC_COL, BaseEntity),
+    }
+    state = getattr(hovered_entity, 'state', None)
+    for key, (messages, color, require_cls) in state_messages.items():
+        if state == key and (require_cls is None or isinstance(hovered_entity, require_cls)):
+            _draw_status(
+                surface, font, messages, color, hovered_entity,
+                box_x=box_x, box_y=box_y, icon_size=icon_size, always_show=True, require_cls=require_cls
+            )
+            break
 
 def _draw_status(surface, font, messages, color, entity, attr_name=None, box_x=0, box_y=0, icon_size=0, value=0, op='==', require_cls=None, always_show=False, conditions=None):
     """
@@ -147,57 +126,7 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
     panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
     pygame.draw.rect(surface, UI_BG1_COL, panel_rect)
     pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, 2)
-
-    # Draw hovered entity info box at the top of the panel if provided
-    if hovered_entity is not None:
-        box_width = panel_width - 16
-        box_height = 80
-        box_x = panel_x + 8
-        box_y = panel_y + panel_height // 2
-        box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
-        pygame.draw.rect(surface, UI_BG1_COL, box_rect, border_radius=8)
-        # Removed border for hovered entity info box
-        # Icon
-        icon_path = getattr(hovered_entity, 'get_icon_path', None)
-        if callable(icon_path):
-            icon_path = icon_path()
-        else:
-            icon_path = getattr(hovered_entity, '_icon', None)
-        icon_surf = get_icon_surface(icon_path) if icon_path else None
-        icon_size = 48
-        if icon_surf:
-            icon_surf = pygame.transform.smoothscale(icon_surf, (icon_size, icon_size))
-            icon_rect = icon_surf.get_rect(topleft=(box_x + 8, box_y + (box_height - icon_size) // 2))
-            surface.blit(icon_surf, icon_rect)
-        # Name
-        name = getattr(hovered_entity, 'display_name', hovered_entity.__class__.__name__)
-        name_text = font.render(name, True, (255, 255, 255))
-        name_rect = name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 12))
-        surface.blit(name_text, name_rect)
-        # Optionally, show more info (e.g., status, power, etc.)
-        status = getattr(hovered_entity, 'status', None)
-        if status:
-            status_text = font.render(str(status), True, (200, 220, 255))
-            status_rect = status_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 38))
-            surface.blit(status_text, status_rect)
-        # Show a random positive message in green if is_satisfied == 1 (only for SatisfiableEntity)
-        draw_good_status(surface, font, hovered_entity, box_x, box_y, icon_size)
-        # Show a random preparing message in orange if is_initialized == 0 and is_satisfied == 0
-        draw_init_status(surface, font, hovered_entity, box_x, box_y, icon_size)
-        # Show a random negative message in red if is_satisfied == 0 and is_initialized == 1 (only for SatisfiableEntity)
-        draw_mid_status(surface, font, hovered_entity, box_x, box_y, icon_size)
-        # Show a message if is_broken == 1
-        draw_bad_status(surface, font, hovered_entity, box_x, box_y, icon_size)
-        # Show a message for BaseEntity parent: 'Requires no attention'
-        parent_bases = type(hovered_entity).__bases__
-        if parent_bases and parent_bases[0] is BaseEntity and type(hovered_entity) is not BaseEntity:
-            _draw_status(
-                surface, font,
-                ["Requires no attention", "Of no interest", "Simply exists", "Nothing to check", "Very boring" ],
-                (180, 180, 180),
-                hovered_entity, '', box_x, box_y, icon_size, always_show=True
-            )
-
+    
     # Draw entity counts grid if grid is provided
     if grid is not None:
         counts, icon_paths = get_entity_counts(grid)
@@ -225,4 +154,37 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
                 bg_rect = count_rect.inflate(6, 4)
                 pygame.draw.rect(surface, (0, 0, 0), bg_rect)
                 surface.blit(count_text, count_rect)
+
+    # Draw hovered entity info box at the top of the panel if provided
+    if hovered_entity is not None:
+        box_width = panel_width - 16
+        box_height = 80
+        box_x = panel_x + 8
+        # Start at 50% height of the panel
+        box_y = panel_y + (panel_height // 2)
+        box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+        pygame.draw.rect(surface, UI_BG1_COL, box_rect, border_radius=8)
+        # Icon
+        icon_path = get_entity_icon_path(hovered_entity)
+        icon_surf = get_icon_surface(icon_path) if icon_path else None
+        icon_size = 48
+        if icon_surf:
+            icon_surf = pygame.transform.smoothscale(icon_surf, (icon_size, icon_size))
+            icon_rect = icon_surf.get_rect(topleft=(box_x + 8, box_y - 5 + (box_height - icon_size) // 2))
+            surface.blit(icon_surf, icon_rect)
+        # Name
+        name = getattr(hovered_entity, 'display_name', hovered_entity.__class__.__name__)
+        name_text = font.render(name, True, (255, 255, 255))
+        name_rect = name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 20))
+        surface.blit(name_text, name_rect)
+        # Optionally, show more info (e.g., status, power, etc.)
+        status = getattr(hovered_entity, 'status', None)
+        if status:
+            status_text = font.render(str(status), True, (200, 220, 255))
+            status_rect = status_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 38))
+            surface.blit(status_text, status_rect)
+        # Show a status message based on entity state
+        draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size)
+
+
     return panel_width

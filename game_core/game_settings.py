@@ -22,6 +22,7 @@ GRID_BG_COL = (80, 80, 80)    # Grid background color (main play area)
 GRID_BORDER_COL = (120, 120, 120) # Grid line color (main play area)
 # Color for the background outside the grid
 BG_OUTSIDE_GRID_COL = GRID_BG_COL
+STATUS_BASIC_COL =(180, 180, 180)
 STATUS_INIT_COL = (120, 150, 180)
 STATUS_BAD_COL = (255, 0, 0)
 STATUS_MID_COL = (255, 220, 0)

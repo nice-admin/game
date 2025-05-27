@@ -3,15 +3,14 @@ from game_core.game_settings import *
 from game_core.game_state import GameState
 from game_core.game_settings import get_font1
 from typing import Optional, Tuple, Dict, Any
+import colorsys
 
-# --- Font Cache ---
 _font_cache: Dict[int, pygame.font.Font] = {}
 def get_cached_font(size: int) -> pygame.font.Font:
     if size not in _font_cache:
         _font_cache[size] = get_font1(size)
     return _font_cache[size]
 
-# --- UI Resource Panel Cells and Header ---
 class BasicCell:
     cell_width = 100
     cell_height = 60
@@ -133,11 +132,7 @@ class Header:
     def get_surface(self) -> pygame.Surface:
         return self.surface
 
-# --- Panel Baking and Drawing ---
-
-# Store baked panel cells and headers globally
 _baked_panel = None
-
 
 def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, Any]:
     """
@@ -200,19 +195,16 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
         'total_height': total_height,
     }
 
-
 def get_baked_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, Any]:
     global _baked_panel
     if _baked_panel is None:
         _baked_panel = bake_resource_panel(font)
     return _baked_panel
 
-
 def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
     """
     Draws the resource panel by blitting the baked static panel, then updating and blitting only the value overlays.
     """
-    from game_core.game_state import GameState
     baked = get_baked_panel(font)
     panel_surface = baked['panel_surface'].copy()  # Copy so we can blit values on top
     surf_x = (surface.get_width() - baked['total_width']) // 2
@@ -238,7 +230,6 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
             else:
                 diff = breaker_strength - power_drain
                 t = min(max(1 - (diff / margin), 0), 1)
-                import colorsys
                 hue = (120 - 120 * t) / 360
                 r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
                 color = (int(r*255), int(g*255), int(b*255))
@@ -249,7 +240,6 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
             cell.draw_value(value, font or get_font1(18), color=color)
         cell.blit_to(panel_surface, (cell_x, cell_y))
     surface.blit(panel_surface, (surf_x, surf_y))
-
 
 def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygame.font.Font] = None):
     """
@@ -286,13 +276,11 @@ def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygam
     update_icon_surfaces._icon_surfaces = icon_surfaces
     update_icon_surfaces._icon_state = (is_internet_online, is_nas_online)
 
-
 def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
     """
     Draws the system icons (internet, NAS, wifi, storage) in the resource panel, using the correct tint for online/offline states.
     Optimized for clarity and maintainability.
     """
-    from game_core.game_state import GameState
     font = font or get_font1(18)
     gs = GameState()
     is_internet_online = gs.is_internet_online
