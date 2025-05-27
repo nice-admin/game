@@ -13,6 +13,7 @@ import game_other.testing_layout as testing_layout
 from game_core.game_events import handle_event
 from game_core.game_state import update_totals_from_grid
 import game_core.situation_manager
+from game_ui.render_queue_panel import handle_render_queue_panel_event
 
 
 # --- Game Grid ---
@@ -132,7 +133,13 @@ def run_game():
 
 def handle_events(state, remove_entity, place_entity):
     grid_changed = False
+    font = state.get('font', None)
+    screen_width = pygame.display.get_surface().get_width()
+    baked = get_baked_panel(font)
+    resource_panel_height = baked['total_height']
     for event in pygame.event.get():
+        # Handle render queue panel click/expand
+        handle_render_queue_panel_event(event, screen_width, resource_panel_height)
         result, changed = handle_event(event, state, remove_entity, place_entity)
         if result == 'exit':
             return False, grid_changed
