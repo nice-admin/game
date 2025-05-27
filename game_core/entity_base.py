@@ -112,7 +112,11 @@ class BaseEntity:
     def on_built(self):
         """Call this after the entity is actually built/placed to deduct its purchase cost from total_money."""
         gs = GameState()
-        gs.total_money -= getattr(self, 'purchase_cost', 0)
+        cost = getattr(self, 'purchase_cost', 0)
+        gs.total_money -= cost
+        if cost > 0:
+            from game_other.audio import play_purchase_sound
+            play_purchase_sound()
 
 class SatisfiableEntity(BaseEntity):
     _icon = None

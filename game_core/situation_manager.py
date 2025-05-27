@@ -64,7 +64,7 @@ class JobArrived(BaseSituation):
         state = GameState()
         import random
         n = random.randint(5, 15)
-        state.total_shot_count = n
+        state.total_shots_unfinished = n
         state.job_id += 1  # Mark a new job event (renamed from job_arrived_id)
         # You can add a sound or alert here if desired
         return True

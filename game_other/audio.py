@@ -46,3 +46,6 @@ def play_power_outage_sound(sound_path=None):
 
 def play_power_up_sound(sound_path=None):
     play_sound_effect('data/audio/sounds/power-up1.wav', sound_path)
+
+def play_purchase_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/purchase1.wav', sound_path)

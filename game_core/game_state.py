@@ -16,8 +16,9 @@ class GameState:
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
             cls._instance.render_progress = 0
-            cls._instance.total_shot_count = 10  # Default for UI
-            cls._instance.job_id = 0    # Track JobArrived events (renamed from job_arrived_id)
+            cls._instance.total_shots_unfinished = 10
+            cls._instance.total_shots_finished = 10
+            cls._instance.job_id = 0
         return cls._instance
 
     def summarize_entities(self, grid):

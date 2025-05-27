@@ -4,35 +4,35 @@ from game_core.entity_definitions import *
 from game_core.game_settings import *
 from game_core.game_state import GameState
 
-PANEL_WIDTH = 1532
-PANEL_HEIGHT = 30
-ANIMATION_DURATION = 1.0  # seconds
+RQ_WIDTH = 1532
+RQ_FOLDED_HEIGHT = 30
+ANIMATION_DURATION = 0.4  # seconds
 
 _render_queue_panel_expanded = False
-_render_queue_panel_current_height = PANEL_HEIGHT
-_render_queue_panel_target_height = PANEL_HEIGHT
+_render_queue_panel_current_height = RQ_FOLDED_HEIGHT
+_render_queue_panel_target_height = RQ_FOLDED_HEIGHT
 _render_queue_panel_anim_start_time = None
 
-SHOT_HEIGHT = 40
-SHOT_SPACING = 8
-TOP_MARGIN = 50
+RQI_HEIGHT = 40
+RQI_SPACING = 8
+RQI_TOP_MARGIN = 50
 
 
 def get_expanded_extra_height():
     gs = GameState()
-    shot_rows = getattr(gs, 'total_shot_count', 10)
-    return shot_rows * SHOT_HEIGHT + (shot_rows - 1) * SHOT_SPACING + TOP_MARGIN
+    shot_rows = getattr(gs, 'total_shots_unfinished', 10)
+    return shot_rows * RQI_HEIGHT + (shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
     global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
-    panel_x = (screen_width - PANEL_WIDTH) // 2
+    panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
-    panel_rect = pygame.Rect(panel_x, panel_y, PANEL_WIDTH, _render_queue_panel_current_height)
+    panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, _render_queue_panel_current_height)
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and panel_rect.collidepoint(*event.pos):
         _render_queue_panel_expanded = not _render_queue_panel_expanded
         expanded_height = get_expanded_extra_height()
-        _render_queue_panel_target_height = PANEL_HEIGHT + (expanded_height if _render_queue_panel_expanded else 0)
+        _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + (expanded_height if _render_queue_panel_expanded else 0)
         _render_queue_panel_anim_start_time = time.time()
         return True
     return False
@@ -45,16 +45,36 @@ class RenderQueueItem:
 
     def draw(self, surface, x, y, width, height, font):
         bar_width = int(width * 0.9)
-        bar_height = 30
+        bar_height = 20
         bar_x = x + (width - bar_width) // 2
         bar_y = y
         bg_col = tuple(int(c * 0.5) for c in UI_BG1_COL)
-        pygame.draw.rect(surface, bg_col, (bar_x, bar_y, bar_width, bar_height))
-        teal = (0, 255, 220)
+        border_radius = bar_height // 3
+        # Draw background with rounded corners
+        pygame.draw.rect(surface, bg_col, (bar_x, bar_y, bar_width, bar_height), border_radius=border_radius)
+        # Gradient progress bar with rounded corners
+        left_col = (69, 79, 95)
+        right_col = (0, 187, 133)
         fill_width = int(bar_width * self.progress)
-        pygame.draw.rect(surface, teal, (bar_x, bar_y, fill_width, bar_height))
+        if fill_width > 0:
+            grad_surf = pygame.Surface((fill_width, bar_height), pygame.SRCALPHA)
+            for i in range(fill_width):
+                t = i / max(fill_width - 1, 1)
+                r = int(left_col[0] + (right_col[0] - left_col[0]) * t)
+                g = int(left_col[1] + (right_col[1] - left_col[1]) * t)
+                b = int(left_col[2] + (right_col[2] - left_col[2]) * t)
+                pygame.draw.line(grad_surf, (r, g, b), (i, 0), (i, bar_height - 1))
+            if fill_width >= bar_width:
+                pygame.draw.rect(grad_surf, (0,0,0,0), (0,0,fill_width,bar_height), border_radius=border_radius)
+                surface.blit(grad_surf, (bar_x, bar_y))
+            else:
+                mask = pygame.Surface((fill_width, bar_height), pygame.SRCALPHA)
+                pygame.draw.rect(mask, (255,255,255,255), (0,0,fill_width,bar_height), border_top_left_radius=border_radius, border_bottom_left_radius=border_radius)
+                grad_surf.blit(mask, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
+                surface.blit(grad_surf, (bar_x, bar_y))
+        # Draw the name text above the bar, aligned to the left
         name_text = font.render(self.name, True, TEXT1_COL)
-        name_rect = name_text.get_rect(midleft=(bar_x + 10, bar_y + bar_height // 2))
+        name_rect = name_text.get_rect(topleft=(bar_x + 10, bar_y - 4 - name_text.get_height()))
         surface.blit(name_text, name_rect)
 
 
@@ -64,7 +84,7 @@ _last_render_queue_items = None
 def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
     global _last_job_id, _last_render_queue_items
-    panel_x = (screen_width - PANEL_WIDTH) // 2
+    panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
 
     # Animate height
@@ -81,19 +101,19 @@ def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, 
         _render_queue_panel_current_height = _render_queue_panel_target_height
 
     panel_height = _render_queue_panel_current_height
-    panel_rect = pygame.Rect(panel_x, panel_y, PANEL_WIDTH, panel_height)
+    panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, panel_height)
     pygame.draw.rect(surface, UI_BG1_COL, panel_rect)
     pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, 2)
 
     # Title
     title_text = font.render("Render Queue", True, TEXT1_COL)
-    title_rect = title_text.get_rect(midtop=(panel_x + PANEL_WIDTH // 2, panel_y + 7))
+    title_rect = title_text.get_rect(midtop=(panel_x + RQ_WIDTH // 2, panel_y + 7))
     surface.blit(title_text, title_rect)
 
     # Masked bars
-    mask_surface = pygame.Surface((PANEL_WIDTH, panel_height), pygame.SRCALPHA)
+    mask_surface = pygame.Surface((RQ_WIDTH, panel_height), pygame.SRCALPHA)
     gs = GameState()
-    shot_rows = getattr(gs, 'total_shot_count', 10)
+    shot_rows = getattr(gs, 'total_shots_unfinished', 10)
     job_id = getattr(gs, 'job_id', 0)
     # Only update items if job_id changed (i.e., JobArrived triggered)
     if _last_job_id != job_id or _last_render_queue_items is None:
@@ -102,7 +122,7 @@ def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, 
     items = render_queue_items if render_queue_items is not None else _last_render_queue_items
     for idx in range(shot_rows):
         if idx < len(items) and isinstance(items[idx], RenderQueueItem):
-            y = TOP_MARGIN + idx * (SHOT_HEIGHT + SHOT_SPACING)
-            items[idx].draw(mask_surface, 0, y, PANEL_WIDTH, SHOT_HEIGHT, font)
+            y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
+            items[idx].draw(mask_surface, 0, y, RQ_WIDTH, RQI_HEIGHT, font)
     surface.blit(mask_surface, (panel_x, panel_y))
     return panel_rect

@@ -41,8 +41,11 @@ def draw_construction_panel(surface, selected_index, font, x=10, y=10, width=220
     margin = 6
     col_width = (width - (n + 1) * margin) // n
     icon_size = min(col_width - 8, height - 48)
+    # Center the row of buttons in the panel
+    total_row_width = n * col_width + (n + 1) * margin
+    x_offset = x + (width - total_row_width) // 2
     for i, entity in enumerate(ENTITY_CHOICES):
-        bx = x + margin + i * (col_width + margin)
+        bx = x_offset + margin + i * (col_width + margin)
         by = y + margin
         entry_rect = pygame.Rect(bx, by, col_width, height - 2 * margin)
         pygame.draw.rect(surface, (90, 90, 90) if i == selected_index else (60, 60, 60), entry_rect)
