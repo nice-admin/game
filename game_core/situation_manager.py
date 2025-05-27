@@ -62,6 +62,9 @@ class NasCrashed(BaseSituation):
 class JobArrived(BaseSituation):
     def trigger(self):
         state = GameState()
+        # Only allow new job if previous job is fully completed
+        if getattr(state, 'total_shots_finished', 0) != getattr(state, 'total_shots_unfinished', 0):
+            return False
         import random
         n = random.randint(5, 15)
         state.total_shots_unfinished = n
@@ -97,7 +100,7 @@ SITUATIONS = [
     # Add more situation instances here...
 ]
 
-START_DELAY = 10  # seconds before situation manager starts
+START_DELAY = 1  # seconds before situation manager starts
 
 def start_situation_manager():
     def situation_loop():
@@ -105,7 +108,7 @@ def start_situation_manager():
         while True:
             situation = random.choice(SITUATIONS)
             situation.trigger()
-            time.sleep(random.uniform(5, 10))
+            time.sleep(random.uniform(1, 2))
     thread = threading.Thread(target=situation_loop, daemon=True)
     thread.start()
 

@@ -2,4 +2,6 @@
 # Toggle features on/off for development or release builds
 
 ENTITY_STATE_PANEL = 1
-ALLOW_RESOURCES_PANEL = 1
+ALLOW_RESOURCE_PANEL = 1
+ALLOW_ALERTS_PANEL = 1
+ALLOW_INFO_PANEL = 1

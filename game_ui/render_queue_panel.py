@@ -79,11 +79,16 @@ class RenderQueueItem:
 
 
 _last_job_id = None
+_last_shot_rows = None
 _last_render_queue_items = None
+
+def bake_render_queue_items(job_id, shot_rows):
+    """Create and return a baked list of RenderQueueItem objects for the current job."""
+    return [RenderQueueItem(f"Shot {i+1}", progress=0.5) for i in range(shot_rows)]
 
 def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
-    global _last_job_id, _last_render_queue_items
+    global _last_job_id, _last_shot_rows, _last_render_queue_items
     panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
 
@@ -115,10 +120,11 @@ def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, 
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_unfinished', 10)
     job_id = getattr(gs, 'job_id', 0)
-    # Only update items if job_id changed (i.e., JobArrived triggered)
-    if _last_job_id != job_id or _last_render_queue_items is None:
-        _last_render_queue_items = [RenderQueueItem(f"Shot {i+1}", progress=0.5) for i in range(shot_rows)]
+    # Only bake items if job_id or shot_rows changed
+    if _last_job_id != job_id or _last_shot_rows != shot_rows or _last_render_queue_items is None:
+        _last_render_queue_items = bake_render_queue_items(job_id, shot_rows)
         _last_job_id = job_id
+        _last_shot_rows = shot_rows
     items = render_queue_items if render_queue_items is not None else _last_render_queue_items
     for idx in range(shot_rows):
         if idx < len(items) and isinstance(items[idx], RenderQueueItem):
