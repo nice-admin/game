@@ -16,6 +16,8 @@ class GameState:
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
             cls._instance.render_progress = 0
+            cls._instance.total_shot_count = 10  # Default for UI
+            cls._instance.job_id = 0    # Track JobArrived events (renamed from job_arrived_id)
         return cls._instance
 
     def summarize_entities(self, grid):
@@ -66,19 +68,8 @@ class GameState:
         self.total_broken_entities = self.count_broken_entities(grid)
 
     def get_totals_dict(self):
-        return {
-            'total_money': self.total_money,
-            'total_power_drain': self.total_power_drain,
-            'total_breaker_strength': self.total_breaker_strength,
-            'total_employees': self.total_employees,
-            'total_risky_entities': self.total_risky_entities,
-            'total_broken_entities': self.total_broken_entities,
-            'is_internet_online': self.is_internet_online,
-            'is_wifi_online': self.is_wifi_online,
-            'is_nas_online': self.is_nas_online,
-            'game_time_seconds': self.game_time_seconds,
-            'game_time_days': self.game_time_days,
-        }
+        # Return all public (non-callable, non-underscore) attributes as a dict
+        return {k: v for k, v in vars(self).items() if not k.startswith('_') and not callable(v)}
 
 def get_totals_dict():
     return GameState().get_totals_dict()

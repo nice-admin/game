@@ -319,3 +319,14 @@ class ComputerEntity(SatisfiableEntity):
     power_drain = 1
     satisfaction_check_type = 'outlet'
     # You can override satisfaction_check_radius, threshold, etc. in subclasses
+    def _update_bar2(self, grid):
+        prev_bar2 = self.bar2 if hasattr(self, 'bar2') else None
+        prev_bar2_timer = self.bar2_timer if hasattr(self, 'bar2_timer') else None
+        super()._update_bar2(grid)
+        # Only increment render_progress if bar2 just completed (allow for float rounding)
+        if (
+            prev_bar2 is not None and prev_bar2_timer is not None and
+            prev_bar2 >= 0.99 and self.bar2 == 0.0 and self.bar2_timer == 0
+        ):
+            gs = GameState()
+            gs.render_progress += 1

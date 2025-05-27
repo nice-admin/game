@@ -2,6 +2,7 @@ import pygame
 import time
 from game_core.entity_definitions import *
 from game_core.game_settings import *
+from game_core.game_state import GameState
 
 PANEL_WIDTH = 1532
 PANEL_HEIGHT = 30
@@ -12,14 +13,15 @@ _render_queue_panel_current_height = PANEL_HEIGHT
 _render_queue_panel_target_height = PANEL_HEIGHT
 _render_queue_panel_anim_start_time = None
 
-SHOT_ROWS = 10
 SHOT_HEIGHT = 40
 SHOT_SPACING = 8
 TOP_MARGIN = 50
 
 
 def get_expanded_extra_height():
-    return SHOT_ROWS * SHOT_HEIGHT + (SHOT_ROWS - 1) * SHOT_SPACING + TOP_MARGIN
+    gs = GameState()
+    shot_rows = getattr(gs, 'total_shot_count', 10)
+    return shot_rows * SHOT_HEIGHT + (shot_rows - 1) * SHOT_SPACING + TOP_MARGIN
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
@@ -56,8 +58,12 @@ class RenderQueueItem:
         surface.blit(name_text, name_rect)
 
 
+_last_job_id = None
+_last_render_queue_items = None
+
 def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
+    global _last_job_id, _last_render_queue_items
     panel_x = (screen_width - PANEL_WIDTH) // 2
     panel_y = resource_panel_height
 
@@ -86,11 +92,17 @@ def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, 
 
     # Masked bars
     mask_surface = pygame.Surface((PANEL_WIDTH, panel_height), pygame.SRCALPHA)
-    if render_queue_items is None:
-        render_queue_items = [RenderQueueItem(f"Shot {i+1}", progress=0.5) for i in range(SHOT_ROWS)]
-    for idx in range(SHOT_ROWS):
-        if idx < len(render_queue_items) and isinstance(render_queue_items[idx], RenderQueueItem):
+    gs = GameState()
+    shot_rows = getattr(gs, 'total_shot_count', 10)
+    job_id = getattr(gs, 'job_id', 0)
+    # Only update items if job_id changed (i.e., JobArrived triggered)
+    if _last_job_id != job_id or _last_render_queue_items is None:
+        _last_render_queue_items = [RenderQueueItem(f"Shot {i+1}", progress=0.5) for i in range(shot_rows)]
+        _last_job_id = job_id
+    items = render_queue_items if render_queue_items is not None else _last_render_queue_items
+    for idx in range(shot_rows):
+        if idx < len(items) and isinstance(items[idx], RenderQueueItem):
             y = TOP_MARGIN + idx * (SHOT_HEIGHT + SHOT_SPACING)
-            render_queue_items[idx].draw(mask_surface, 0, y, PANEL_WIDTH, SHOT_HEIGHT, font)
+            items[idx].draw(mask_surface, 0, y, PANEL_WIDTH, SHOT_HEIGHT, font)
     surface.blit(mask_surface, (panel_x, panel_y))
     return panel_rect

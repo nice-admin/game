@@ -12,7 +12,7 @@ class BasicComputer(ComputerEntity):
 
 class Monitor(SatisfiableEntity):
     _icon = "data/graphics/monitor.png"
-    has_bar2 = 2
+    has_bar2 = 0
     satisfaction_check_type = ComputerEntity
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1

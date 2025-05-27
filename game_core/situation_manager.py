@@ -58,9 +58,20 @@ class NasCrashed(BaseSituation):
         game_other.audio.play_system_back()
         self._crashed = False
 
+class JobArrived(BaseSituation):
+    def trigger(self):
+        state = GameState()
+        import random
+        n = random.randint(5, 15)
+        state.total_shot_count = n
+        state.job_id += 1  # Mark a new job event (renamed from job_arrived_id)
+        # You can add a sound or alert here if desired
+        return True
+
 SITUATIONS = [
     InternetOutage(),
     NasCrashed(),
+    JobArrived(),
     # Add more situation instances here...
 ]
 
