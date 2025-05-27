@@ -95,7 +95,7 @@ class PowerOutage:
 
 SITUATIONS = [
     InternetOutage(),
-    NasCrashed(),
+    # NasCrashed(),
     JobArrived(),
     # Add more situation instances here...
 ]
