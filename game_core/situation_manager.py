@@ -38,17 +38,24 @@ class InternetOutage(BaseSituation):
         state.is_wifi_online = 1
 
 class NasCrashed(BaseSituation):
+    RESTORE_DELAY = 10  # seconds
     def __init__(self):
         self._crashed = False
 
     def trigger(self):
         state = GameState()
-        if state.is_nas_running == 1 and not self._crashed:
-            state.is_nas_running = 0
+        if state.is_nas_online == 1 and not self._crashed:
+            state.is_nas_online = 0
             self._crashed = True
             # Optionally play a sound or log the event here
+            threading.Timer(self.RESTORE_DELAY, self.restore_nas).start()
             return True
         return False
+
+    def restore_nas(self):
+        state = GameState()
+        state.is_nas_online = 1
+        self._crashed = False
 
 SITUATIONS = [
     InternetOutage(),

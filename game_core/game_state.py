@@ -12,7 +12,7 @@ class GameState:
             cls._instance.total_broken_entities = 0
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
-            cls._instance.is_nas_running = 1
+            cls._instance.is_nas_online = 1
         return cls._instance
 
     def summarize_entities(self, grid):
@@ -72,7 +72,7 @@ class GameState:
             'total_broken_entities': self.total_broken_entities,
             'is_internet_online': self.is_internet_online,
             'is_wifi_online': self.is_wifi_online,
-            'is_nas_running': self.is_nas_running,  # Added NAS status
+            'is_nas_online': self.is_nas_online,  # Added NAS status
         }
 
 def get_totals_dict():

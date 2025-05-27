@@ -251,10 +251,10 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
     surface.blit(panel_surface, (surf_x, surf_y))
 
 
-def update_icon_surfaces(is_internet_online, font: Optional[pygame.font.Font] = None):
+def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygame.font.Font] = None):
     """
-    Tint and cache the icon surfaces for the current is_internet_online state.
-    This should be called only at game start and when is_internet_online changes.
+    Tint and cache the icon surfaces for the current is_internet_online and is_nas_online state.
+    This should be called only at game start and when either state changes.
     """
     icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
     icon_size = 40
@@ -274,25 +274,36 @@ def update_icon_surfaces(is_internet_online, font: Optional[pygame.font.Font] = 
     OFFLINE = (0, 0, 0)
     icon_surfaces = []
     for idx, icon in enumerate(system_icons):
-        if idx in (0, 2):
+        if idx == 0:  # internet.png
+            color = ONLINE if is_internet_online else OFFLINE
+        elif idx == 1:  # nas.png
+            color = ONLINE if is_nas_online else OFFLINE
+        elif idx == 2:  # wifi.png
             color = ONLINE if is_internet_online else OFFLINE
         else:
             color = ONLINE
         icon_surfaces.append(tint_icon(icon, color))
     update_icon_surfaces._icon_surfaces = icon_surfaces
-    update_icon_surfaces._icon_state = is_internet_online
+    update_icon_surfaces._icon_state = (is_internet_online, is_nas_online)
 
 
-def draw_icons(surface, font: Optional[pygame.font.Font] = None):
+def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
+    """
+    Draws the system icons (internet, NAS, wifi, storage) in the resource panel, using the correct tint for online/offline states.
+    Optimized for clarity and maintainability.
+    """
     from game_core.game_state import GameState
     font = font or get_font1(18)
     gs = GameState()
     is_internet_online = gs.is_internet_online
+    is_nas_online = getattr(gs, 'is_nas_online', True)
+
     # Only update icon surfaces if state changed or never initialized
     if (not hasattr(update_icon_surfaces, "_icon_state") or
-        update_icon_surfaces._icon_state != is_internet_online):
-        update_icon_surfaces(is_internet_online, font)
+        update_icon_surfaces._icon_state != (is_internet_online, is_nas_online)):
+        update_icon_surfaces(is_internet_online, is_nas_online, font)
     icon_surfaces = update_icon_surfaces._icon_surfaces
+
     # Get baked panel and system cell positions
     baked = get_baked_panel(font)
     system_grid = baked['system_grid']
@@ -304,21 +315,18 @@ def draw_icons(surface, font: Optional[pygame.font.Font] = None):
     surf_x = baked['surf_x'] or 0
     surf_y = baked['surf_y'] or 0
     icon_size = 40
-    # Helper to cache icon positions
-    def get_icon_positions():
-        return [
-            (
-                surf_x + system_x + col_idx * SystemCell.cell_width + 10,
-                surf_y + start_y + row_idx * SystemCell.cell_height + (SystemCell.cell_height - icon_size) // 2
-            )
-            for row_idx, row in enumerate(system_grid)
-            for col_idx, _ in enumerate(row)
-        ]
-    if not hasattr(draw_icons, '_icon_positions'):
-        draw_icons._icon_positions = get_icon_positions()
-    icon_positions = draw_icons._icon_positions
-    for idx, (x, y) in enumerate(icon_positions):
-        if idx < len(icon_surfaces):
-            surface.blit(icon_surfaces[idx], (x, y))
+
+    # Calculate icon positions dynamically (no caching, always correct if layout changes)
+    icon_positions = [
+        (
+            surf_x + system_x + col_idx * SystemCell.cell_width + 10,
+            surf_y + start_y + row_idx * SystemCell.cell_height + (SystemCell.cell_height - icon_size) // 2
+        )
+        for row_idx, row in enumerate(system_grid)
+        for col_idx, _ in enumerate(row)
+    ]
+
+    for icon_surf, (x, y) in zip(icon_surfaces, icon_positions):
+        surface.blit(icon_surf, (x, y))
 
 
