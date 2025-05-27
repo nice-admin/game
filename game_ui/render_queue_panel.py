@@ -6,7 +6,7 @@ from game_core.game_state import GameState
 
 RQ_WIDTH = 1532
 RQ_FOLDED_HEIGHT = 30
-ANIMATION_DURATION = 0.4  # seconds
+ANIMATION_DURATION = 0.3  # seconds
 
 _render_queue_panel_expanded = False
 _render_queue_panel_current_height = RQ_FOLDED_HEIGHT
@@ -81,17 +81,78 @@ class RenderQueueItem:
 _last_job_id = None
 _last_shot_rows = None
 _last_render_queue_items = None
+_last_baked_panel = None
+_last_baked_panel_job_id = None
+_last_baked_panel_shot_rows = None
+_last_baked_panel_width = None
+_last_baked_panel_height = None
 
 def bake_render_queue_items(job_id, shot_rows):
     """Create and return a baked list of RenderQueueItem objects for the current job."""
     return [RenderQueueItem(f"Shot {i+1}", progress=0.5) for i in range(shot_rows)]
+
+class Header:
+    def __init__(self, width, font, total_finished, total_unfinished):
+        self.width = width
+        self.font = font
+        self.total_finished = total_finished
+        self.total_unfinished = total_unfinished
+
+    def draw(self, surface, y=0):
+        shots_in_queue = self.total_finished + self.total_unfinished
+        title_str = f"Render Queue - 0 / {shots_in_queue} shots in queue"
+        title_text = self.font.render(title_str, True, TEXT1_COL)
+        title_rect = title_text.get_rect(midtop=(self.width // 2, y + 7))
+        surface.blit(title_text, title_rect)
+
+def bake_render_queue_panel(font, screen_width, resource_panel_height):
+    """Bake the static render queue panel (background, border, title, and RenderQueueItems) into a surface."""
+    global _last_baked_panel, _last_baked_panel_job_id, _last_baked_panel_shot_rows, _last_baked_panel_width, _last_baked_panel_height
+    panel_x = (screen_width - RQ_WIDTH) // 2
+    panel_y = resource_panel_height
+    panel_height = _render_queue_panel_current_height
+    panel_width = RQ_WIDTH
+    gs = GameState()
+    shot_rows = getattr(gs, 'total_shots_unfinished', 10)
+    job_id = getattr(gs, 'job_id', 0)
+    total_shots_finished = getattr(gs, 'total_shots_finished', 0)
+    total_shots_unfinished = getattr(gs, 'total_shots_unfinished', 0)
+    shots_in_queue = total_shots_finished + total_shots_unfinished
+    # Only re-bake if job_id, shot_rows, or panel size changed
+    if (
+        _last_baked_panel is not None and
+        _last_baked_panel_job_id == job_id and
+        _last_baked_panel_shot_rows == shot_rows and
+        _last_baked_panel_width == panel_width and
+        _last_baked_panel_height == panel_height
+    ):
+        return _last_baked_panel
+    # Bake new panel
+    panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+    pygame.draw.rect(panel_surface, UI_BG1_COL, (0, 0, panel_width, panel_height))
+    pygame.draw.rect(panel_surface, UI_BORDER1_COL, (0, 0, panel_width, panel_height), 2)
+    # Header
+    header = Header(panel_width, font, total_shots_finished, total_shots_unfinished)
+    header.draw(panel_surface, y=0)
+    # RenderQueueItems
+    items = bake_render_queue_items(job_id, shot_rows)
+    for idx in range(shot_rows):
+        if idx < len(items) and isinstance(items[idx], RenderQueueItem):
+            y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
+            items[idx].draw(panel_surface, 0, y, panel_width, RQI_HEIGHT, font)
+    # Cache
+    _last_baked_panel = panel_surface
+    _last_baked_panel_job_id = job_id
+    _last_baked_panel_shot_rows = shot_rows
+    _last_baked_panel_width = panel_width
+    _last_baked_panel_height = panel_height
+    return panel_surface
 
 def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
     global _last_job_id, _last_shot_rows, _last_render_queue_items
     panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
-
     # Animate height
     if _render_queue_panel_anim_start_time is not None:
         elapsed = time.time() - _render_queue_panel_anim_start_time
@@ -104,31 +165,9 @@ def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, 
             _render_queue_panel_anim_start_time = None
     else:
         _render_queue_panel_current_height = _render_queue_panel_target_height
-
     panel_height = _render_queue_panel_current_height
     panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, panel_height)
-    pygame.draw.rect(surface, UI_BG1_COL, panel_rect)
-    pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, 2)
-
-    # Title
-    title_text = font.render("Render Queue", True, TEXT1_COL)
-    title_rect = title_text.get_rect(midtop=(panel_x + RQ_WIDTH // 2, panel_y + 7))
-    surface.blit(title_text, title_rect)
-
-    # Masked bars
-    mask_surface = pygame.Surface((RQ_WIDTH, panel_height), pygame.SRCALPHA)
-    gs = GameState()
-    shot_rows = getattr(gs, 'total_shots_unfinished', 10)
-    job_id = getattr(gs, 'job_id', 0)
-    # Only bake items if job_id or shot_rows changed
-    if _last_job_id != job_id or _last_shot_rows != shot_rows or _last_render_queue_items is None:
-        _last_render_queue_items = bake_render_queue_items(job_id, shot_rows)
-        _last_job_id = job_id
-        _last_shot_rows = shot_rows
-    items = render_queue_items if render_queue_items is not None else _last_render_queue_items
-    for idx in range(shot_rows):
-        if idx < len(items) and isinstance(items[idx], RenderQueueItem):
-            y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
-            items[idx].draw(mask_surface, 0, y, RQ_WIDTH, RQI_HEIGHT, font)
-    surface.blit(mask_surface, (panel_x, panel_y))
+    # Use baked panel for static content
+    baked_panel = bake_render_queue_panel(font, screen_width, resource_panel_height)
+    surface.blit(baked_panel, (panel_x, panel_y))
     return panel_rect

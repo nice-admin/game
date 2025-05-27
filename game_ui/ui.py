@@ -43,7 +43,9 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
     
     draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     # Draw render queue panel at the top, centered, below resource panel
-    draw_render_queue_panel(surface, font, surface.get_width(), resource_panel_height)
+
+    if ALLOW_RENDER_QUEUE_PANEL:
+        draw_render_queue_panel(surface, font, surface.get_width(), resource_panel_height)
     # Draw power outage overlay LAST if active
     power_outage.draw_overlay(surface)
 
