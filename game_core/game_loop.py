@@ -99,6 +99,8 @@ def run_game():
     prev_camera_offset = camera_offset
     prev_cell_size = cell_size
     state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=camera_drag, paint_brush=paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, panel_x=panel_x, panel_y=panel_y, panel_width=panel_width, panel_height=panel_height, line_start=None, erase_line_start=None, GRID_WIDTH=GRID_WIDTH, GRID_HEIGHT=GRID_HEIGHT)
+    from game_core.game_state import GameState
+    gs = GameState()
     while running:
         frame_start = pygame.time.get_ticks()
         # Handle events
@@ -106,7 +108,7 @@ def run_game():
         # Update game logic
         grid_changed_from_logic = update_game_logic(state, frame_count, update_game_state)
         grid_changed = grid_changed_from_events or grid_changed_from_logic
-        # Only re-bake static entities if grid changed or cell size changed (not camera offset)
+        # Only re-bake static entities if grid changed or prev_cell_size changed (not camera offset)
         if grid_changed or prev_cell_size != state['cell_size']:
             if background_surface.get_width() != GRID_WIDTH * state['cell_size'] or background_surface.get_height() != GRID_HEIGHT * state['cell_size']:
                 background_surface = pygame.Surface((GRID_WIDTH * state['cell_size'], GRID_HEIGHT * state['cell_size']))
@@ -117,9 +119,11 @@ def run_game():
         # Render
         frame_end = pygame.time.get_ticks()
         frame_ms = frame_end - frame_start
+        dt = clock.tick(FPS)  # milliseconds since last frame, includes wait time
+        gs.game_time_seconds += dt / 1000.0
+        gs.game_time_days = int(gs.game_time_seconds // 10) + 1
         timings = {"Frame": frame_ms}
         render_game(state, screen, background_surface, font, timings, clock)
-        clock.tick(FPS)
         frame_count += 1
     # Save game state on exit
     savegame.save_game(state['entity_states'], state['camera_offset'], state['cell_size'])

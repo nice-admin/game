@@ -4,6 +4,8 @@ class GameState:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(GameState, cls).__new__(cls)
+            cls._instance.game_time_seconds = 0
+            cls._instance.game_time_days = 0
             cls._instance.total_money = 10000
             cls._instance.total_power_drain = 0
             cls._instance.total_breaker_strength = 0
@@ -73,7 +75,9 @@ class GameState:
             'total_broken_entities': self.total_broken_entities,
             'is_internet_online': self.is_internet_online,
             'is_wifi_online': self.is_wifi_online,
-            'is_nas_online': self.is_nas_online,  # Added NAS status
+            'is_nas_online': self.is_nas_online,
+            'game_time_seconds': self.game_time_seconds,
+            'game_time_days': self.game_time_days,
         }
 
 def get_totals_dict():

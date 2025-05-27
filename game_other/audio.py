@@ -37,8 +37,8 @@ def play_pipette_sound(sound_path=None):
 def play_breaker_break_sound(sound_path=None):
     play_sound_effect('data/audio/sounds/breaker-break1.wav', sound_path, 'breaker break')
 
-def play_internet_outage_sound(sound_path=None):
-    play_sound_effect('data/audio/sounds/internet-outage1.wav', sound_path, 'internet outage')
+def play_system_out(sound_path=None):
+    play_sound_effect('data/audio/sounds/system-out1.wav', sound_path, 'internet outage')
 
-def play_internet_reconnect_sound(sound_path=None):
-    play_sound_effect('data/audio/sounds/internet-reconnect1.wav', sound_path, 'internet reconnect')
+def play_system_back(sound_path=None):
+    play_sound_effect('data/audio/sounds/system-back1.wav', sound_path, 'internet reconnect')

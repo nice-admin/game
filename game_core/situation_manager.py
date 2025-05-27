@@ -21,7 +21,7 @@ class InternetOutage(BaseSituation):
             state.is_internet_online = 0
             state.is_wifi_online = 0
             self._restoring = True
-            game_other.audio.play_internet_outage_sound()
+            game_other.audio.play_system_out()
             threading.Timer(self.RESTORE_DELAY, self.restore_internet).start()
             return True
         return False
@@ -29,7 +29,7 @@ class InternetOutage(BaseSituation):
     def restore_internet(self):
         state = GameState()
         state.is_internet_online = 1
-        game_other.audio.play_internet_reconnect_sound()
+        game_other.audio.play_system_back()
         threading.Timer(self.WIFI_RESTORE_DELAY, self.restore_wifi).start()
         self._restoring = False
 
@@ -47,7 +47,7 @@ class NasCrashed(BaseSituation):
         if state.is_nas_online == 1 and not self._crashed:
             state.is_nas_online = 0
             self._crashed = True
-            # Optionally play a sound or log the event here
+            game_other.audio.play_system_out()
             threading.Timer(self.RESTORE_DELAY, self.restore_nas).start()
             return True
         return False
@@ -55,6 +55,7 @@ class NasCrashed(BaseSituation):
     def restore_nas(self):
         state = GameState()
         state.is_nas_online = 1
+        game_other.audio.play_system_back()
         self._crashed = False
 
 SITUATIONS = [
@@ -63,8 +64,11 @@ SITUATIONS = [
     # Add more situation instances here...
 ]
 
+START_DELAY = 10  # seconds before situation manager starts
+
 def start_situation_manager():
     def situation_loop():
+        time.sleep(START_DELAY)  # Wait before starting situations
         while True:
             situation = random.choice(SITUATIONS)
             situation.trigger()

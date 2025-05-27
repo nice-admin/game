@@ -46,7 +46,10 @@ def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5,
         totals = get_totals_dict()
         lines.append("Game State Totals:")
         for k, v in totals.items():
-            lines.append(f"    {k}: {v}")
+            if k == "game_time_seconds":
+                lines.append(f"    {k}: {int(v)}")
+            else:
+                lines.append(f"    {k}: {v}")
     except Exception as e:
         lines.append(f"[Game state unavailable: {e}]")
     # Render lines in bottom left

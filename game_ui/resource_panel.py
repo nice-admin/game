@@ -140,7 +140,7 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
     """
     font = font or get_cached_font(18)
     gap = 10
-    general_labels = ["Money", "Power Drain", "Breaker Strength", "Employees"] + ["" for _ in range(6)]
+    general_labels = ["Day", "Money", "Power Drain", "Breaker Strength", "Employees"] + ["" for _ in range(5)]
     general_grid = [[GeneralCell(label=general_labels[row*5+col], font=font) for col in range(5)] for row in range(2)]
     problems_labels = ["Risk Factor", "Problems", "", ""]
     problems_grid = [[ProblemCell(label=problems_labels[row*2+col], font=font) for col in range(2)] for row in range(2)]
@@ -174,10 +174,11 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
         draw_grid(grid, x, start_y, cell_cls)
     problems_x = start_x + general_width + gap
     cell_map = [
-        ('employees', general_grid[0][3], start_x + 3 * GeneralCell.cell_width, start_y),
-        ('money', general_grid[0][0], start_x, start_y),
-        ('power drain', general_grid[0][1], start_x + 1 * GeneralCell.cell_width, start_y),
-        ('breaker strength', general_grid[0][2], start_x + 2 * GeneralCell.cell_width, start_y),
+        ('day', general_grid[0][0], start_x, start_y),
+        ('money', general_grid[0][1], start_x + 1 * GeneralCell.cell_width, start_y),
+        ('power drain', general_grid[0][2], start_x + 2 * GeneralCell.cell_width, start_y),
+        ('breaker strength', general_grid[0][3], start_x + 3 * GeneralCell.cell_width, start_y),
+        ('employees', general_grid[0][4], start_x + 4 * GeneralCell.cell_width, start_y),
         ('risk factor', problems_grid[0][0], problems_x, start_y),
         ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell.cell_width, start_y),
     ]
@@ -215,6 +216,7 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
     breaker_strength = gs.total_breaker_strength
     power_drain = gs.total_power_drain
     key_map = {
+        'day': (None, (255,255,255), None),
         'employees': (gs.total_employees, (255,255,255), None),
         'money': (gs.total_money, (255,255,255), None),
         'breaker strength': (breaker_strength, (255,255,255), None),
@@ -222,7 +224,10 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
         'problems': (gs.total_broken_entities, (255,255,255), None),
     }
     for key, cell, cell_x, cell_y in baked['cell_map']:
-        if key == 'power drain':
+        if key == 'day':
+            value = int(gs.game_time_days)
+            cell.draw_value(value, font or get_font1(18), color=(255,255,255))
+        elif key == 'power drain':
             value = power_drain
             margin = 15
             if breaker_strength <= 0:
