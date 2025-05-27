@@ -206,10 +206,4 @@ def render_game(state, screen, background_surface, font, timings):
         GRID_WIDTH=GRID_WIDTH,
         GRID_HEIGHT=GRID_HEIGHT
     )
-    if feature_toggle.ENTITY_STATE_PANEL:
-        draw_entity_state_panel(
-            screen,
-            font,
-            hovered_entity=hovered_entity
-        )
     pygame.display.flip()

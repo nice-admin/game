@@ -1,26 +1,25 @@
 # game_ui/ui.py
 
-from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES
+from game_ui.construction_panel import draw_construction_panel
 from game_ui.profiler_panel import draw_profiler_panel
 from game_ui.hidden_info_panel import draw_entity_state_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
 from game_ui.info_panel import draw_info_panel, get_info_panel_width
-from game_other.feature_toggle import ALLOW_RESOURCES_PANEL
+from game_other.feature_toggle import ALLOW_RESOURCES_PANEL, ENTITY_STATE_PANEL
 import pygame
-from game_core.entity_state import EntityStateList
-from game_ui.resource_panel import *
+from game_ui.resource_panel import draw_resource_panel, draw_icons
+
 
 def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None):
     """
     Draw all UI elements that are on top of the game area.
-    Extend this function to include more UI overlays as needed.
+    This is the single entry point for all UI overlays.
     """
     if ALLOW_RESOURCES_PANEL:
         draw_resource_panel(surface, font)
         draw_icons(surface, font)
     draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
     info_panel_width = get_info_panel_width(surface.get_width())
-    from game_ui.alerts_panel import check_alerts, draw_alert_panel
     if grid is not None:
         check_alerts(grid, surface.get_width())
         draw_alert_panel(surface, font, surface.get_width() - info_panel_width, surface.get_height())
@@ -28,9 +27,13 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid, hovered_entity=hovered_entity)
     # Draw entity preview overlay
-    if selected_entity_type and camera_offset is not None and cell_size is not None and GRID_WIDTH is not None and GRID_HEIGHT is not None and grid is not None:
+    if all(v is not None for v in [selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
         draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
+    # Draw entity state panel if enabled
+    if ENTITY_STATE_PANEL:
+        draw_entity_state_panel(surface, font, hovered_entity=hovered_entity)
     # Future: draw other UI overlays here
+
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
     """
@@ -44,11 +47,9 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
     gy = int((my - camera_offset[1]) // cell_size)
     if not (0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT):
         return
-
     # Check if the cell is already occupied
     if grid[gy][gx] is not None:
         return
-
     preview_entity = selected_entity_type(gx, gy)
     icon_path = getattr(preview_entity, '_icon', None)
     icon_surf = get_icon_surface(icon_path) if icon_path else None
