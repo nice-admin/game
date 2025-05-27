@@ -95,7 +95,7 @@ class PowerOutage:
 
 SITUATIONS = [
     InternetOutage(),
-    # NasCrashed(),
+    NasCrashed(),
     JobArrived(),
     # Add more situation instances here...
 ]
@@ -108,7 +108,7 @@ def start_situation_manager():
         while True:
             situation = random.choice(SITUATIONS)
             situation.trigger()
-            time.sleep(random.uniform(1, 2))
+            time.sleep(random.uniform(3, 6))
     thread = threading.Thread(target=situation_loop, daemon=True)
     thread.start()
 

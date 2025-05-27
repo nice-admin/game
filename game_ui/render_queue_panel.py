@@ -21,7 +21,7 @@ RQI_TOP_MARGIN = 50
 def get_expanded_extra_height():
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_unfinished', 10)
-    return shot_rows * RQI_HEIGHT + (shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN
+    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
@@ -39,7 +39,7 @@ def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
 
 
 class RenderQueueItem:
-    def __init__(self, name, progress=0.5):
+    def __init__(self, name, progress=0.0):
         self.name = name
         self.progress = progress  # 0.0 to 1.0
 
@@ -53,21 +53,16 @@ class RenderQueueItem:
         # Draw background with rounded corners
         pygame.draw.rect(surface, bg_col, (bar_x, bar_y, bar_width, bar_height), border_radius=border_radius)
         # Gradient progress bar with rounded corners
-        left_col = (69, 79, 95)
-        right_col = (0, 187, 133)
-        # Clamp fill_width to [0, bar_width]
-        fill_width = int(bar_width * self.progress)
-        fill_width = max(0, min(fill_width, bar_width))
+        left_col, right_col = (69, 79, 95), (0, 187, 133)
+        fill_width = max(0, min(int(bar_width * self.progress), bar_width))
         if fill_width > 0:
             grad_surf = pygame.Surface((fill_width, bar_height), pygame.SRCALPHA)
-            # Draw gradient left-to-right, inclusive of last pixel
             for i in range(fill_width):
                 t = i / (fill_width - 1) if fill_width > 1 else 0
                 r = int(left_col[0] + (right_col[0] - left_col[0]) * t)
                 g = int(left_col[1] + (right_col[1] - left_col[1]) * t)
                 b = int(left_col[2] + (right_col[2] - left_col[2]) * t)
                 pygame.draw.line(grad_surf, (r, g, b), (i, 0), (i, bar_height - 1))
-            # Always apply rounded mask, even for fill_width == 1
             mask = pygame.Surface((fill_width, bar_height), pygame.SRCALPHA)
             if fill_width >= bar_width:
                 pygame.draw.rect(mask, (255,255,255,255), (0,0,fill_width,bar_height), border_radius=border_radius)
@@ -79,9 +74,14 @@ class RenderQueueItem:
         name_text = font.render(self.name, True, TEXT1_COL)
         name_rect = name_text.get_rect(topleft=(bar_x + 10, bar_y - 4 - name_text.get_height()))
         surface.blit(name_text, name_rect)
-
+        # Draw progress number in the center of the bar
+        percent = int(self.progress * 100)
+        progress_text = font.render(f"{percent} / 100%", True, TEXT1_COL)
+        progress_rect = progress_text.get_rect(center=(bar_x + bar_width // 2, bar_y + bar_height // 2))
+        surface.blit(progress_text, progress_rect)
 
 _last_job_id = None
+_last_job_start_render_progress = 0  # Track render_progress at job start
 _last_shot_rows = None
 _last_render_queue_items = None
 _last_baked_panel = None
@@ -98,17 +98,21 @@ def bake_render_queue_items(job_id, shot_rows):
 
 def get_progress_items(job_id, shot_rows, render_progress):
     """Return a list of RenderQueueItem with progress distributed according to render_progress.
-    Each bar represents 0-100 units. Only one bar fills at a time. E.g. if render_progress=214, first two bars are full, third bar is at 0.14."""
-    items = [RenderQueueItem(f"Shot {i+1}", progress=0.0) for i in range(shot_rows)]
-    # Each bar is 100 units
+    Each bar represents 0-100 units. Only one bar fills at a time."""
+    global _last_job_id, _last_job_start_render_progress
+    if job_id != _last_job_id:
+        # New job detected, treat current render_progress as 0 for this job
+        _last_job_id = job_id
+        _last_job_start_render_progress = render_progress
+    effective_progress = render_progress - _last_job_start_render_progress
+    items = [RenderQueueItem(f"Shot {i+1}") for i in range(shot_rows)]
     for i in range(shot_rows):
-        if render_progress >= (i + 1) * 100:
+        if effective_progress >= (i + 1) * 100:
             items[i].progress = 1.0
-        elif render_progress >= i * 100:
-            # Partial fill for the current bar
-            items[i].progress = (render_progress - i * 100) / 100.0
+        elif effective_progress >= i * 100:
+            items[i].progress = (effective_progress - i * 100) / 100.0
         else:
-            items[i].progress = 0.0
+            break  # All subsequent bars remain at 0.0
     return items
 
 class Header:
@@ -137,7 +141,6 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
     job_id = getattr(gs, 'job_id', 0)
     total_shots_finished = getattr(gs, 'total_shots_finished', 0)
     total_shots_unfinished = getattr(gs, 'total_shots_unfinished', 0)
-    shots_in_queue = total_shots_finished + total_shots_unfinished
     render_progress = getattr(gs, 'render_progress', 0)
     # Only re-bake if job_id, shot_rows, panel size, or render_progress changed
     global _last_render_progress, _last_progress_items
@@ -160,10 +163,9 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress)
     _last_progress_items = items
-    for idx in range(shot_rows):
-        if idx < len(items) and isinstance(items[idx], RenderQueueItem):
-            y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
-            items[idx].draw(panel_surface, 0, y, panel_width, RQI_HEIGHT, font)
+    for idx, item in enumerate(items):
+        y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
+        item.draw(panel_surface, 0, y, panel_width, RQI_HEIGHT, font)
     # Cache
     _last_baked_panel = panel_surface
     _last_baked_panel_job_id = job_id
@@ -175,7 +177,6 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
 
 def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
-    global _last_job_id, _last_shot_rows, _last_render_queue_items
     panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
     # Animate height
