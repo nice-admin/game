@@ -21,6 +21,7 @@ def _get_ms_history():
 def draw_profiler_panel(screen, clock, font, draw_call_count=None, tick_count=None, timings=None):
     """
     Draws a profiler panel showing FPS, draw calls, tick count, and timings in the top left area of the screen.
+    Renders both the background and text onto a semi-transparent surface, then blits it to the main screen.
     """
     w, h = screen.get_width(), screen.get_height()
     px = 0  # Absolute top-left
@@ -53,10 +54,10 @@ def draw_profiler_panel(screen, clock, font, draw_call_count=None, tick_count=No
     pw = DP_WIDTH
     surf = pygame.Surface((pw, ph), pygame.SRCALPHA)
     surf.fill(DP_BG_COLOR)
-    screen.blit(surf, (px, py))
-    y = py + DP_PAD_Y
+    y = DP_PAD_Y
     for text, color in rows:
         if text:
             text_surf = font.render(text, True, color)
-            screen.blit(text_surf, (px + DP_PAD_X, y))
+            surf.blit(text_surf, (DP_PAD_X, y))
         y += DP_ROW_SPACING
+    screen.blit(surf, (px, py))

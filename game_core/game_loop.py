@@ -118,7 +118,7 @@ def run_game():
         frame_end = pygame.time.get_ticks()
         frame_ms = frame_end - frame_start
         timings = {"Frame": frame_ms}
-        render_game(state, screen, background_surface, font, timings)
+        render_game(state, screen, background_surface, font, timings, clock)
         clock.tick(FPS)
         frame_count += 1
     # Save game state on exit
@@ -165,7 +165,7 @@ def update_game_logic(state, frame_count, update_game_state):
         update_game_state(state['grid'])
     return grid_changed
 
-def render_game(state, screen, background_surface, font, timings):
+def render_game(state, screen, background_surface, font, timings, clock):
     screen.fill(BG_OUTSIDE_GRID_COL)
     screen.blit(background_surface, state['camera_offset'])
     min_x = max(0, int(-state['camera_offset'][0] // state['cell_size']))
@@ -194,7 +194,7 @@ def render_game(state, screen, background_surface, font, timings):
         state['panel_y'],
         state['panel_width'],
         state['panel_height'],
-        clock=None,
+        clock=clock,
         draw_call_count=None,
         tick_count=None,
         timings=timings,

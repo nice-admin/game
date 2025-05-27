@@ -23,8 +23,7 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
     if grid is not None:
         check_alerts(grid, surface.get_width())
         draw_alert_panel(surface, font, surface.get_width() - info_panel_width, surface.get_height())
-    if clock is not None:
-        draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
+    # Draw info panel (entity summary, hovered entity info, etc.)
     draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid, hovered_entity=hovered_entity)
     # Draw entity preview overlay
     if all(v is not None for v in [selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
@@ -33,6 +32,9 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
     if ENTITY_STATE_PANEL:
         draw_entity_state_panel(surface, font, hovered_entity=hovered_entity)
     # Future: draw other UI overlays here
+    # Draw profiler panel LAST so it is always visible on top
+    if clock is not None:
+        draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
 
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
