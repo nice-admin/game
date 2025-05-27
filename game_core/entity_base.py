@@ -3,6 +3,8 @@ import re
 import random
 import time
 from .game_settings import *
+from game_core.game_state import GameState
+
 
 CELL_SIZE = 64  # Default cell size, can be overridden by main.py
 
@@ -51,7 +53,23 @@ class BaseEntity:
         if self._icon_surface and not static_only:
             icon = pygame.transform.smoothscale(self._icon_surface, (cell_size, cell_size))
             surface.blit(icon, (self.x * cell_size + offset[0], self.y * cell_size + offset[1]))
-        # No progress bars in base class
+        # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is 0
+        highlight_color = None
+        if (
+            getattr(self, 'is_initialized', 0) and not getattr(self, 'is_satisfied', 1)
+        ):
+            highlight_color = STATUS_MID_COL
+        if getattr(self, 'is_broken', 0):
+            highlight_color = STATUS_BAD_COL
+        if highlight_color and not getattr(self, 'warning_hidden', 0) and not static_only:
+            x = self.x * cell_size + offset[0]
+            y = self.y * cell_size + offset[1]
+            pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
+        if not static_only:
+            if getattr(self, "has_bar1", 1) and not getattr(self, 'bar1_hidden', 0) and hasattr(self, 'draw_bar1'):
+                self.draw_bar1(surface, offset[0], offset[1], cell_size)
+            if getattr(self, "has_bar2", 0) and not getattr(self, 'bar2_hidden', 0) and hasattr(self, 'draw_bar2'):
+                self.draw_bar2(surface, offset[0], offset[1], cell_size)
 
     def to_dict(self):
         from game_core.entity_definitions import to_type_from_classname
@@ -103,20 +121,20 @@ class SatisfiableEntity(BaseEntity):
     _BAR_HEIGHT_RATIO = 0.15
     _BAR_DURATION_FRAMES = 300
     _BAR_REFRESH_RATE = 1
-    has_bar1 = True
-    has_bar2 = False
-    bar1_hidden = False  # New: allows hiding bar1
-    bar2_hidden = False  # New: allows hiding bar2
-    warning_hidden = False
-    is_satisfied = False
-    is_initialized = False
-    is_risky = False
-    is_broken = False
+    has_bar1 = 1
+    has_bar2 = 0
+    bar1_hidden = 0  # New: allows hiding bar1
+    bar2_hidden = 0  # New: allows hiding bar2
+    warning_hidden = 0
+    is_satisfied = 0
+    is_initialized = 0
+    is_risky = 0
+    is_broken = 0
     state = "Init"
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.is_initialized = False
+        self.is_initialized = 0
         self.bar1 = 0.0 if self.has_bar1 else None
         self.bar1_timer = 0 if self.has_bar1 else None
         self.bar2 = 0.0 if self.has_bar2 else None
@@ -146,10 +164,6 @@ class SatisfiableEntity(BaseEntity):
                                 if getattr(entity, 'is_satisfied', 1) == 1:
                                     count += 1
         return count
-
-    def on_satisfaction_check(self, count = 1, threshold = 1):
-        # Set is_satisfied to True if count >= threshold, else False
-        self.is_satisfied = count >= threshold
 
     def _set_status(self):
         # Set to 'Mid' if (not satisfied AND initialized AND not broken) OR risky
@@ -185,8 +199,7 @@ class SatisfiableEntity(BaseEntity):
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
-                    count = self.count_entities_in_proximity(grid, entity_type, radius)
-                    self.on_satisfaction_check(count, getattr(self, 'satisfaction_check_threshold', 1))
+                    self.satisfaction_check(grid)
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -214,7 +227,7 @@ class SatisfiableEntity(BaseEntity):
                 del self._bar2_spawn_attempted
 
     def get_icon_path(self):
-        if getattr(self, 'is_broken', False) and getattr(self, '_icon_broken', None):
+        if getattr(self, 'is_broken', 0) and getattr(self, '_icon_broken', None):
             return self._icon_broken
         return self._icon
 
@@ -226,22 +239,22 @@ class SatisfiableEntity(BaseEntity):
         if self._icon_surface and not static_only:
             icon = pygame.transform.smoothscale(self._icon_surface, (cell_size, cell_size))
             surface.blit(icon, (self.x * cell_size + offset[0], self.y * cell_size + offset[1]))
-        # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is False
+        # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is 0
         highlight_color = None
         if (
-            getattr(self, 'is_initialized', False) and not getattr(self, 'is_satisfied', True)
+            getattr(self, 'is_initialized', 0) and not getattr(self, 'is_satisfied', 1)
         ):
             highlight_color = STATUS_MID_COL
-        if getattr(self, 'is_broken', False):
+        if getattr(self, 'is_broken', 0):
             highlight_color = STATUS_BAD_COL
-        if highlight_color and not getattr(self, 'warning_hidden', False) and not static_only:
+        if highlight_color and not getattr(self, 'warning_hidden', 0) and not static_only:
             x = self.x * cell_size + offset[0]
             y = self.y * cell_size + offset[1]
             pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
         if not static_only:
-            if getattr(self, "has_bar1", True) and not getattr(self, 'bar1_hidden', False):
+            if getattr(self, "has_bar1", 1) and not getattr(self, 'bar1_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
-            if getattr(self, "has_bar2", False) and not getattr(self, 'bar2_hidden', False):
+            if getattr(self, "has_bar2", 0) and not getattr(self, 'bar2_hidden', 0) and hasattr(self, 'draw_bar2'):
                 self.draw_bar2(surface, offset[0], offset[1], cell_size)
 
     def draw_bar1(self, surface, ox, oy, cell_size):
@@ -258,7 +271,7 @@ class SatisfiableEntity(BaseEntity):
         pygame.draw.rect(surface, bar_color, (x, y, fill_width, bar_height))
 
     def draw_bar2(self, surface, ox, oy, cell_size):
-        if not (getattr(self, "has_bar2", False) and self.is_initialized and self.is_satisfied):
+        if not (getattr(self, "has_bar2", 0) and self.is_initialized and self.is_satisfied):
             return
         if self.bar2 is None:
             return
@@ -274,21 +287,35 @@ class SatisfiableEntity(BaseEntity):
         return False
 
     def satisfaction_check(self, grid):
-        """
-        Universal satisfaction check method. Checks for a specific entity type within a given radius.
-        Entities can override or configure."""
-        if not getattr(self, 'satisfaction_check_enabled', False):
-            return
         entity_type = getattr(self, 'satisfaction_check_type', None)
         radius = getattr(self, 'satisfaction_check_radius', 2)
         threshold = getattr(self, 'satisfaction_check_threshold', 1)
+        gs = GameState()
+        gs_var = getattr(self, 'satisfaction_check_gamestate', None)
         predicate = getattr(self, 'satisfaction_check_predicate', None)
+        # All conditions must be satisfied
+        # 1. If a GameState variable is specified, it must be 1
+        if gs_var is not None:
+            if not hasattr(gs, gs_var) or getattr(gs, gs_var) != 1:
+                self.is_satisfied = 0
+                return
+        # 2. If an entity_type is specified, proximity count must meet threshold
         if entity_type:
-            count = self.count_entities_in_proximity(grid, entity_type, radius, predicate)
-            self.on_satisfaction_check(count, threshold)
+            if predicate:
+                count = self.count_entities_in_proximity(grid, entity_type, radius, predicate=lambda e: predicate(self, e))
+            else:
+                count = self.count_entities_in_proximity(grid, entity_type, radius)
+            if hasattr(self, 'on_satisfaction_check'):
+                self.on_satisfaction_check(count, threshold)
+                return
+            if count < threshold:
+                self.is_satisfied = 0
+                return
+        # If all conditions passed, mark as satisfied
+        self.is_satisfied = 1
 
 class ComputerEntity(SatisfiableEntity):
-    has_bar2 = True
+    has_bar2 = 1
     power_drain = 1
     satisfaction_check_type = 'outlet'
     # You can override satisfaction_check_radius, threshold, etc. in subclasses
