@@ -335,18 +335,19 @@ class SatisfiableEntity(BaseEntity):
         self.is_satisfied = 1
 
 class ComputerEntity(SatisfiableEntity):
-    has_bar2 = 1
     satisfaction_check_type = 'outlet'
     power_drain = 1  # Set intended value here
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        # No need to set power_drain here; handled by BaseEntity
+        self.is_rendering = 1 if self.bar2 is not None else 0
 
     def _update_bar2(self, grid):
         prev_bar2 = self.bar2 if hasattr(self, 'bar2') else None
         prev_bar2_timer = self.bar2_timer if hasattr(self, 'bar2_timer') else None
         super()._update_bar2(grid)
+        # Update is_rendering based on bar2 presence
+        self.is_rendering = 1 if self.bar2 is not None else 0
         # Only increment render_progress if bar2 just completed (allow for float rounding)
         if (
             prev_bar2 is not None and prev_bar2_timer is not None and

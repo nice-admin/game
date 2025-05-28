@@ -23,7 +23,7 @@ RESOURCE_PANEL_CELLS = {
     },
     (0, 1): {
         "key": "power_drain",
-        "label": "Power Drain",
+        "label": "Power\ndrain",
         "icon": "data/graphics/resource_panel/power.png",
         "value_getter": lambda gs: gs.total_power_drain*0.001,
         "format": lambda v, gs: f"{int(v)} KW",
@@ -35,7 +35,7 @@ RESOURCE_PANEL_CELLS = {
     },
     (0, 2): {
         "key": "breaker_strength",
-        "label": "Breaker Limit",
+        "label": "Breaker\nlimit",
         "icon": "data/graphics/resource_panel/breakers.png",
         "value_getter": lambda gs: gs.total_breaker_strength*0.001,
         "format": lambda v, gs: f"{int(v)} KW",
@@ -56,7 +56,7 @@ RESOURCE_PANEL_CELLS = {
     },
     (1, 1): {
         "key": "expenses",
-        "label": "Expenses",
+        "label": "Monthly\nexpenses",
         "icon": "data/graphics/resource_panel/expenses.png",
         "value_getter": lambda gs: gs.total_upkeep,
         "format": lambda v, gs: f"-${v}",
@@ -118,11 +118,16 @@ class BasicCell:
             icon_offset = self.icon.get_width() + 12
         if self.label:
             label_font = get_cached_font(self.label_text_size)
-            text_width, text_height = label_font.size(str(self.label))
-            x = 0 + icon_offset
-            y = (self.cell_height - text_height) // 2
-            surf = label_font.render(str(self.label), True, TEXT1_COL)
-            surface.blit(surf, (x, y))
+            # Support multi-line labels
+            lines = str(self.label).split("\n")
+            total_height = sum([label_font.size(line)[1] for line in lines])
+            y = (self.cell_height - total_height) // 2
+            for line in lines:
+                text_width, text_height = label_font.size(line)
+                x = 0 + icon_offset
+                surf = label_font.render(line, True, TEXT1_COL)
+                surface.blit(surf, (x, y))
+                y += text_height
         return surface
 
     def get_surface(self) -> pygame.Surface:
@@ -132,7 +137,7 @@ class BasicCell:
         # Left align, vertically centered
         text_width, text_height = font.size(str(self.label))
         x = 5
-        y = (self.cell_height - text_height) // 2
+        y = (self.cell_height - text_height) // 2 + 2
         return x, y
 
     def get_value_font(self, base_font: pygame.font.Font) -> pygame.font.Font:
@@ -142,7 +147,7 @@ class BasicCell:
         # Right align, vertically centered
         text_width, text_height = font.size(str(value_str))
         x = self.cell_width - text_width - 10
-        y = (self.cell_height - text_height) // 2
+        y = (self.cell_height - text_height) // 2 + 2
         return x, y
 
     def draw_value(self, value: Any, base_font: pygame.font.Font, color: Tuple[int, int, int] = (255,255,255), extra_key: Any = None):
@@ -166,8 +171,8 @@ class BasicCell:
             target_surface.blit(self.value_surface, pos)
 
 class GeneralCell(BasicCell):
-    cell_width = 250
-    def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, value_font_size: int = 25, label_text_size: int = 15, icon: Optional[pygame.Surface] = None):
+    cell_width = 220
+    def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, value_font_size: int = 22, label_text_size: int = 16, icon: Optional[pygame.Surface] = None):
         super().__init__(label=label, font=font, value_font_size=value_font_size, label_text_size=label_text_size, icon=icon)
         self.text_color = text_color if text_color is not None else TEXT1_COL
 
@@ -245,8 +250,12 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
         for col in range(2):
             if problems_grid[row][col] is None:
                 problems_grid[row][col] = ProblemCell(label="", font=font)
+    # --- SYSTEM PANEL: Restore to 2 rows x 2 columns ---
     icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
-    system_labels = ["Connected", "Running", "Connected", "15 / 25 TB"]
+    system_labels = [
+        "Connected", "Running",
+        "WiFi OK", "15 / 25 TB"
+    ]
     system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
     system_grid = [[SystemCell(label=system_labels[row*2+col], font=font, icon=system_icons[row*2+col]) for col in range(2)] for row in range(2)]
     general_width = 5 * GeneralCell.cell_width
