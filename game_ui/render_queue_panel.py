@@ -98,21 +98,22 @@ def bake_render_queue_items(job_id, shot_rows):
 
 def get_progress_items(job_id, shot_rows, render_progress):
     """Return a list of RenderQueueItem with progress distributed according to render_progress.
-    Each bar represents 0-100 units. Only one bar fills at a time."""
-    global _last_job_id, _last_job_start_render_progress
-    if job_id != _last_job_id:
-        # New job detected, treat current render_progress as 0 for this job
-        _last_job_id = job_id
-        _last_job_start_render_progress = render_progress
-    effective_progress = render_progress - _last_job_start_render_progress
+    Each bar represents 0-100 units. Only one bar fills at a time.
+    When a bar fills, increment GameState().total_shots_finished if not already counted."""
+    gs = GameState()
     items = [RenderQueueItem(f"Shot {i+1}") for i in range(shot_rows)]
+    finished_count = 0
     for i in range(shot_rows):
-        if effective_progress >= (i + 1) * 100:
+        if render_progress >= (i + 1) * 100:
             items[i].progress = 1.0
-        elif effective_progress >= i * 100:
-            items[i].progress = (effective_progress - i * 100) / 100.0
+            finished_count += 1
+        elif render_progress >= i * 100:
+            items[i].progress = (render_progress - i * 100) / 100.0
         else:
             break  # All subsequent bars remain at 0.0
+    # Update global finished shots if needed
+    if gs.total_shots_finished != finished_count:
+        gs.total_shots_finished = finished_count
     return items
 
 class Header:
@@ -141,7 +142,7 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
     job_id = getattr(gs, 'job_id', 0)
     total_shots_finished = getattr(gs, 'total_shots_finished', 0)
     total_shots_unfinished = getattr(gs, 'total_shots_unfinished', 0)
-    render_progress = getattr(gs, 'render_progress', 0)
+    render_progress_current = getattr(gs, 'render_progress_current', 0)
     # Only re-bake if job_id, shot_rows, panel size, or render_progress changed
     global _last_render_progress, _last_progress_items
     if (
@@ -150,7 +151,7 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
         _last_baked_panel_shot_rows == shot_rows and
         _last_baked_panel_width == panel_width and
         _last_baked_panel_height == panel_height and
-        _last_render_progress == render_progress
+        _last_render_progress == render_progress_current
     ):
         return _last_baked_panel
     # Bake new panel
@@ -161,7 +162,7 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
     header = Header(panel_width, font, total_shots_finished, total_shots_unfinished)
     header.draw(panel_surface, y=0)
     # RenderQueueItems with progress
-    items = get_progress_items(job_id, shot_rows, render_progress)
+    items = get_progress_items(job_id, shot_rows, render_progress_current)
     _last_progress_items = items
     for idx, item in enumerate(items):
         y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
@@ -172,7 +173,7 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
     _last_baked_panel_shot_rows = shot_rows
     _last_baked_panel_width = panel_width
     _last_baked_panel_height = panel_height
-    _last_render_progress = render_progress
+    _last_render_progress = render_progress_current
     return panel_surface
 
 def draw_render_queue_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):

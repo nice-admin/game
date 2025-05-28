@@ -40,8 +40,9 @@ def run_game():
     pygame.display.set_caption("3D Artist Team Manager")
     clock = pygame.time.Clock()
 
-    # Start situation manager (random events)
-    game_core.gameplay_events.start_gameplay_events()
+    # Start gameplay evennts
+    game_core.gameplay_events.start_random_gameplay_events()
+    game_core.gameplay_events.start_deterministic_gameplay_events()
 
     grid = create_grid()
     # Load game state if available
@@ -106,9 +107,11 @@ def run_game():
         frame_start = pygame.time.get_ticks()
         # Handle events
         running, grid_changed_from_events = handle_events(state, remove_entity, place_entity)
+        # Check for async grid changes from testing layout
+        grid_changed_from_testing = state.pop('testing_layout_grid_changed', False)
         # Update game logic
         grid_changed_from_logic = update_game_logic(state, frame_count, update_game_state)
-        grid_changed = grid_changed_from_events or grid_changed_from_logic
+        grid_changed = grid_changed_from_events or grid_changed_from_logic or grid_changed_from_testing
         # Only re-bake static entities if grid changed or prev_cell_size changed (not camera offset)
         if grid_changed or prev_cell_size != state['cell_size']:
             if background_surface.get_width() != GRID_WIDTH * state['cell_size'] or background_surface.get_height() != GRID_HEIGHT * state['cell_size']:
@@ -116,11 +119,17 @@ def run_game():
             bake_static_entities()
             prev_cell_size = state['cell_size']
             update_totals_from_grid(state['grid'])
+        gs.finish_job()
+        dt = clock.tick(FPS)  # milliseconds since last frame, includes wait time
+        # 1 in-game day = 10 seconds, so 30 days = 300 seconds
+        seconds_per_month = 30 * 10
+        # Subtract upkeep as integer value per tick
+        deduction = gs.total_upkeep * (dt / 1000.0) / seconds_per_month
+        gs.total_money -= round(deduction)
         prev_camera_offset = state['camera_offset']
         # Render
         frame_end = pygame.time.get_ticks()
         frame_ms = frame_end - frame_start
-        dt = clock.tick(FPS)  # milliseconds since last frame, includes wait time
         gs.game_time_seconds += dt / 1000.0
         gs.game_time_days = int(gs.game_time_seconds // 10) + 1
         timings = {"Frame": frame_ms}
@@ -137,9 +146,23 @@ def handle_events(state, remove_entity, place_entity):
     screen_width = pygame.display.get_surface().get_width()
     baked = get_baked_panel(font)
     resource_panel_height = baked['total_height']
+
+    # Define the callback for async grid changes (must be in this scope)
+    def handle_testing_layout_grid_change():
+        state['testing_layout_grid_changed'] = True
+
     for event in pygame.event.get():
         # Handle render queue panel click/expand
         handle_render_queue_panel_event(event, screen_width, resource_panel_height)
+        # Wire up testing layout async grid change callback
+        testing_layout.handle_testing_layout(
+            event,
+            state['grid'],
+            state['entity_states'],
+            state['GRID_WIDTH'],
+            state['GRID_HEIGHT'],
+            on_entity_placed=state.setdefault('testing_layout_grid_change_cb', handle_testing_layout_grid_change)
+        )
         result, changed = handle_event(event, state, remove_entity, place_entity)
         if result == 'exit':
             return False, grid_changed

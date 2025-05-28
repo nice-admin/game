@@ -31,9 +31,11 @@ def to_display_name_from_classname(name):
 class BaseEntity:
     _icon = None
     _id_counter = 0
-    is_person = 0  # Default: not a person
     state = "Basic"
     purchase_cost = 0
+    upkeep = 0
+    power_drain = 0  # Intended power drain when initialized (override in subclasses)
+    _intended_power_drain = None  # Store intended value for restoration
 
     def __init__(self, x, y):
         self.x, self.y = x, y
@@ -42,6 +44,9 @@ class BaseEntity:
         self.id = BaseEntity._id_counter
         BaseEntity._id_counter += 1
         self.timestamp = time.strftime('%Y-%m-%d %H:%M:%S')  # Human-readable creation time       
+        # Store intended power_drain and start with 0 until initialized
+        self._intended_power_drain = getattr(self.__class__, 'power_drain', 0)
+        self.power_drain = 0
 
     def update(self, grid):
         pass  # No-op for base class, avoids AttributeError in main loop
@@ -110,13 +115,17 @@ class BaseEntity:
         return d
 
     def on_built(self):
-        """Call this after the entity is actually built/placed to deduct its purchase cost from total_money."""
+        """Call this after the entity is actually built/placed to deduct its purchase cost from total_money and add upkeep to total_upkeep."""
         gs = GameState()
         cost = getattr(self, 'purchase_cost', 0)
         gs.total_money -= cost
         if cost > 0:
             from game_other.audio import play_purchase_sound
             play_purchase_sound()
+
+    def on_initialized(self):
+        """Call this when the entity becomes initialized to set power_drain to intended value."""
+        self.power_drain = self._intended_power_drain
 
 class SatisfiableEntity(BaseEntity):
     _icon = None
@@ -193,11 +202,13 @@ class SatisfiableEntity(BaseEntity):
 
     def _update_bar1(self, grid):
         if self.has_bar1:
+            prev_initialized = self.is_initialized
             self.bar1_timer += self._BAR_REFRESH_RATE
             if self.bar1_timer >= self._BAR_DURATION_FRAMES:
                 self.bar1_timer = 0
                 if not self.is_initialized:
                     self.is_initialized = True
+                    self.on_initialized()  # Set power_drain when initialized
                     if self.has_bar2 and not hasattr(self, '_bar2_spawned'):
                         if random.random() < 0.1:
                             self.has_bar2 = True
@@ -325,9 +336,13 @@ class SatisfiableEntity(BaseEntity):
 
 class ComputerEntity(SatisfiableEntity):
     has_bar2 = 1
-    power_drain = 1
     satisfaction_check_type = 'outlet'
-    # You can override satisfaction_check_radius, threshold, etc. in subclasses
+    power_drain = 1  # Set intended value here
+
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        # No need to set power_drain here; handled by BaseEntity
+
     def _update_bar2(self, grid):
         prev_bar2 = self.bar2 if hasattr(self, 'bar2') else None
         prev_bar2_timer = self.bar2_timer if hasattr(self, 'bar2_timer') else None
@@ -338,4 +353,13 @@ class ComputerEntity(SatisfiableEntity):
             prev_bar2 >= 0.99 and self.bar2 == 0.0 and self.bar2_timer == 0
         ):
             gs = GameState()
-            gs.render_progress += 1
+            gs.render_progress_current += 1
+
+class PersonEntity(SatisfiableEntity):
+    is_person = 1
+    # You can add more attributes or override methods as needed
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        # Example: Give a default display name or other person-specific logic
+        self.display_name = getattr(self, 'display_name', 'Person')
+        # Add more initialization if needed

@@ -6,7 +6,8 @@ class GameState:
             cls._instance = super(GameState, cls).__new__(cls)
             cls._instance.game_time_seconds = 0
             cls._instance.game_time_days = 0
-            cls._instance.total_money = 10000
+            cls._instance.total_money = 100000
+            cls._instance.total_upkeep = 0
             cls._instance.total_power_drain = 0
             cls._instance.total_breaker_strength = 0
             cls._instance.total_employees = 0
@@ -15,9 +16,11 @@ class GameState:
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
-            cls._instance.render_progress = 0
+            cls._instance.render_progress_current = 0
+            cls._instance.render_progress_goal = 0
             cls._instance.total_shots_unfinished = 0
             cls._instance.total_shots_finished = 0
+            cls._instance.jobs_finished = 0
             cls._instance.job_id = 0
         return cls._instance
 
@@ -61,18 +64,41 @@ class GameState:
     def count_power_drain(self, grid):
         return self._count_entities(grid, 'power_drain', sum_mode=True)
 
+    def count_upkeep(self, grid):
+        total = 0
+        for row in grid:
+            for entity in row:
+                if entity is not None and hasattr(entity, 'upkeep'):
+                    try:
+                        val = float(getattr(entity, 'upkeep', 0))
+                        if val > 0:
+                            total += val
+                    except Exception:
+                        pass
+        return int(round(total))
+
     def update_totals_from_grid(self, grid):
         self.total_employees = self.count_employees(grid)
         self.total_power_drain = self.count_power_drain(grid)
         self.total_breaker_strength = self.count_breaker_strength(grid)
         self.total_risky_entities = self.count_risky_entities(grid)
         self.total_broken_entities = self.count_broken_entities(grid)
+        self.total_upkeep = self.count_upkeep(grid)
         from game_core.gameplay_events import power_outage
         power_outage.trigger()
 
     def get_totals_dict(self):
         # Return all public (non-callable, non-underscore) attributes as a dict
         return {k: v for k, v in vars(self).items() if not k.startswith('_') and not callable(v)}
+
+    def finish_job(self):
+        if (
+            self.total_shots_unfinished == self.total_shots_finished
+            and self.total_shots_finished > 0
+        ):
+            self.jobs_finished += 1
+            self.total_shots_unfinished = 0
+            self.total_shots_finished = 0
 
 def get_totals_dict():
     return GameState().get_totals_dict()

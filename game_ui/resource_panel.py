@@ -11,14 +11,95 @@ def get_cached_font(size: int) -> pygame.font.Font:
         _font_cache[size] = get_font1(size)
     return _font_cache[size]
 
+# --- Resource Panel Cell Definitions ---
+RESOURCE_PANEL_CELLS = {
+    # General cells (row, col): properties
+    (0, 0): {
+        "key": "day",
+        "label": "Day",
+        "icon": "data/graphics/resource_panel/day.png",
+        "value_getter": lambda gs: int(gs.game_time_days),
+        "format": lambda v, gs: str(v),
+    },
+    (0, 1): {
+        "key": "power_drain",
+        "label": "Power Drain",
+        "icon": "data/graphics/resource_panel/power.png",
+        "value_getter": lambda gs: gs.total_power_drain*0.001,
+        "format": lambda v, gs: f"{int(v)} KW",
+        "color": lambda v, gs: (
+            (255,0,0) if gs.total_breaker_strength <= 0 else
+            tuple(int(x*255) for x in colorsys.hsv_to_rgb((120-120*min(max(1-(gs.total_breaker_strength-v)/15,0),1))/360,1,1))
+        ),
+        "extra_key": lambda gs: gs.total_breaker_strength,
+    },
+    (0, 2): {
+        "key": "breaker_strength",
+        "label": "Breaker Limit",
+        "icon": "data/graphics/resource_panel/breakers.png",
+        "value_getter": lambda gs: gs.total_breaker_strength*0.001,
+        "format": lambda v, gs: f"{int(v)} KW",
+    },
+    (0, 3): {
+        "key": "employees",
+        "label": "Employees",
+        "icon": "data/graphics/resource_panel/employees.png",
+        "value_getter": lambda gs: gs.total_employees,
+        "format": lambda v, gs: str(v),
+    },
+    (1, 0): {
+        "key": "money",
+        "label": "Money",
+        "icon": "data/graphics/resource_panel/money.png",
+        "value_getter": lambda gs: gs.total_money,
+        "format": lambda v, gs: f"${v}",
+    },
+    (1, 1): {
+        "key": "expenses",
+        "label": "Expenses",
+        "icon": "data/graphics/resource_panel/expenses.png",
+        "value_getter": lambda gs: gs.total_upkeep,
+        "format": lambda v, gs: f"-${v}",
+    },
+    # Add more as needed
+}
+PROBLEM_PANEL_CELLS = {
+    (0, 0): {
+        "key": "risk",
+        "label": "Risk",
+        "icon": "data/graphics/resource_panel/risk.png",
+        "value_getter": lambda gs: gs.total_risky_entities,
+        "format": lambda v, gs: str(v),
+    },
+    (0, 1): {
+        "key": "problems",
+        "label": "Problems",
+        "icon": "data/graphics/resource_panel/problem.png",
+        "value_getter": lambda gs: gs.total_broken_entities,
+        "format": lambda v, gs: str(v),
+    },
+    # Add more as needed
+}
+
 class BasicCell:
-    cell_width = 100
-    cell_height = 60
-    def __init__(self, label: str = "", font: Optional[pygame.font.Font] = None, value_font_size: int = 23, label_text_size: int = 17):
-        self.label = label
+    cell_width = 200
+    cell_height = 50
+    def __init__(self, label: str = "", font: Optional[pygame.font.Font] = None, value_font_size: int = 23, label_text_size: int = 17, icon: Optional[pygame.Surface] = None):
+        self.label = label or ""
         self.font = font or get_cached_font(label_text_size)
         self.value_font_size = int(value_font_size)
         self.label_text_size = int(label_text_size)
+        self.icon = None
+        # If icon is a string (path), load it; if it's a Surface, use it; otherwise, no icon
+        if isinstance(icon, str):
+            try:
+                self.icon = pygame.image.load(icon).convert_alpha()
+                self.icon = pygame.transform.smoothscale(self.icon, (36, 36))
+            except Exception:
+                self.icon = None
+        elif icon is not None:
+            self.icon = icon
+        # No fallback to RESOURCE_ICON_PATHS or label-based lookup
         self.surface = self._create_surface()
         self.value_surface = None
         self.last_value = None
@@ -30,11 +111,16 @@ class BasicCell:
         surface = pygame.Surface((self.cell_width, self.cell_height), pygame.SRCALPHA)
         surface.fill(UI_BG1_COL)
         pygame.draw.rect(surface, UI_BORDER1_COL, surface.get_rect(), 1)
+        icon_offset = 0
+        if self.icon is not None:
+            icon_y = (self.cell_height - self.icon.get_height()) // 2
+            surface.blit(self.icon, (6, icon_y))
+            icon_offset = self.icon.get_width() + 12
         if self.label:
             label_font = get_cached_font(self.label_text_size)
             text_width, text_height = label_font.size(str(self.label))
-            x = (self.cell_width - text_width) // 2
-            y = self.cell_height - text_height - 7
+            x = 0 + icon_offset
+            y = (self.cell_height - text_height) // 2
             surf = label_font.render(str(self.label), True, TEXT1_COL)
             surface.blit(surf, (x, y))
         return surface
@@ -43,18 +129,20 @@ class BasicCell:
         return self.surface
 
     def get_label_pos(self, font: pygame.font.Font) -> Tuple[int, int]:
+        # Left align, vertically centered
         text_width, text_height = font.size(str(self.label))
-        x = (self.cell_width - text_width) // 2
-        y = self.cell_height - text_height - 10
+        x = 5
+        y = (self.cell_height - text_height) // 2
         return x, y
 
     def get_value_font(self, base_font: pygame.font.Font) -> pygame.font.Font:
         return get_cached_font(self.value_font_size)
 
     def get_value_pos(self, font: pygame.font.Font, value_str: str = "0") -> Tuple[int, int]:
-        text_width, _ = font.size(str(value_str))
-        x = (self.cell_width - text_width) // 2
-        y = 13
+        # Right align, vertically centered
+        text_width, text_height = font.size(str(value_str))
+        x = self.cell_width - text_width - 10
+        y = (self.cell_height - text_height) // 2
         return x, y
 
     def draw_value(self, value: Any, base_font: pygame.font.Font, color: Tuple[int, int, int] = (255,255,255), extra_key: Any = None):
@@ -78,18 +166,18 @@ class BasicCell:
             target_surface.blit(self.value_surface, pos)
 
 class GeneralCell(BasicCell):
-    cell_width = 190
-    def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, value_font_size: int = 25, label_text_size: int = 15):
-        super().__init__(label=label, font=font, value_font_size=value_font_size, label_text_size=label_text_size)
+    cell_width = 250
+    def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, value_font_size: int = 25, label_text_size: int = 15, icon: Optional[pygame.Surface] = None):
+        super().__init__(label=label, font=font, value_font_size=value_font_size, label_text_size=label_text_size, icon=icon)
         self.text_color = text_color if text_color is not None else TEXT1_COL
 
     def _draw_text(self):
         pass  # No-op to prevent double label rendering
 
 class ProblemCell(GeneralCell):
-    cell_width = 120
-    def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None):
-        super().__init__(label=label, font=font, text_color=text_color if text_color is not None else TEXT1_COL)
+    cell_width = 160
+    def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, icon: Optional[pygame.Surface] = None):
+        super().__init__(label=label, font=font, text_color=text_color if text_color is not None else TEXT1_COL, icon=icon)
 
 class SystemCell(GeneralCell):
     cell_width = 160
@@ -140,10 +228,23 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
     """
     font = font or get_cached_font(18)
     gap = 10
-    general_labels = ["Day", "Money", "Power Drain", "Breaker Strength", "Employees"] + ["" for _ in range(5)]
-    general_grid = [[GeneralCell(label=general_labels[row*5+col], font=font) for col in range(5)] for row in range(2)]
-    problems_labels = ["Risk Factor", "Problems", "", ""]
-    problems_grid = [[ProblemCell(label=problems_labels[row*2+col], font=font) for col in range(2)] for row in range(2)]
+    # Build general grid from RESOURCE_PANEL_CELLS
+    general_grid = [[None for _ in range(5)] for _ in range(2)]
+    for (row, col), props in RESOURCE_PANEL_CELLS.items():
+        general_grid[row][col] = GeneralCell(label=props["label"], font=font, icon=props.get("icon"))
+    # Fill empty cells
+    for row in range(2):
+        for col in range(5):
+            if general_grid[row][col] is None:
+                general_grid[row][col] = GeneralCell(label="", font=font)
+    # Build problems grid from PROBLEM_PANEL_CELLS
+    problems_grid = [[None for _ in range(2)] for _ in range(2)]
+    for (row, col), props in PROBLEM_PANEL_CELLS.items():
+        problems_grid[row][col] = ProblemCell(label=props["label"], font=font, icon=props.get("icon"))
+    for row in range(2):
+        for col in range(2):
+            if problems_grid[row][col] is None:
+                problems_grid[row][col] = ProblemCell(label="", font=font)
     icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
     system_labels = ["Connected", "Running", "Connected", "15 / 25 TB"]
     system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
@@ -173,18 +274,8 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
         panel_surface.blit(header.get_surface(), (x, 0))
         draw_grid(grid, x, start_y, cell_cls)
     problems_x = start_x + general_width + gap
-    cell_map = [
-        ('day', general_grid[0][0], start_x, start_y),
-        ('money', general_grid[0][1], start_x + 1 * GeneralCell.cell_width, start_y),
-        ('power drain', general_grid[0][2], start_x + 2 * GeneralCell.cell_width, start_y),
-        ('breaker strength', general_grid[0][3], start_x + 3 * GeneralCell.cell_width, start_y),
-        ('employees', general_grid[0][4], start_x + 4 * GeneralCell.cell_width, start_y),
-        ('risk factor', problems_grid[0][0], problems_x, start_y),
-        ('problems', problems_grid[0][1], problems_x + 1 * ProblemCell.cell_width, start_y),
-    ]
     return {
         'panel_surface': panel_surface,
-        'cell_map': cell_map,
         'general_grid': general_grid,
         'problems_grid': problems_grid,
         'system_grid': system_grid,
@@ -213,41 +304,25 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
     baked['surf_x'] = surf_x
     baked['surf_y'] = surf_y
     gs = GameState()
-    breaker_strength = gs.total_breaker_strength
-    power_drain = gs.total_power_drain
-    key_map = {
-        'day': (None, (255,255,255), None),
-        'employees': (gs.total_employees, (255,255,255), None),
-        'money': (gs.total_money, (255,255,255), None),
-        'breaker strength': (breaker_strength, (255,255,255), None),
-        'risk factor': (gs.total_risky_entities, (255,255,255), None),
-        'problems': (gs.total_broken_entities, (255,255,255), None),
-    }
-    for key, cell, cell_x, cell_y in baked['cell_map']:
-        if key == 'day':
-            value = int(gs.game_time_days)
-            cell.draw_value(value, font or get_font1(18), color=(255,255,255))
-        elif key == 'power drain':
-            value = power_drain
-            margin = 15
-            if breaker_strength <= 0:
-                color = (255, 0, 0)
-            else:
-                diff = breaker_strength - power_drain
-                t = min(max(1 - (diff / margin), 0), 1)
-                hue = (120 - 120 * t) / 360
-                r, g, b = colorsys.hsv_to_rgb(hue, 1, 1)
-                color = (int(r*255), int(g*255), int(b*255))
-            extra_key = breaker_strength
-            cell.draw_value(value, font or get_font1(18), color=color, extra_key=extra_key)
-        elif key == 'money':
-            value, color, extra_key = key_map.get(key, (0, (255,255,255), None))
-            value_str = f"${value}"
-            cell.draw_value(value_str, font or get_font1(18), color=color)
-        else:
-            value, color, extra_key = key_map.get(key, (0, (255,255,255), None))
-            cell.draw_value(value, font or get_font1(18), color=color)
-        cell.blit_to(panel_surface, (cell_x, cell_y))
+    # Draw all general cells using RESOURCE_PANEL_CELLS definitions
+    for (row, col), props in RESOURCE_PANEL_CELLS.items():
+        cell = baked['general_grid'][row][col]
+        value = props["value_getter"](gs) if "value_getter" in props else None
+        value_str = props["format"](value, gs) if "format" in props else str(value)
+        color = (props["color"](value, gs) if callable(props.get("color")) else props.get("color", (255,255,255))) if "color" in props else (255,255,255)
+        extra_key = props["extra_key"](gs) if "extra_key" in props else None
+        cell.draw_value(value_str, font or get_font1(18), color=color, extra_key=extra_key)
+        cell.blit_to(panel_surface, (cell.x, cell.y))
+    # Draw all problem cells using PROBLEM_PANEL_CELLS definitions
+    for (row, col), props in PROBLEM_PANEL_CELLS.items():
+        cell = baked['problems_grid'][row][col]
+        value = props["value_getter"](gs) if "value_getter" in props else None
+        value_str = props["format"](value, gs) if "format" in props else str(value)
+        color = (props["color"](value, gs) if callable(props.get("color")) else props.get("color", (255,255,255))) if "color" in props else (255,255,255)
+        extra_key = props["extra_key"](gs) if "extra_key" in props else None
+        cell.draw_value(value_str, font or get_font1(18), color=color, extra_key=extra_key)
+        cell.blit_to(panel_surface, (cell.x, cell.y))
+    # System cells can be handled similarly if desired
     surface.blit(panel_surface, (surf_x, surf_y))
 
 def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygame.font.Font] = None):

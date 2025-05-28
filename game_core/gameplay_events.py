@@ -60,17 +60,29 @@ class NasCrashed(GamePlayEvent):
         self._crashed = False
 
 class JobArrived(GamePlayEvent):
+    def __init__(self):
+        self._last_jobs_finished = None
+
     def trigger(self):
         state = GameState()
         # Only allow new job if previous job is fully completed
         if getattr(state, 'total_shots_finished', 0) != getattr(state, 'total_shots_unfinished', 0):
             return False
         import random
-        n = random.randint(5, 15)
+        n = random.randint(2, 4)
         state.total_shots_unfinished = n
         state.job_id += 1  # Mark a new job event (renamed from job_arrived_id)
+        state.render_progress_current = 0  # Reset render progress for new job
+        state.render_progress_goal = n * 100  # Set goal to total shots * 100
         # You can add a sound or alert here if desired
         return True
+
+    def notify_jobs_finished(self, jobs_finished):
+        if self._last_jobs_finished is None:
+            self._last_jobs_finished = jobs_finished
+        elif jobs_finished != self._last_jobs_finished:
+            self._last_jobs_finished = jobs_finished
+            self.trigger()
 
 class PowerOutage:
     def __init__(self):
@@ -93,23 +105,42 @@ class PowerOutage:
             overlay.fill((0, 0, 0, 160))  # 50% black
             surface.blit(overlay, (0, 0))
 
-SITUATIONS = [
+RANDOM_GAMEPLAY_EVENTS = [
     InternetOutage(),
-    NasCrashed(),
-    JobArrived(),
-    # Add more situation instances here...
+    # NasCrashed(),
+    # Add more random situation instances here...
 ]
 
-START_DELAY = 1  # seconds before situation manager starts
+DETERMINISTIC_GAMEPLAY_EVENTS = [
+    JobArrived(),
+    # Add more deterministic situation instances here...
+]
 
-def start_gameplay_events():
-    def gameplay_event_loop():
-        time.sleep(START_DELAY)  # Wait before starting situations
+GAMEPLAY_EVENTS = RANDOM_GAMEPLAY_EVENTS + DETERMINISTIC_GAMEPLAY_EVENTS
+
+START_DELAY = 10  # seconds before situation manager starts
+
+# Start random events in a background thread
+
+def start_random_gameplay_events():
+    def random_event_loop():
+        time.sleep(START_DELAY)
         while True:
-            situation = random.choice(SITUATIONS)
+            situation = random.choice(RANDOM_GAMEPLAY_EVENTS)
             situation.trigger()
-            time.sleep(random.uniform(3, 6))
-    thread = threading.Thread(target=gameplay_event_loop, daemon=True)
+            time.sleep(random.uniform(10, 30))
+    thread = threading.Thread(target=random_event_loop, daemon=True)
+    thread.start()
+
+# Deterministic events are checked every second in the main/game loop or a separate thread
+
+def start_deterministic_gameplay_events():
+    def deterministic_event_loop():
+        while True:
+            for event in DETERMINISTIC_GAMEPLAY_EVENTS:
+                event.trigger()
+            time.sleep(1)  # Tick every second
+    thread = threading.Thread(target=deterministic_event_loop, daemon=True)
     thread.start()
 
 power_outage = PowerOutage()

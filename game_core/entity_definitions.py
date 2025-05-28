@@ -6,7 +6,7 @@ from game_other.audio import play_breaker_break_sound
 class BasicComputer(ComputerEntity):
     _icon = "data/graphics/computer-basic.png"
     has_bar2 = 1
-    power_drain = 1  # Set as class attribute
+    power_drain = 200
     satisfaction_check_type = 'outlet'
     satisfaction_check_gamestate = 'is_nas_online'
 
@@ -23,6 +23,7 @@ class Artist(SatisfiableEntity):
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
     is_person = 1
+    upkeep = 2000
 
 class EspressoMachine(BaseEntity):
     _icon = "data/graphics/coffee-machine.png"
@@ -35,6 +36,7 @@ class ProjectManager(SatisfiableEntity):
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
+    upkeep = 3000
 
 class Snacks(BaseEntity):
     _icon = "data/graphics/snacks.png"
@@ -51,7 +53,7 @@ class Breaker(SatisfiableEntity):
     bar1_hidden = 1
     is_satisfied = 1
     warning_hidden = 0
-    breaker_strength = 5
+    breaker_strength = 1000
     purchase_cost = 100
 
     def satisfaction_check(self, grid):
