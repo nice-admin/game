@@ -3,7 +3,7 @@ from game_core.entity_definitions import get_icon_surface
 from collections import Counter
 import random
 from game_core.entity_base import *
-from game_core.game_settings import *
+from game_core.config import *
 
 # Store the last hovered entity and its chosen message
 _last_hovered_entity_id = None

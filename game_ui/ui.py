@@ -9,7 +9,7 @@ from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel import draw_resource_panel, draw_icons, get_baked_panel
 from game_ui.render_queue_panel import draw_render_queue_panel
-from game_core.situation_manager import power_outage
+from game_core.gameplay_events import power_outage
 
 
 def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None):

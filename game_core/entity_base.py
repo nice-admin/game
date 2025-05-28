@@ -2,7 +2,7 @@ import pygame
 import re
 import random
 import time
-from .game_settings import *
+from .config import *
 from game_core.game_state import GameState
 
 

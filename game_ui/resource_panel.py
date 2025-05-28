@@ -1,7 +1,7 @@
 import pygame
-from game_core.game_settings import *
+from game_core.config import *
 from game_core.game_state import GameState
-from game_core.game_settings import get_font1
+from game_core.config import get_font1
 from typing import Optional, Tuple, Dict, Any
 import colorsys
 

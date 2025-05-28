@@ -1,7 +1,7 @@
 # game_core/controls.py
 import pygame
 import game_other.audio as audio
-from game_core.game_settings import GRID_WIDTH, GRID_HEIGHT
+from game_core.config import GRID_WIDTH, GRID_HEIGHT
 
 def handle_global_controls(event, grid=None, entity_states=None):
     if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -251,7 +251,7 @@ class PaintBrush:
         return None
 
 def handle_entity_pickup(event, selected_index, selected_entity_type, grid, entity_states, ENTITY_CHOICES, remove_entity_fn, place_entity_fn, camera_offset, cell_size):
-    from game_core.game_settings import GRID_WIDTH, GRID_HEIGHT
+    from game_core.config import GRID_WIDTH, GRID_HEIGHT
     grid_changed = False
     if selected_index is not None:
         return selected_index, selected_entity_type, grid_changed

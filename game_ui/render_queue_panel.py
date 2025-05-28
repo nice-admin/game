@@ -1,7 +1,7 @@
 import pygame
 import time
 from game_core.entity_definitions import *
-from game_core.game_settings import *
+from game_core.config import *
 from game_core.game_state import GameState
 
 RQ_WIDTH = 1532

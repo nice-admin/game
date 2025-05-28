@@ -2,7 +2,7 @@ import pygame
 import time
 import random
 from game_core.entity_definitions import BaseEntity, ComputerEntity, ProjectManager, Artist
-from game_core.game_settings import *
+from game_core.config import *
 from game_core.game_state import GameState
 
 # --- Configurable constants ---

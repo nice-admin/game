@@ -5,11 +5,11 @@ from game_core.game_state import GameState
 import game_other.audio
 import pygame
 
-class BaseSituation:
+class GamePlayEvent:
     def trigger(self):
         pass
 
-class InternetOutage(BaseSituation):
+class InternetOutage(GamePlayEvent):
     RESTORE_DELAY = 10  # seconds
     WIFI_RESTORE_DELAY = 2  # seconds
 
@@ -38,7 +38,7 @@ class InternetOutage(BaseSituation):
         state = GameState()
         state.is_wifi_online = 1
 
-class NasCrashed(BaseSituation):
+class NasCrashed(GamePlayEvent):
     RESTORE_DELAY = 10  # seconds
     def __init__(self):
         self._crashed = False
@@ -59,7 +59,7 @@ class NasCrashed(BaseSituation):
         game_other.audio.play_system_back_sound()
         self._crashed = False
 
-class JobArrived(BaseSituation):
+class JobArrived(GamePlayEvent):
     def trigger(self):
         state = GameState()
         # Only allow new job if previous job is fully completed
@@ -102,14 +102,14 @@ SITUATIONS = [
 
 START_DELAY = 1  # seconds before situation manager starts
 
-def start_situation_manager():
-    def situation_loop():
+def start_gameplay_events():
+    def gameplay_event_loop():
         time.sleep(START_DELAY)  # Wait before starting situations
         while True:
             situation = random.choice(SITUATIONS)
             situation.trigger()
             time.sleep(random.uniform(3, 6))
-    thread = threading.Thread(target=situation_loop, daemon=True)
+    thread = threading.Thread(target=gameplay_event_loop, daemon=True)
     thread.start()
 
 power_outage = PowerOutage()

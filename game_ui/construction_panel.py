@@ -4,7 +4,7 @@ import pygame
 import inspect
 import game_core.entity_definitions as entities_mod
 from game_core.entity_definitions import to_display_name_from_classname, get_icon_surface
-from game_core.game_settings import FONT1_PATH, get_font1
+from game_core.config import FONT1_PATH, get_font1
 
 # Build ENTITY_CHOICES once at import
 ENTITY_CHOICES = [
