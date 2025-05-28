@@ -6,7 +6,7 @@ class GameState:
             cls._instance = super(GameState, cls).__new__(cls)
             cls._instance.game_time_seconds = 0
             cls._instance.game_time_days = 0
-            cls._instance.total_money = 100000
+            cls._instance.total_money = 20000
             cls._instance.total_upkeep = 0
             cls._instance.total_power_drain = 0
             cls._instance.total_breaker_strength = 0

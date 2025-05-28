@@ -74,6 +74,8 @@ class JobArrived(GamePlayEvent):
         state.job_id += 1  # Mark a new job event (renamed from job_arrived_id)
         state.render_progress_current = 0  # Reset render progress for new job
         state.render_progress_goal = n * 100  # Set goal to total shots * 100
+        # Roll job_budget: 10000 * n
+        state.job_budget = 10000 * n
         # You can add a sound or alert here if desired
         return True
 

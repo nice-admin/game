@@ -5,14 +5,14 @@ from game_other.audio import play_breaker_break_sound
 # --- Entity subclasses ---
 class BasicComputer(ComputerEntity):
     _icon = "data/graphics/computer-basic.png"
-    has_bar2 = 1
+    has_special = 1
     power_drain = 200
     satisfaction_check_type = 'outlet'
     satisfaction_check_gamestate = 'is_nas_online'
 
 class Monitor(SatisfiableEntity):
     _icon = "data/graphics/monitor.png"
-    has_bar2 = 0
+    has_special = 0
     power_drain = 20
     satisfaction_check_type = ComputerEntity
     satisfaction_check_radius = 1
@@ -56,6 +56,7 @@ class EspressoMachine(BaseEntity):
 
 class Outlet(BaseEntity):
     _icon = "data/graphics/outlet.png"
+    purchase_cost = 20
 
 class ProjectManager(SatisfiableEntity):
     _icon = "data/graphics/project-manager.png"
@@ -68,7 +69,8 @@ class Snacks(BaseEntity):
     _icon = "data/graphics/snacks.png"
 
 class Router(BaseEntity):
-    _icon = "data/graphics/router.png"   
+    _icon = "data/graphics/router.png"
+    purchase_cost = 100
 
 class Breaker(SatisfiableEntity):
     _icon = "data/graphics/breaker.png"
@@ -80,7 +82,7 @@ class Breaker(SatisfiableEntity):
     is_satisfied = 1
     warning_hidden = 0
     breaker_strength = 1000
-    purchase_cost = 100
+    purchase_cost = 500
 
     def satisfaction_check(self, grid):
         # Use DRY proximity check for unbroken breakers in radius 1 (including self)

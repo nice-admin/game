@@ -74,8 +74,8 @@ class BaseEntity:
         if not static_only:
             if getattr(self, "has_bar1", 1) and not getattr(self, 'bar1_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
-            if getattr(self, "has_bar2", 0) and not getattr(self, 'bar2_hidden', 0) and hasattr(self, 'draw_bar2'):
-                self.draw_bar2(surface, offset[0], offset[1], cell_size)
+            if getattr(self, "has_special", 0) and not getattr(self, 'special_hidden', 0) and hasattr(self, 'draw_special'):
+                self.draw_special(surface, offset[0], offset[1], cell_size)
 
     def to_dict(self):
         from game_core.entity_definitions import to_type_from_classname
@@ -134,15 +134,16 @@ class SatisfiableEntity(BaseEntity):
     _BAR1_COL_FILL_INIT = STATUS_INIT_COL
     _BAR1_COL_FILL_UNSAT = STATUS_MID_COL
     _BAR1_COL_FILL_SAT = STATUS_GOOD_COL
-    _BAR2_COL_BG = (100, 100, 100)
-    _BAR2_COL_FILL = (203, 33, 255)
+    _SPECIAL_COL_BG = (100, 100, 100)
+    _SPECIAL_COL_FILL = (203, 33, 255)
     _BAR_HEIGHT_RATIO = 0.15
     _BAR_DURATION_FRAMES = 300
     _BAR_REFRESH_RATE = 1
     has_bar1 = 1
-    has_bar2 = 0
+    has_special = 0
     bar1_hidden = 0  # New: allows hiding bar1
-    bar2_hidden = 0  # New: allows hiding bar2
+    special_hidden = 0  # New: allows hiding special bar
+    special_chance = 0
     warning_hidden = 0
     is_satisfied = 0
     is_initialized = 0
@@ -155,8 +156,8 @@ class SatisfiableEntity(BaseEntity):
         self.is_initialized = 0
         self.bar1 = 0.0 if self.has_bar1 else None
         self.bar1_timer = 0 if self.has_bar1 else None
-        self.bar2 = 0.0 if self.has_bar2 else None
-        self.bar2_timer = 0 if self.has_bar2 else None
+        self.special = 0.0 if self.has_special else None
+        self.special_timer = 0 if self.has_special else None
         self._progress_bar_frame_counter = 0
 
     def count_entities_in_proximity(self, grid, entity_type, radius, predicate=None):
@@ -187,9 +188,9 @@ class SatisfiableEntity(BaseEntity):
         # Set to 'Mid' if (not satisfied AND initialized AND not broken) OR risky
         if ((self.is_satisfied == 0 and self.is_initialized == 1 and self.is_broken == 0) or self.is_risky == 1):
             self.state = "Mid"
-        elif self.is_satisfied and self.is_initialized:
+        elif self.is_satisfied == 1 and self.is_initialized == 1:
             self.state = "Good"
-        elif self.is_broken:
+        elif self.is_broken == 1:
             self.state = "Bad"
 
     def update(self, grid):
@@ -197,7 +198,7 @@ class SatisfiableEntity(BaseEntity):
         if self._progress_bar_frame_counter >= self._BAR_REFRESH_RATE:
             self._progress_bar_frame_counter = 0
             self._update_bar1(grid)
-            self._update_bar2(grid)
+            self._update_special(grid)
         self._set_status()
 
     def _update_bar1(self, grid):
@@ -207,14 +208,16 @@ class SatisfiableEntity(BaseEntity):
             if self.bar1_timer >= self._BAR_DURATION_FRAMES:
                 self.bar1_timer = 0
                 if not self.is_initialized:
-                    self.is_initialized = True
+                    self.is_initialized = 1
                     self.on_initialized()  # Set power_drain when initialized
-                    if self.has_bar2 and not hasattr(self, '_bar2_spawned'):
-                        if random.random() < 0.1:
-                            self.has_bar2 = True
-                            self.bar2 = 0.0
-                            self.bar2_timer = 0
-                        self._bar2_spawned = True
+                # Always roll for special after bar1 completes, if has_special and not currently rendering
+                if self.has_special and (self.special is None and self.special_timer is None):
+                    if random.random() < getattr(self, 'special_chance', 0.1):
+                        self.special = 0.0
+                        self.special_timer = 0
+                    else:
+                        self.special = None
+                        self.special_timer = None
                 self.is_satisfied = self.check_satisfaction(grid)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
@@ -224,27 +227,35 @@ class SatisfiableEntity(BaseEntity):
         else:
             self.bar1 = None
 
-    def _update_bar2(self, grid):
-        if self.has_bar2 and self.is_initialized and self.is_satisfied:
-            if not hasattr(self, '_bar2_spawn_attempted'):
-                if self.bar2 is None and self.bar2_timer is None:
-                    if random.random() < 0.1:
-                        self.bar2 = 0.0
-                        self.bar2_timer = 0
+    def _update_special(self, grid):
+        if self.has_special and self.is_initialized and self.is_satisfied:
+            if not hasattr(self, '_special_spawn_attempted'):
+                if self.special is None and self.special_timer is None:
+                    if random.random() < getattr(self, 'special_chance', 0.1):
+                        self.special = 0.0
+                        self.special_timer = 0
                     else:
-                        self.bar2 = None
-                        self.bar2_timer = None
-                self._bar2_spawn_attempted = True
-            if self.bar2 is not None and self.bar2_timer is not None:
-                self.bar2_timer += self._BAR_REFRESH_RATE
-                if self.bar2_timer >= self._BAR_DURATION_FRAMES:
-                    self.bar2_timer = 0
-                self.bar2 = self.bar2_timer / self._BAR_DURATION_FRAMES
+                        self.special = None
+                        self.special_timer = None
+                self._special_spawn_attempted = 1
+            if self.special is not None and self.special_timer is not None:
+                self.special_timer += self._BAR_REFRESH_RATE
+                if self.special_timer >= self._BAR_DURATION_FRAMES:
+                    self.special_timer = 0
+                    # When special finishes, roll again for another one or drop it
+                    if random.random() < getattr(self, 'special_chance', 0.1):
+                        self.special = 0.0
+                        self.special_timer = 0
+                    else:
+                        self.special = None
+                        self.special_timer = None
+                else:
+                    self.special = self.special_timer / self._BAR_DURATION_FRAMES
         else:
-            self.bar2 = None
-            self.bar2_timer = None
-            if hasattr(self, '_bar2_spawn_attempted'):
-                del self._bar2_spawn_attempted
+            self.special = None
+            self.special_timer = None
+            if hasattr(self, '_special_spawn_attempted'):
+                del self._special_spawn_attempted
 
     def get_icon_path(self):
         if getattr(self, 'is_broken', 0) and getattr(self, '_icon_broken', None):
@@ -274,8 +285,8 @@ class SatisfiableEntity(BaseEntity):
         if not static_only:
             if getattr(self, "has_bar1", 1) and not getattr(self, 'bar1_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
-            if getattr(self, "has_bar2", 0) and not getattr(self, 'bar2_hidden', 0) and hasattr(self, 'draw_bar2'):
-                self.draw_bar2(surface, offset[0], offset[1], cell_size)
+            if getattr(self, "has_special", 0) and not getattr(self, 'special_hidden', 0) and hasattr(self, 'draw_special'):
+                self.draw_special(surface, offset[0], offset[1], cell_size)
 
     def draw_bar1(self, surface, ox, oy, cell_size):
         bar_height = int(cell_size * self._BAR_HEIGHT_RATIO)
@@ -290,21 +301,21 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.bar1)
         pygame.draw.rect(surface, bar_color, (x, y, fill_width, bar_height))
 
-    def draw_bar2(self, surface, ox, oy, cell_size):
-        if not (getattr(self, "has_bar2", 0) and self.is_initialized and self.is_satisfied):
+    def draw_special(self, surface, ox, oy, cell_size):
+        if not (getattr(self, "has_special", 0) and self.is_initialized and self.is_satisfied):
             return
-        if self.bar2 is None:
+        if self.special is None:
             return
         bar_height = int(cell_size * self._BAR_HEIGHT_RATIO)
         bar_width = cell_size
         x = self.x * cell_size + ox
         y = self.y * cell_size + oy + cell_size - 2 * bar_height
-        pygame.draw.rect(surface, self._BAR2_COL_BG, (x, y, bar_width, bar_height))
-        fill_width = int(bar_width * self.bar2)
-        pygame.draw.rect(surface, self._BAR2_COL_FILL, (x, y, fill_width, bar_height))
+        pygame.draw.rect(surface, self._SPECIAL_COL_BG, (x, y, bar_width, bar_height))
+        fill_width = int(bar_width * self.special)
+        pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
     def check_satisfaction(self, grid):
-        return False
+        return 0
 
     def satisfaction_check(self, grid):
         entity_type = getattr(self, 'satisfaction_check_type', None)
@@ -314,7 +325,7 @@ class SatisfiableEntity(BaseEntity):
         gs_var = getattr(self, 'satisfaction_check_gamestate', None)
         predicate = getattr(self, 'satisfaction_check_predicate', None)
         # All conditions must be satisfied
-        # 1. If a GameState variable is specified, it must be 1
+        # 1. If a GameState variable is specified, it must be True
         if gs_var is not None:
             if not hasattr(gs, gs_var) or getattr(gs, gs_var) != 1:
                 self.is_satisfied = 0
@@ -337,24 +348,24 @@ class SatisfiableEntity(BaseEntity):
 class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
     power_drain = 1  # Set intended value here
+    special_chance = 0.5
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.is_rendering = 1 if self.bar2 is not None else 0
+        self.is_rendering = 1 if self.special is not None else 0
 
-    def _update_bar2(self, grid):
-        prev_bar2 = self.bar2 if hasattr(self, 'bar2') else None
-        prev_bar2_timer = self.bar2_timer if hasattr(self, 'bar2_timer') else None
-        super()._update_bar2(grid)
-        # Update is_rendering based on bar2 presence
-        self.is_rendering = 1 if self.bar2 is not None else 0
-        # Only increment render_progress if bar2 just completed (allow for float rounding)
-        if (
-            prev_bar2 is not None and prev_bar2_timer is not None and
-            prev_bar2 >= 0.99 and self.bar2 == 0.0 and self.bar2_timer == 0
-        ):
-            gs = GameState()
-            gs.render_progress_current += 1
+    def _update_special(self, grid):
+        prev_special = self.special if hasattr(self, 'special') else None
+        prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
+        super()._update_special(grid)
+        # Update is_rendering based on special presence
+        self.is_rendering = 1 if self.special is not None else 0
+        # Increment render_progress if special just completed (allow for float rounding or special drop)
+        if prev_special is not None and prev_special >= 0.99:
+            # If special is now gone or reset to 0, count as completed
+            if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
+                gs = GameState()
+                gs.render_progress_current += 1
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1
