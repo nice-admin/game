@@ -28,6 +28,7 @@ RESOURCE_PANEL_CELLS = {
         "value_getter": lambda gs: gs.total_power_drain*0.001,
         "format": lambda v, gs: f"{int(v)} KW",
         "color": lambda v, gs: (
+            (255,255,255) if v == 0 else
             (255,0,0) if gs.total_breaker_strength <= 0 else
             tuple(int(x*255) for x in colorsys.hsv_to_rgb((120-120*min(max(1-(gs.total_breaker_strength-v)/15,0),1))/360,1,1))
         ),
