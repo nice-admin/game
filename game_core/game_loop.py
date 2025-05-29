@@ -45,9 +45,9 @@ def run_game():
     grid = create_grid()
     # Load game state if available
     entity_states, camera_offset, cell_size = savegame.load_game(grid)
-    camera_drag = CameraDrag()
-    camera_drag.left_drag_enabled = True
-    paint_brush = PaintBrush()
+    # --- Use new GameControls class for all input ---
+    from game_core.controls import GameControls
+    game_controls = GameControls()
     font = pygame.font.SysFont(None, 24)
     selected_index = None
     selected_entity_type = None
@@ -95,15 +95,15 @@ def run_game():
     running = True
     prev_camera_offset = camera_offset
     prev_cell_size = cell_size
-    state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=camera_drag, paint_brush=paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, line_start=None, erase_line_start=None, GRID_WIDTH=GRID_WIDTH, GRID_HEIGHT=GRID_HEIGHT)
+    state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=game_controls.camera_drag, paint_brush=game_controls.paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, line_start=None, erase_line_start=None, GRID_WIDTH=GRID_WIDTH, GRID_HEIGHT=GRID_HEIGHT)
     from game_core.game_state import GameState
     gs = GameState()
     while running:
         frame_start = pygame.time.get_ticks()
-        # Handle events (no construction logic)
-        running, _ = handle_events(state, remove_entity, place_entity)
+        # Handle events (all input via GameControls)
+        running, _ = handle_events(state, game_controls, remove_entity, place_entity)
         # Camera WSAD movement
-        state['camera_offset'] = state['camera_drag'].handle_wsad(state['camera_offset'])
+        state['camera_offset'] = game_controls.camera_drag.handle_wsad(state['camera_offset'])
         # --- Update all entities every 2 frames ---
         if frame_count % 2 == 0:
             for row in state['grid']:
@@ -132,7 +132,8 @@ def run_game():
     pygame.quit()
     sys.exit()
 
-def handle_events(state, remove_entity, place_entity):
+# --- All event handling now routed through GameControls ---
+def handle_events(state, game_controls, remove_entity, place_entity):
     font = state.get('font', None)
     screen_width = pygame.display.get_surface().get_width()
     baked = get_baked_panel(font)
@@ -154,7 +155,7 @@ def handle_events(state, remove_entity, place_entity):
             state['GRID_HEIGHT'],
             on_entity_placed=state.setdefault('testing_layout_grid_change_cb', handle_testing_layout_grid_change)
         )
-        result, _ = general_handler(event, state, remove_entity, place_entity)
+        result, grid_changed = game_controls.handle_event(event, state, remove_entity, place_entity)
         if result == 'exit':
             return False, False
     return True, False
