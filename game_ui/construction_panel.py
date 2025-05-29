@@ -32,7 +32,7 @@ class EntityButton:
         self.height = height if height is not None else self.DEFAULT_HEIGHT
         self.width = width if width is not None else self.DEFAULT_WIDTH
 
-def draw_construction_panel(surface, selected_section=0, selected_item=0, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8):
+def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8):
     """
     Draws a new construction panel with two rows:
     - First row: 7 section buttons ("Computers", "Monitors", rest are "empty")
@@ -97,7 +97,8 @@ def draw_construction_panel(surface, selected_section=0, selected_item=0, font=N
     entity_buttons = []
     for i, label in enumerate(item_labels):
         btn_rect = pygame.Rect(x + i * item_btn_w + 2, y + section_btn_h + 2, item_btn_w - 4, item_btn_h - 4)
-        selected = (i == selected_item)
+        # Only highlight if selected_item is not None and matches index
+        selected = (selected_item is not None and i == selected_item)
         color = BTN_SELECTED if selected else BTN_COLOR
         pygame.draw.rect(surface, color, btn_rect)
         icon_path = entity_icons[i]

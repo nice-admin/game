@@ -354,7 +354,7 @@ def handle_event(event, state, remove_entity, place_entity):
             if button.rect.collidepoint(mx, my):
                 state['selected_section'] = idx
                 # Optionally reset selected_item when section changes
-                state['selected_item'] = 0
+                state['selected_item'] = None
                 return None, grid_changed
         # Item buttons
         for idx, button in enumerate(panel_btn_rects.get('item', [])):

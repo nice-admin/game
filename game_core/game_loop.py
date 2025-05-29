@@ -233,7 +233,7 @@ def render_game(state, screen, background_surface, font, timings, clock):
         GRID_WIDTH=GRID_WIDTH,
         GRID_HEIGHT=GRID_HEIGHT,
         selected_section=state.get('selected_section', 0),
-        selected_item=state.get('selected_item', 0),
+        selected_item=state.get('selected_item', None),
         panel_btn_rects=panel_btn_rects
     )
     state['panel_btn_rects'] = panel_btn_rects
