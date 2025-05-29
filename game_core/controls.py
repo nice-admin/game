@@ -345,7 +345,6 @@ def line_deconstruct(x0, y0, x1, y1):
 
 def handle_event(event, state, remove_entity, place_entity):
     grid_changed = False
-    # --- Handle clicks on construction_panel_new ---
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         mx, my = pygame.mouse.get_pos()
         panel_btn_rects = state.get('panel_btn_rects', {})
@@ -353,13 +352,16 @@ def handle_event(event, state, remove_entity, place_entity):
         for idx, button in enumerate(panel_btn_rects.get('section', [])):
             if button.rect.collidepoint(mx, my):
                 state['selected_section'] = idx
-                # Optionally reset selected_item when section changes
                 state['selected_item'] = None
                 return None, grid_changed
         # Item buttons
         for idx, button in enumerate(panel_btn_rects.get('item', [])):
             if button.rect.collidepoint(mx, my):
-                state['selected_item'] = idx
+                # Deselect if already selected
+                if state.get('selected_item', None) == idx:
+                    state['selected_item'] = None
+                else:
+                    state['selected_item'] = idx
                 return None, grid_changed
     testing_layout.handle_testing_layout(event, state['grid'], state['entity_states'], state['GRID_WIDTH'], state['GRID_HEIGHT'])
     global_result = handle_global_controls(event, grid=state['grid'], entity_states=state['entity_states'])
