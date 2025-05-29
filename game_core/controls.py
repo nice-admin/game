@@ -350,15 +350,15 @@ def handle_event(event, state, remove_entity, place_entity):
         mx, my = pygame.mouse.get_pos()
         panel_btn_rects = state.get('panel_btn_rects', {})
         # Section buttons
-        for idx, rect in enumerate(panel_btn_rects.get('section', [])):
-            if rect.collidepoint(mx, my):
+        for idx, button in enumerate(panel_btn_rects.get('section', [])):
+            if button.rect.collidepoint(mx, my):
                 state['selected_section'] = idx
                 # Optionally reset selected_item when section changes
                 state['selected_item'] = 0
                 return None, grid_changed
         # Item buttons
-        for idx, rect in enumerate(panel_btn_rects.get('item', [])):
-            if rect.collidepoint(mx, my):
+        for idx, button in enumerate(panel_btn_rects.get('item', [])):
+            if button.rect.collidepoint(mx, my):
                 state['selected_item'] = idx
                 return None, grid_changed
     testing_layout.handle_testing_layout(event, state['grid'], state['entity_states'], state['GRID_WIDTH'], state['GRID_HEIGHT'])

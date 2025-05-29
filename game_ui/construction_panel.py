@@ -11,12 +11,25 @@ def get_computer_entities():
             computers.append(obj)
     return computers
 
+class SectionButton:
+    def __init__(self, rect, label, selected=False):
+        self.rect = rect
+        self.label = label
+        self.selected = selected
+
+class EntityButton:
+    def __init__(self, rect, label, icon_path=None, selected=False):
+        self.rect = rect
+        self.label = label
+        self.icon_path = icon_path
+        self.selected = selected
+
 def draw_construction_panel(surface, selected_section=0, selected_item=0, font=None, x=None, y=None, width=None, height=100):
     """
     Draws a new construction panel with two rows:
     - First row: 7 section buttons ("Computers", "Monitors", rest are "empty")
     - Second row: 10 item buttons (dynamically filled for Computers section)
-    Returns: (section_btn_rects, item_btn_rects)
+    Returns: (section_buttons, entity_buttons)
     """
     # Panel sizing and positioning (always width=1000, centered, bottom)
     width = 1000
@@ -38,22 +51,22 @@ def draw_construction_panel(surface, selected_section=0, selected_item=0, font=N
     section_labels = ["Computers", "Monitors"] + ["empty"] * 5
     section_btn_w = width // 7
     section_btn_h = height // 2
-    section_btn_rects = []
+    section_buttons = []
     for i, label in enumerate(section_labels):
         btn_rect = pygame.Rect(x + i * section_btn_w, y, section_btn_w, section_btn_h)
-        section_btn_rects.append(btn_rect)
-        color = BTN_SELECTED if i == selected_section else BTN_COLOR
+        selected = (i == selected_section)
+        color = BTN_SELECTED if selected else BTN_COLOR
         pygame.draw.rect(surface, color, btn_rect)
         if font:
             text_surf = font.render(label, True, TEXT_COLOR)
             text_rect = text_surf.get_rect(center=btn_rect.center)
             surface.blit(text_surf, text_rect)
+        section_buttons.append(SectionButton(btn_rect, label, selected))
 
-    # Second row: Item buttons
+    # Second row: Entity buttons
     if selected_section == 0:  # Computers
         computer_classes = get_computer_entities()
         item_labels = [cls.__name__ for cls in computer_classes]
-        # Pad to 10
         item_labels += ["empty button"] * (10 - len(item_labels))
         computer_icons = [getattr(cls, '_icon', None) for cls in computer_classes]
         computer_icons += [None] * (10 - len(computer_icons))
@@ -62,13 +75,12 @@ def draw_construction_panel(surface, selected_section=0, selected_item=0, font=N
         computer_icons = [None] * 10
     item_btn_w = width // 10
     item_btn_h = height // 2
-    item_btn_rects = []
+    entity_buttons = []
     for i, label in enumerate(item_labels):
         btn_rect = pygame.Rect(x + i * item_btn_w, y + section_btn_h, item_btn_w, item_btn_h)
-        item_btn_rects.append(btn_rect)
-        color = BTN_SELECTED if i == selected_item else BTN_COLOR
+        selected = (i == selected_item)
+        color = BTN_SELECTED if selected else BTN_COLOR
         pygame.draw.rect(surface, color, btn_rect)
-        # Draw icon if available
         icon_path = computer_icons[i] if selected_section == 0 else None
         if icon_path:
             try:
@@ -82,4 +94,5 @@ def draw_construction_panel(surface, selected_section=0, selected_item=0, font=N
             text_surf = font.render(label, True, TEXT_COLOR)
             text_rect = text_surf.get_rect(center=(btn_rect.centerx, btn_rect.bottom - 14))
             surface.blit(text_surf, text_rect)
-    return section_btn_rects, item_btn_rects
+        entity_buttons.append(EntityButton(btn_rect, label, icon_path, selected))
+    return section_buttons, entity_buttons
