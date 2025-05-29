@@ -217,6 +217,15 @@ def render_game(state, screen, background_surface, font, timings, clock):
     hovered_entity = grid_ref[gy][gx] if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT else None
     # Draw UI, pass hovered_entity and preview args
     panel_btn_rects = {}
+    # Draw construction panel and get entity_buttons for preview
+    from game_ui.construction_panel import draw_construction_panel
+    section_btn_rects, entity_buttons = draw_construction_panel(
+        screen,
+        selected_section=state.get('selected_section', 0),
+        selected_item=state.get('selected_item', None),
+        font=font
+    )
+    # Now pass entity_buttons to draw_all_panels
     draw_all_panels(
         screen,
         state['selected_index'],
@@ -234,7 +243,8 @@ def render_game(state, screen, background_surface, font, timings, clock):
         GRID_HEIGHT=GRID_HEIGHT,
         selected_section=state.get('selected_section', 0),
         selected_item=state.get('selected_item', None),
-        panel_btn_rects=panel_btn_rects
+        panel_btn_rects=panel_btn_rects,
+        entity_buttons=entity_buttons
     )
     state['panel_btn_rects'] = panel_btn_rects
     pygame.display.flip()

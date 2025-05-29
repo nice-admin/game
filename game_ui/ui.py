@@ -11,11 +11,21 @@ from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
 
-def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None):
+def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
     """
     Draw all UI elements that are on top of the game area.
     This is the single entry point for all UI overlays.
     """
+    # Draw entity preview first, so it appears behind the construction panel
+    # Get the selected entity class from the selected EntityButton
+    selected_entity_class = None
+    if entity_buttons is not None and selected_item is not None and 0 <= selected_item < len(entity_buttons):
+        selected_entity_class = entity_buttons[selected_item].entity_class
+    else:
+        selected_entity_class = selected_entity_type
+    if all(v is not None for v in [selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
+        draw_entity_preview(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
+
     if ALLOW_RESOURCE_PANEL:
         draw_resource_panel(surface, font)
         draw_icons(surface, font)
@@ -40,9 +50,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_INFO_PANEL:
         draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid, hovered_entity=hovered_entity)
     
-    if all(v is not None for v in [selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
-        draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
-    
     if ENTITY_STATE_PANEL:
         draw_entity_state_panel(surface, font, hovered_entity=hovered_entity)
     
@@ -59,22 +66,24 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
     """
     Draws a preview of the selected entity at the mouse position, snapped to the grid, at 50% opacity.
     """
-    if selected_entity_type is None:
+    if not callable(selected_entity_type):
         return
     from game_core.entity_definitions import get_icon_surface
     mx, my = pygame.mouse.get_pos()
-    gx = int((mx - camera_offset[0]) // cell_size)
-    gy = int((my - camera_offset[1]) // cell_size)
-    if not (0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT):
+    grid_x = int((mx - camera_offset[0]) // cell_size)
+    grid_y = int((my - camera_offset[1]) // cell_size)
+    # Check grid bounds and occupancy
+    if not (0 <= grid_x < GRID_WIDTH and 0 <= grid_y < GRID_HEIGHT):
         return
-    # Check if the cell is already occupied
-    if grid[gy][gx] is not None:
+    if grid[grid_y][grid_x] is not None:
         return
-    preview_entity = selected_entity_type(gx, gy)
+    # Instantiate preview entity and get icon
+    preview_entity = selected_entity_type(grid_x, grid_y)
     icon_path = getattr(preview_entity, '_icon', None)
     icon_surf = get_icon_surface(icon_path) if icon_path else None
+    # Draw icon with 50% opacity if available
     if icon_surf:
         icon_surf = pygame.transform.smoothscale(icon_surf, (cell_size, cell_size)).copy()
-        icon_surf.fill((255,255,255,128), special_flags=pygame.BLEND_RGBA_MULT)  # 50% opacity
-        surface.blit(icon_surf, (gx * cell_size + camera_offset[0], gy * cell_size + camera_offset[1]))
+        icon_surf.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(icon_surf, (grid_x * cell_size + camera_offset[0], grid_y * cell_size + camera_offset[1]))
     # No fallback to color rectangle
