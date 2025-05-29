@@ -345,6 +345,18 @@ def line_deconstruct(x0, y0, x1, y1):
 
 def handle_event(event, state, remove_entity, place_entity):
     grid_changed = False
+    # Handle 1-9 key selection for entity buttons
+    idx = get_construction_panel_key(event)
+    if idx is not None:
+        # Only update if the index is in range of current entity buttons
+        entity_buttons = state.get('panel_btn_rects', {}).get('item', [])
+        if 0 <= idx < len(entity_buttons):
+            # Toggle selection if already selected
+            if state.get('selected_item', None) == idx:
+                state['selected_item'] = None
+            else:
+                state['selected_item'] = idx
+            return None, grid_changed
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         mx, my = pygame.mouse.get_pos()
         panel_btn_rects = state.get('panel_btn_rects', {})
