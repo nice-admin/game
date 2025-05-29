@@ -110,6 +110,8 @@ def run_game():
                 for entity in row:
                     if entity:
                         entity.update(state['grid'])
+            from game_core.game_state import update_totals_from_grid
+            update_totals_from_grid(state['grid'])
         dt = clock.tick(FPS)
         # 1 in-game day = 10 seconds, so 30 days = 300 seconds
         seconds_per_month = 30 * 10
