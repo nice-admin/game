@@ -1,62 +1,85 @@
-# game_ui/construction_panel.py
-
 import pygame
 import inspect
-import game_core.entity_definitions as entities_mod
-from game_core.entity_definitions import to_display_name_from_classname, get_icon_surface
-from game_core.config import FONT1_PATH, get_font1
+from game_core import entity_definitions
+from game_core.entity_base import ComputerEntity
 
-# Build ENTITY_CHOICES once at import
-ENTITY_CHOICES = [
-    {
-        "name": getattr(obj, 'display_name', to_display_name_from_classname(obj.__name__)),
-        "class": obj,
-        "icon": getattr(obj, '_icon', None)
-    }
-    for obj in entities_mod.__dict__.values()
-    if inspect.isclass(obj)
-    and issubclass(obj, entities_mod.BaseEntity)
-    and obj is not entities_mod.BaseEntity
-    and obj is not getattr(entities_mod, 'SatisfiableEntity', None)
-    and obj.__module__ == entities_mod.__name__  # Only top-level classes from entity_definitions.py
-]
+def get_computer_entities():
+    # Find all classes in entity_definitions that are subclass of ComputerEntity (but not ComputerEntity itself)
+    computers = []
+    for name, obj in inspect.getmembers(entity_definitions):
+        if inspect.isclass(obj) and issubclass(obj, ComputerEntity) and obj is not ComputerEntity:
+            computers.append(obj)
+    return computers
 
-def get_construction_panel_size(screen_width, screen_height):
-    panel_width = int(screen_width * 0.5)
-    panel_height = int(screen_height * 0.07)
-    panel_x = (screen_width - panel_width) // 2  # Center horizontally
-    panel_y = screen_height - panel_height - 10
-    return panel_x, panel_y, panel_width, panel_height
+def draw_construction_panel(surface, selected_section=0, selected_item=0, font=None, x=None, y=None, width=None, height=100):
+    """
+    Draws a new construction panel with two rows:
+    - First row: 7 section buttons ("Computers", "Monitors", rest are "empty")
+    - Second row: 10 item buttons (dynamically filled for Computers section)
+    Returns: (section_btn_rects, item_btn_rects)
+    """
+    # Panel sizing and positioning (always width=1000, centered, bottom)
+    width = 1000
+    height = 100
+    x = (surface.get_width() - width) // 2
+    y = surface.get_height() - height
 
-def draw_construction_panel(surface, selected_index, font, x=10, y=10, width=220, height=200):
-    if font is None:
-        font = pygame.font.Font(FONT1_PATH, int(height * 0.18))
+    # Colors
+    BG_COLOR = (40, 40, 40)
+    BTN_COLOR = (80, 80, 80)
+    BTN_SELECTED = (120, 180, 255)
+    TEXT_COLOR = (255, 255, 255)
+    
+    # Panel background
     panel_rect = pygame.Rect(x, y, width, height)
-    pygame.draw.rect(surface, (40, 40, 40), panel_rect)
-    pygame.draw.rect(surface, (80, 80, 80), panel_rect, 2)
+    pygame.draw.rect(surface, BG_COLOR, panel_rect)
 
-    n = len(ENTITY_CHOICES)
-    if n == 0:
-        return
-    margin = 6
-    col_width = (width - (n + 1) * margin) // n
-    icon_size = min(col_width - 8, height - 48)
-    # Center the row of buttons in the panel
-    total_row_width = n * col_width + (n + 1) * margin
-    x_offset = x + (width - total_row_width) // 2
-    for i, entity in enumerate(ENTITY_CHOICES):
-        bx = x_offset + margin + i * (col_width + margin)
-        by = y + margin
-        entry_rect = pygame.Rect(bx, by, col_width, height - 2 * margin)
-        pygame.draw.rect(surface, (90, 90, 90) if i == selected_index else (60, 60, 60), entry_rect)
-        icon_path = entity["icon"]
+    # First row: Section buttons
+    section_labels = ["Computers", "Monitors"] + ["empty"] * 5
+    section_btn_w = width // 7
+    section_btn_h = height // 2
+    section_btn_rects = []
+    for i, label in enumerate(section_labels):
+        btn_rect = pygame.Rect(x + i * section_btn_w, y, section_btn_w, section_btn_h)
+        section_btn_rects.append(btn_rect)
+        color = BTN_SELECTED if i == selected_section else BTN_COLOR
+        pygame.draw.rect(surface, color, btn_rect)
+        if font:
+            text_surf = font.render(label, True, TEXT_COLOR)
+            text_rect = text_surf.get_rect(center=btn_rect.center)
+            surface.blit(text_surf, text_rect)
+
+    # Second row: Item buttons
+    if selected_section == 0:  # Computers
+        computer_classes = get_computer_entities()
+        item_labels = [cls.__name__ for cls in computer_classes]
+        # Pad to 10
+        item_labels += ["empty button"] * (10 - len(item_labels))
+        computer_icons = [getattr(cls, '_icon', None) for cls in computer_classes]
+        computer_icons += [None] * (10 - len(computer_icons))
+    else:
+        item_labels = ["empty button"] * 10
+        computer_icons = [None] * 10
+    item_btn_w = width // 10
+    item_btn_h = height // 2
+    item_btn_rects = []
+    for i, label in enumerate(item_labels):
+        btn_rect = pygame.Rect(x + i * item_btn_w, y + section_btn_h, item_btn_w, item_btn_h)
+        item_btn_rects.append(btn_rect)
+        color = BTN_SELECTED if i == selected_item else BTN_COLOR
+        pygame.draw.rect(surface, color, btn_rect)
+        # Draw icon if available
+        icon_path = computer_icons[i] if selected_section == 0 else None
         if icon_path:
-            icon_surf = get_icon_surface(icon_path)
-            if icon_surf:
-                icon_surf = pygame.transform.smoothscale(icon_surf, (icon_size, icon_size))
-                icon_rect = icon_surf.get_rect(center=(entry_rect.centerx, entry_rect.centery - 12))
+            try:
+                icon_surf = pygame.image.load(icon_path).convert_alpha()
+                icon_surf = pygame.transform.smoothscale(icon_surf, (item_btn_w - 8, item_btn_w - 8))
+                icon_rect = icon_surf.get_rect(center=(btn_rect.centerx, btn_rect.top + (item_btn_w - 8)//2 + 2))
                 surface.blit(icon_surf, icon_rect)
-        display_name = getattr(entity["class"], 'display_name', entity["name"])
-        label = font.render(display_name, True, (220, 220, 220))
-        label_rect = label.get_rect(center=(entry_rect.centerx, entry_rect.bottom - 18))
-        surface.blit(label, label_rect)
+            except Exception:
+                pass
+        if font:
+            text_surf = font.render(label, True, TEXT_COLOR)
+            text_rect = text_surf.get_rect(center=(btn_rect.centerx, btn_rect.bottom - 14))
+            surface.blit(text_surf, text_rect)
+    return section_btn_rects, item_btn_rects

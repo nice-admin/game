@@ -3,7 +3,6 @@ import pygame
 import game_other.audio as audio
 from game_core.config import GRID_WIDTH, GRID_HEIGHT
 # --- Merged from input_events.py ---
-from game_ui.construction_panel import ENTITY_CHOICES
 import game_other.testing_layout as testing_layout
 
 def handle_global_controls(event, grid=None, entity_states=None):
@@ -55,33 +54,32 @@ def _handle_single_erase(gx, gy, grid):
         return (gx, gy)
     return None
 
-def _handle_pipette_select(mx, my, camera_offset, CELL_SIZE, panel_x, panel_y, panel_width, panel_height, grid, ENTITY_CHOICES):
+def _handle_pipette_select(mx, my, camera_offset, CELL_SIZE, panel_x, panel_y, panel_width, panel_height, grid):
     gx = int((mx - camera_offset[0]) // CELL_SIZE)
     gy = int((my - camera_offset[1]) // CELL_SIZE)
     over_panel = panel_x <= mx <= panel_x + panel_width and panel_y <= my <= panel_y + panel_height
     if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT:
         entity = grid[gy][gx]
         if entity is not None:
-            for idx, choice in enumerate(ENTITY_CHOICES):
-                if isinstance(entity, choice["class"]):
-                    audio.play_pipette_sound()
-                    return idx, choice["class"]
+            # ENTITY_CHOICES removed, so pipette select is now a no-op or could be replaced with new logic
+            return None, None
     return None, None
 
-def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, panel_height, ENTITY_CHOICES, selected_index, selected_entity_type, camera_offset, CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, grid, last_game_click=None, last_game_right_click=None):
+def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, panel_height, selected_index, selected_entity_type, camera_offset, CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, grid, last_game_click=None, last_game_right_click=None):
     placed_entity = None
     removed_coords = None
     line_entities = []
     erase_line_coords = []
     shift_held = pygame.key.get_mods() & pygame.KMOD_SHIFT
     idx = get_construction_panel_key(event)
-    if idx is not None and idx < len(ENTITY_CHOICES):
+    if idx is not None:
         if selected_index == idx:
             selected_index = None
             selected_entity_type = None
         else:
             selected_index = idx
-            selected_entity_type = ENTITY_CHOICES[selected_index]["class"]
+            # ENTITY_CHOICES removed, directly use index for selection
+            selected_entity_type = None  # Reset entity type on index change
     if event.type == pygame.MOUSEBUTTONDOWN:
         mx, my = pygame.mouse.get_pos()
         screen = pygame.display.get_surface()
@@ -127,7 +125,7 @@ def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, pa
         screen = pygame.display.get_surface()
         if is_mouse_blocked_by_bottom_bar(mx, my, screen, panel_x, panel_y, panel_width, panel_height):
             return selected_index, selected_entity_type, placed_entity, removed_coords, line_entities, last_game_click, erase_line_coords, last_game_right_click
-        selected_index, selected_entity_type = _handle_pipette_select(mx, my, camera_offset, CELL_SIZE, panel_x, panel_y, panel_width, panel_height, grid, ENTITY_CHOICES)
+        selected_index, selected_entity_type = _handle_pipette_select(mx, my, camera_offset, CELL_SIZE, panel_x, panel_y, panel_width, panel_height, grid)
     return selected_index, selected_entity_type, placed_entity, removed_coords, line_entities, last_game_click, erase_line_coords, last_game_right_click
 
 class CameraDrag:
@@ -243,7 +241,7 @@ class PaintBrush:
                 return gx, gy, None, True
         return None
 
-def handle_entity_pickup(event, selected_index, selected_entity_type, grid, entity_states, ENTITY_CHOICES, remove_entity_fn, place_entity_fn, camera_offset, cell_size):
+def handle_entity_pickup(event, selected_index, selected_entity_type, grid, entity_states, remove_entity_fn, place_entity_fn, camera_offset, cell_size):
     from game_core.config import GRID_WIDTH, GRID_HEIGHT
     grid_changed = False
     if selected_index is not None:
@@ -266,10 +264,8 @@ def handle_entity_pickup(event, selected_index, selected_entity_type, grid, enti
         if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT:
             if selected_entity_type is None and grid[gy][gx] is not None:
                 entity = grid[gy][gx]
-                for choice in ENTITY_CHOICES:
-                    if isinstance(entity, choice["class"]):
-                        selected_entity_type = choice["class"]
-                        break
+                # Removed ENTITY_CHOICES loop, directly use entity class
+                selected_entity_type = entity.__class__
                 selected_index = None
                 remove_entity_fn(grid, entity_states, gx, gy)
                 audio.play_build_sound()  # Play sound for pickup remove
@@ -372,13 +368,13 @@ def handle_event(event, state, remove_entity, place_entity):
     if global_result == 'cleared':
         return None, True
     state['selected_index'], state['selected_entity_type'], pickup_grid_changed = handle_entity_pickup(
-        event, state['selected_index'], state['selected_entity_type'], state['grid'], state['entity_states'], ENTITY_CHOICES, remove_entity, place_entity, state['camera_offset'], state['cell_size']
+        event, state['selected_index'], state['selected_entity_type'], state['grid'], state['entity_states'], remove_entity, place_entity, state['camera_offset'], state['cell_size']
     )
     if pickup_grid_changed:
         return None, True
     entity_preview_active = state['selected_entity_type'] is not None
     state['camera_offset'] = state['camera_drag'].handle_event(event, state['camera_offset'], entity_preview_active)
-    args = (event, state['panel_x'], state['panel_y'], state['panel_width'], state['panel_height'], ENTITY_CHOICES, state['selected_index'], state['selected_entity_type'], state['camera_offset'], state['cell_size'], state['GRID_WIDTH'], state['GRID_HEIGHT'], state['grid'], state.get('line_start'), state.get('erase_line_start'))
+    args = (event, None, None, None, None, state['selected_index'], state['selected_entity_type'], state['camera_offset'], state['cell_size'], state['GRID_WIDTH'], state['GRID_HEIGHT'], state['grid'], state.get('line_start'), state.get('erase_line_start'))
     (state['selected_index'], state['selected_entity_type'], placed_entity, removed_coords, line_entities, state['line_start'], erase_line_coords, state['erase_line_start']) = handle_construction_panel_selection(*args)
     def place(e):
         if hasattr(e, 'load_icon'): e.load_icon()

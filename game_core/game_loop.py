@@ -3,7 +3,6 @@ import sys
 from game_core.entity_definitions import *
 from game_core.config import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_BG_COL, GRID_BORDER_COL, BG_OUTSIDE_GRID_COL
 from game_core.controls import handle_global_controls, CameraDrag, get_construction_panel_key, handle_construction_panel_selection, PaintBrush, handle_entity_pickup, handle_event
-from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES, get_construction_panel_size
 from game_ui.ui import *
 from game_core.entity_state import EntityStateList
 from game_ui.hidden_info_panel import *
@@ -11,7 +10,7 @@ import game_other.savegame as savegame
 import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
 from game_core.game_state import update_totals_from_grid
-import game_core.events
+import game_core.gameplay_events
 from game_ui.render_queue_panel import handle_render_queue_panel_event
 
 
@@ -40,8 +39,8 @@ def run_game():
     clock = pygame.time.Clock()
 
     # Start gameplay evennts
-    game_core.events.start_random_gameplay_events()
-    game_core.events.start_deterministic_gameplay_events()
+    game_core.gameplay_events.start_random_gameplay_events()
+    game_core.gameplay_events.start_deterministic_gameplay_events()
 
     grid = create_grid()
     # Load game state if available
@@ -58,9 +57,6 @@ def run_game():
         screen_width, screen_height = screen.get_width(), screen.get_height()
         camera_offset[0] = -(GRID_WIDTH * cell_size // 2 - screen_width // 2)
         camera_offset[1] = -(GRID_HEIGHT * cell_size // 2 - screen_height // 2)
-
-    # Get construction panel size (only needs to be recalculated if window size changes)
-    panel_x, panel_y, panel_width, panel_height = get_construction_panel_size(screen.get_width(), screen.get_height())
 
     # Load icons for all entities in grid at startup
     for row in grid:
@@ -99,7 +95,7 @@ def run_game():
     running = True
     prev_camera_offset = camera_offset
     prev_cell_size = cell_size
-    state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=camera_drag, paint_brush=paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, panel_x=panel_x, panel_y=panel_y, panel_width=panel_width, panel_height=panel_height, line_start=None, erase_line_start=None, GRID_WIDTH=GRID_WIDTH, GRID_HEIGHT=GRID_HEIGHT)
+    state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=camera_drag, paint_brush=paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, line_start=None, erase_line_start=None, GRID_WIDTH=GRID_WIDTH, GRID_HEIGHT=GRID_HEIGHT)
     from game_core.game_state import GameState
     gs = GameState()
     while running:
@@ -225,10 +221,6 @@ def render_game(state, screen, background_surface, font, timings, clock):
         screen,
         state['selected_index'],
         font,
-        state['panel_x'],
-        state['panel_y'],
-        state['panel_width'],
-        state['panel_height'],
         clock=clock,
         draw_call_count=None,
         tick_count=None,
