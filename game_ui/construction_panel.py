@@ -80,7 +80,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     - Second row: N item buttons (dynamically filled for section)
     Returns: (section_buttons, entity_buttons)
     """
-    # Panel sizing and positioning
+    # Panel sizing and positioningw
     item_btn_w = EntityButton.DEFAULT_WIDTH
     num_entity_buttons = number_of_entity_buttons
     width = item_btn_w * num_entity_buttons

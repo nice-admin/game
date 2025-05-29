@@ -2,7 +2,7 @@ import pygame
 import sys
 from game_core.entity_definitions import *
 from game_core.config import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_BG_COL, GRID_BORDER_COL, BG_OUTSIDE_GRID_COL
-from game_core.controls import handle_global_controls, CameraDrag, get_construction_panel_key, handle_construction_panel_selection, PaintBrush, handle_entity_pickup, handle_event
+from game_core.controls import *
 from game_ui.ui import *
 from game_core.entity_state import EntityStateList
 from game_ui.hidden_info_panel import *
@@ -100,22 +100,11 @@ def run_game():
     gs = GameState()
     while running:
         frame_start = pygame.time.get_ticks()
-        # Handle events
-        running, grid_changed_from_events = handle_events(state, remove_entity, place_entity)
-        # Check for async grid changes from testing layout
-        grid_changed_from_testing = state.pop('testing_layout_grid_changed', False)
-        # Update game logic
-        grid_changed_from_logic = update_game_logic(state, frame_count, update_game_state)
-        grid_changed = grid_changed_from_events or grid_changed_from_logic or grid_changed_from_testing
-        # Only re-bake static entities if grid changed or prev_cell_size changed (not camera offset)
-        if grid_changed or prev_cell_size != state['cell_size']:
-            if background_surface.get_width() != GRID_WIDTH * state['cell_size'] or background_surface.get_height() != GRID_HEIGHT * state['cell_size']:
-                background_surface = pygame.Surface((GRID_WIDTH * state['cell_size'], GRID_HEIGHT * state['cell_size']))
-            bake_static_entities()
-            prev_cell_size = state['cell_size']
-            update_totals_from_grid(state['grid'])
-        gs.finish_job()
-        dt = clock.tick(FPS)  # milliseconds since last frame, includes wait time
+        # Handle events (no construction logic)
+        running, _ = handle_events(state, remove_entity, place_entity)
+        # Camera WSAD movement
+        state['camera_offset'] = state['camera_drag'].handle_wsad(state['camera_offset'])
+        dt = clock.tick(FPS)
         # 1 in-game day = 10 seconds, so 30 days = 300 seconds
         seconds_per_month = 30 * 10
         # Subtract upkeep as integer value per tick
@@ -136,7 +125,6 @@ def run_game():
     sys.exit()
 
 def handle_events(state, remove_entity, place_entity):
-    grid_changed = False
     font = state.get('font', None)
     screen_width = pygame.display.get_surface().get_width()
     baked = get_baked_panel(font)
@@ -158,42 +146,14 @@ def handle_events(state, remove_entity, place_entity):
             state['GRID_HEIGHT'],
             on_entity_placed=state.setdefault('testing_layout_grid_change_cb', handle_testing_layout_grid_change)
         )
-        result, changed = handle_event(event, state, remove_entity, place_entity)
+        result, _ = handle_event(event, state, remove_entity, place_entity)
         if result == 'exit':
-            return False, grid_changed
-        if changed:
-            grid_changed = True
-    return True, grid_changed
+            return False, False
+    return True, False
 
 def update_game_logic(state, frame_count, update_game_state):
-    # WSAD camera
-    state['camera_offset'] = state['camera_drag'].handle_wsad(state['camera_offset'])
-    # Paint brush continuous
-    paint_result = state['paint_brush'].handle_continuous_paint(
-        state['selected_entity_type'],
-        state['camera_offset'],
-        state['cell_size'],
-        state['grid']
-    )
-    grid_changed = False
-    if paint_result:
-        gx, gy, entity, erase = paint_result
-        if erase:
-            if state['grid'][gy][gx] is not None:
-                remove_entity(state['grid'], state['entity_states'], gx, gy)
-                grid_changed = True
-        else:
-            if state['grid'][gy][gx] is None:
-                place_entity(state['grid'], state['entity_states'], entity)
-                entity.on_built()
-                grid_changed = True
-    # --- Update Entities ---
-    if frame_count % 2 == 0:
-        entities_to_update = [entity for row in state['grid'] for entity in row if entity]
-        for entity in entities_to_update:
-            entity.update(state['grid'])
-        update_game_state(state['grid'])
-    return grid_changed
+    # No construction/game logic update
+    return False
 
 def render_game(state, screen, background_surface, font, timings, clock):
     screen.fill(BG_OUTSIDE_GRID_COL)
