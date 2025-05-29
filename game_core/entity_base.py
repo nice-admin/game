@@ -358,7 +358,7 @@ class SatisfiableEntity(BaseEntity):
 
 class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
-    power_drain = 1  # Set intended value here
+    power_drain = 0
     special_chance = 0.5
 
     def __init__(self, x, y):
@@ -377,6 +377,9 @@ class ComputerEntity(SatisfiableEntity):
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
                 gs = GameState()
                 gs.render_progress_current += 1
+
+class MonitorEntity(SatisfiableEntity):
+    satisfaction_check_type = 'computer'
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1

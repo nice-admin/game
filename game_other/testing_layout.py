@@ -55,7 +55,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
             LineSpawn(Breaker, 4, on_entity_placed=on_entity_placed),
             LineSpawn(Outlet, 6, on_entity_placed=on_entity_placed),
             LineSpawn(BasicComputer, 7, on_entity_placed=on_entity_placed),
-            LineSpawn(Monitor, 8, on_entity_placed=on_entity_placed),
+            LineSpawn(BasicMonitor, 8, on_entity_placed=on_entity_placed),
             LineSpawn(Artist, 9, vertical_spread=0.5, on_entity_placed=on_entity_placed),
             LineSpawn(ProjectManager, 11, on_entity_placed=on_entity_placed),
             LineSpawn(BasicComputer, 16, on_entity_placed=on_entity_placed),

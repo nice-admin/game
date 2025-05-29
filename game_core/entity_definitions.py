@@ -10,7 +10,14 @@ class BasicComputer(ComputerEntity):
     satisfaction_check_type = 'outlet'
     satisfaction_check_gamestate = 'is_nas_online'
 
-class Monitor(SatisfiableEntity):
+class AdvancedComputer(ComputerEntity):
+    _icon = "data/graphics/computer-advanced.png"
+    has_special = 1
+    power_drain = 400
+    satisfaction_check_type = 'outlet'
+    satisfaction_check_gamestate = 'is_nas_online'
+
+class BasicMonitor(MonitorEntity):
     _icon = "data/graphics/monitor.png"
     has_special = 0
     power_drain = 20

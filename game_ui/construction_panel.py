@@ -8,11 +8,41 @@ BG_COLOR = (40, 40, 40)
 BTN_COLOR = (80, 80, 80)
 BTN_SELECTED = (120, 120, 120)
 TEXT_COLOR = (255, 255, 255)
-SECTION_LABELS = ["Computers", "Monitors"] + ["empty"] * 5
+SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management"] + ["empty"] * 2
 
 def get_computer_entities():
     return [obj for name, obj in inspect.getmembers(entity_definitions)
             if inspect.isclass(obj) and issubclass(obj, ComputerEntity) and obj is not ComputerEntity]
+
+def get_monitor_entities():
+    from game_core.entity_base import SatisfiableEntity
+    return [obj for name, obj in inspect.getmembers(entity_definitions)
+            if inspect.isclass(obj) and issubclass(obj, SatisfiableEntity) and obj.__name__.lower().endswith('monitor')]
+
+def get_utility_entities():
+    from game_core.entity_base import BaseEntity, ComputerEntity, SatisfiableEntity
+    # Utility: all BaseEntity subclasses that are not ComputerEntity, not SatisfiableEntity, and not a Monitor
+    return [obj for name, obj in inspect.getmembers(entity_definitions)
+            if inspect.isclass(obj)
+            and issubclass(obj, BaseEntity)
+            and not issubclass(obj, ComputerEntity)
+            and not issubclass(obj, SatisfiableEntity)
+            and not obj.__name__.lower().endswith('monitor')
+            and obj is not BaseEntity]
+
+def get_artist_entities():
+    from game_core.entity_base import SatisfiableEntity
+    return [obj for name, obj in inspect.getmembers(entity_definitions)
+            if inspect.isclass(obj)
+            and issubclass(obj, SatisfiableEntity)
+            and 'artist' in obj.__name__.lower()]
+
+def get_management_entities():
+    from game_core.entity_base import SatisfiableEntity
+    return [obj for name, obj in inspect.getmembers(entity_definitions)
+            if inspect.isclass(obj)
+            and issubclass(obj, SatisfiableEntity)
+            and ('manager' in obj.__name__.lower() or 'project' in obj.__name__.lower())]
 
 class SectionButton:
     DEFAULT_HEIGHT = 40
@@ -45,16 +75,31 @@ class EntityButton:
 def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COLOR):
     pygame.draw.rect(surface, color, rect)
     if label and font:
-        text_surf = font.render(label, True, text_color)
-        text_rect = text_surf.get_rect(center=rect.center)
-        surface.blit(text_surf, text_rect)
+        # If label is two words, split into two rows (handle case-insensitive, ignore extra spaces)
+        words = label.strip().split()
+        if len(words) == 2:
+            text_surf1 = font.render(words[0], True, text_color)
+            text_surf2 = font.render(words[1], True, text_color)
+            # Center both lines vertically in the button
+            total_height = text_surf1.get_height() + text_surf2.get_height()
+            y1 = rect.centery - total_height // 2
+            y2 = y1 + text_surf1.get_height()
+            text_rect1 = text_surf1.get_rect(centerx=rect.centerx, y=y1)
+            text_rect2 = text_surf2.get_rect(centerx=rect.centerx, y=y2)
+            surface.blit(text_surf1, text_rect1)
+            surface.blit(text_surf2, text_rect2)
+        else:
+            text_surf = font.render(label, True, text_color)
+            text_rect = text_surf.get_rect(center=rect.center)
+            surface.blit(text_surf, text_rect)
 
 def get_section_entity_defs():
-    from game_core.entity_base import SatisfiableEntity
     return [
         lambda: get_computer_entities(),
-        lambda: [obj for name, obj in inspect.getmembers(entity_definitions)
-                 if inspect.isclass(obj) and issubclass(obj, SatisfiableEntity) and obj is not SatisfiableEntity],
+        lambda: get_monitor_entities(),
+        lambda: get_utility_entities(),
+        lambda: get_artist_entities(),
+        lambda: get_management_entities(),
     ]
 
 def get_entity_labels_and_icons(entity_classes, num_buttons):
@@ -63,7 +108,7 @@ def get_entity_labels_and_icons(entity_classes, num_buttons):
     items = [(get_display_name(cls), getattr(cls, '_icon', None), cls) for cls in entity_classes]
     if not items:
         return [], [], []
-    items += [("empty button", None, None)] * (num_buttons - len(items))
+    items += [("-", None, None)] * (num_buttons - len(items))
     item_labels, entity_icons, entity_classes_out = zip(*items)
     return list(item_labels), list(entity_icons), list(entity_classes_out)
 
