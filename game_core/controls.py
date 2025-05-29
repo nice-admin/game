@@ -2,6 +2,9 @@
 import pygame
 import game_other.audio as audio
 from game_core.config import GRID_WIDTH, GRID_HEIGHT
+# --- Merged from input_events.py ---
+from game_ui.construction_panel import ENTITY_CHOICES
+import game_other.testing_layout as testing_layout
 
 def handle_global_controls(event, grid=None, entity_states=None):
     if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
@@ -27,16 +30,6 @@ def is_mouse_blocked_by_bottom_bar(mx, my, screen, panel_x, panel_y, panel_width
         return False
     over_panel = panel_x <= mx <= panel_x + panel_width and panel_y <= my <= panel_y + panel_height
     return my > screen.get_height() * 0.93 and not over_panel
-
-def _handle_panel_click(mx, panel_x, panel_width, ENTITY_CHOICES, selected_index, selected_entity_type):
-    col_width = panel_width // len(ENTITY_CHOICES)
-    idx = (mx - panel_x) // col_width
-    if 0 <= idx < len(ENTITY_CHOICES):
-        if selected_index == idx:
-            return None, None
-        else:
-            return idx, ENTITY_CHOICES[idx]["class"]
-    return selected_index, selected_entity_type
 
 def _handle_game_area_build(gx, gy, selected_entity_type, grid):
     if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
@@ -99,7 +92,7 @@ def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, pa
         over_panel = panel_x <= mx <= panel_x + panel_width and panel_y <= my <= panel_y + panel_height
         if event.button == 1:
             if over_panel:
-                selected_index, selected_entity_type = _handle_panel_click(mx, panel_x, panel_width, ENTITY_CHOICES, selected_index, selected_entity_type)
+                pass  # Do nothing when clicking the panel
             elif selected_entity_type is not None:
                 prev_game_click = last_game_click
                 last_game_click = (gx, gy)
@@ -353,6 +346,80 @@ def line_deconstruct(x0, y0, x1, y1):
             err += dx
             y += sy
     return erase_line_coords
+
+def handle_event(event, state, remove_entity, place_entity):
+    grid_changed = False
+    # --- Handle clicks on construction_panel_new ---
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+        mx, my = pygame.mouse.get_pos()
+        panel_btn_rects = state.get('panel_btn_rects', {})
+        # Section buttons
+        for idx, rect in enumerate(panel_btn_rects.get('section', [])):
+            if rect.collidepoint(mx, my):
+                state['selected_section'] = idx
+                # Optionally reset selected_item when section changes
+                state['selected_item'] = 0
+                return None, grid_changed
+        # Item buttons
+        for idx, rect in enumerate(panel_btn_rects.get('item', [])):
+            if rect.collidepoint(mx, my):
+                state['selected_item'] = idx
+                return None, grid_changed
+    testing_layout.handle_testing_layout(event, state['grid'], state['entity_states'], state['GRID_WIDTH'], state['GRID_HEIGHT'])
+    global_result = handle_global_controls(event, grid=state['grid'], entity_states=state['entity_states'])
+    if global_result == 'exit' or event.type == pygame.QUIT:
+        return 'exit', grid_changed
+    if global_result == 'cleared':
+        return None, True
+    state['selected_index'], state['selected_entity_type'], pickup_grid_changed = handle_entity_pickup(
+        event, state['selected_index'], state['selected_entity_type'], state['grid'], state['entity_states'], ENTITY_CHOICES, remove_entity, place_entity, state['camera_offset'], state['cell_size']
+    )
+    if pickup_grid_changed:
+        return None, True
+    entity_preview_active = state['selected_entity_type'] is not None
+    state['camera_offset'] = state['camera_drag'].handle_event(event, state['camera_offset'], entity_preview_active)
+    args = (event, state['panel_x'], state['panel_y'], state['panel_width'], state['panel_height'], ENTITY_CHOICES, state['selected_index'], state['selected_entity_type'], state['camera_offset'], state['cell_size'], state['GRID_WIDTH'], state['GRID_HEIGHT'], state['grid'], state.get('line_start'), state.get('erase_line_start'))
+    (state['selected_index'], state['selected_entity_type'], placed_entity, removed_coords, line_entities, state['line_start'], erase_line_coords, state['erase_line_start']) = handle_construction_panel_selection(*args)
+    def place(e):
+        if hasattr(e, 'load_icon'): e.load_icon()
+        place_entity(state['grid'], state['entity_states'], e)
+        if hasattr(e, 'on_built'):
+            e.on_built()
+    if placed_entity is not None:
+        place(placed_entity)
+        grid_changed = True
+    if line_entities:
+        for e in line_entities: place(e)
+        grid_changed = True
+    if erase_line_coords:
+        for gx, gy in erase_line_coords:
+            if state['grid'][gy][gx] is not None:
+                remove_entity(state['grid'], state['entity_states'], gx, gy)
+                grid_changed = True
+    if removed_coords is not None:
+        gx, gy = removed_coords
+        remove_entity(state['grid'], state['entity_states'], gx, gy)
+        grid_changed = True
+    paint_result = state['paint_brush'].handle_event(event, state['selected_entity_type'], state['camera_offset'], state['cell_size'], state['grid'])
+    if paint_result:
+        gx, gy, entity, erase = paint_result
+        if erase:
+            if state['grid'][gy][gx] is not None:
+                remove_entity(state['grid'], state['entity_states'], gx, gy)
+                grid_changed = True
+        else:
+            if state['grid'][gy][gx] is None:
+                place_entity(state['grid'], state['entity_states'], entity)
+                if hasattr(entity, 'on_built'):
+                    entity.on_built()
+                grid_changed = True
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
+        from game_ui.hidden_info_panel import handle_panel_toggle_event
+        from game_ui.profiler_panel import handle_profiler_panel_toggle
+        handle_panel_toggle_event(event)
+        handle_profiler_panel_toggle()
+        return None, grid_changed
+    return None, grid_changed
 
 # Use PascalCase for entity class references in controls.py
 # (No direct references to class names, but ensure dynamic instantiation works with new class names)

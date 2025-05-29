@@ -9,10 +9,10 @@ from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel import draw_resource_panel, draw_icons, get_baked_panel
 from game_ui.render_queue_panel import draw_render_queue_panel
-from game_core.gameplay_events import power_outage
+from game_core.events import power_outage
+from game_ui.construction_panel_new import draw_construction_panel_new
 
-
-def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None):
+def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width, panel_height, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None):
     """
     Draw all UI elements that are on top of the game area.
     This is the single entry point for all UI overlays.
@@ -23,8 +23,17 @@ def draw_all_panels(surface, selected_index, font, panel_x, panel_y, panel_width
         baked = get_baked_panel(font)
         resource_panel_height = baked['total_height']
     
-    draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
-    
+    if ALLOW_CONSTRUCTION_PANEL:
+        draw_construction_panel(surface, selected_index, font, x=panel_x, y=panel_y, width=panel_width, height=panel_height)
+
+    # Draw new construction panel and get button rects for click detection
+    section_btn_rects, item_btn_rects = draw_construction_panel_new(
+        surface, selected_section=selected_section, selected_item=selected_item, font=font, x=panel_x, y=panel_y, width=panel_width, height=panel_height
+    )
+    if panel_btn_rects is not None:
+        panel_btn_rects['section'] = section_btn_rects
+        panel_btn_rects['item'] = item_btn_rects
+
     info_panel_width = get_info_panel_width(surface.get_width())
     
     check_alerts(grid, surface.get_width())

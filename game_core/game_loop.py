@@ -2,7 +2,7 @@ import pygame
 import sys
 from game_core.entity_definitions import *
 from game_core.config import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_BG_COL, GRID_BORDER_COL, BG_OUTSIDE_GRID_COL
-from game_core.controls import handle_global_controls, CameraDrag, get_construction_panel_key, handle_construction_panel_selection, PaintBrush, handle_entity_pickup
+from game_core.controls import handle_global_controls, CameraDrag, get_construction_panel_key, handle_construction_panel_selection, PaintBrush, handle_entity_pickup, handle_event
 from game_ui.construction_panel import draw_construction_panel, ENTITY_CHOICES, get_construction_panel_size
 from game_ui.ui import *
 from game_core.entity_state import EntityStateList
@@ -10,9 +10,8 @@ from game_ui.hidden_info_panel import *
 import game_other.savegame as savegame
 import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
-from game_core.input_events import handle_event
 from game_core.game_state import update_totals_from_grid
-import game_core.gameplay_events
+import game_core.events
 from game_ui.render_queue_panel import handle_render_queue_panel_event
 
 
@@ -41,8 +40,8 @@ def run_game():
     clock = pygame.time.Clock()
 
     # Start gameplay evennts
-    game_core.gameplay_events.start_random_gameplay_events()
-    game_core.gameplay_events.start_deterministic_gameplay_events()
+    game_core.events.start_random_gameplay_events()
+    game_core.events.start_deterministic_gameplay_events()
 
     grid = create_grid()
     # Load game state if available
@@ -221,6 +220,7 @@ def render_game(state, screen, background_surface, font, timings, clock):
     gy = int((my - cam_offset[1]) // cell_sz)
     hovered_entity = grid_ref[gy][gx] if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT else None
     # Draw UI, pass hovered_entity and preview args
+    panel_btn_rects = {}
     draw_all_panels(
         screen,
         state['selected_index'],
@@ -239,6 +239,10 @@ def render_game(state, screen, background_surface, font, timings, clock):
         camera_offset=cam_offset,
         cell_size=cell_sz,
         GRID_WIDTH=GRID_WIDTH,
-        GRID_HEIGHT=GRID_HEIGHT
+        GRID_HEIGHT=GRID_HEIGHT,
+        selected_section=state.get('selected_section', 0),
+        selected_item=state.get('selected_item', 0),
+        panel_btn_rects=panel_btn_rects
     )
+    state['panel_btn_rects'] = panel_btn_rects
     pygame.display.flip()

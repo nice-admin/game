@@ -84,7 +84,7 @@ class GameState:
         self.total_risky_entities = self.count_risky_entities(grid)
         self.total_broken_entities = self.count_broken_entities(grid)
         self.total_upkeep = self.count_upkeep(grid)
-        from game_core.gameplay_events import power_outage
+        from game_core.events import power_outage
         power_outage.trigger()
 
     def get_totals_dict(self):
