@@ -23,11 +23,6 @@ def get_construction_panel_key(event):
         return event.key - pygame.K_1
     return None
 
-def _handle_game_area_build(gx, gy, selected_entity_type, grid):
-    if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
-        return selected_entity_type(gx, gy)
-    return None
-
 def _handle_line_build(prev_game_click, gx, gy, shift_held, selected_entity_type, grid):
     if shift_held and prev_game_click is not None and prev_game_click != (gx, gy):
         x0, y0 = prev_game_click
@@ -89,7 +84,7 @@ def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, pa
                 if line_entities:
                     audio.play_build_sound()
                 elif not shift_held:
-                    placed_entity = _handle_game_area_build(gx, gy, selected_entity_type, grid)
+                    placed_entity = handle_single_left_click_build(gx, gy, selected_entity_type, grid)
                     if placed_entity:
                         audio.play_build_sound()
         elif event.button == 3:
@@ -121,7 +116,7 @@ class CameraDrag:
         self.last_mouse_pos = None
         self.button = 2  # Use middle mouse button for drag
         self.left_drag_enabled = False
-        self.wsad_step = 25+
+        self.wsad_step = 25
         self._block_next_drag = False  # Initialize the block flag
 
     def handle_event(self, event, camera_offset, entity_preview_active=False, entity_held=False, grid=None, cell_size=None, GRID_SIZE=None):
@@ -169,7 +164,7 @@ class CameraDrag:
         if keys[pygame.K_d]:
             camera_offset[0] -= step
         return camera_offset
-
+    
 class PaintBrush:
     def __init__(self):
         self.active = False
@@ -227,7 +222,7 @@ class PaintBrush:
                 audio.play_build_sound()  # Play sound for paintbrush erase
                 return gx, gy, None, True
         return None
-
+        
 def handle_entity_pickup(event, selected_index, selected_entity_type, grid, entity_states, remove_entity_fn, place_entity_fn, camera_offset, cell_size):
     from game_core.config import GRID_WIDTH, GRID_HEIGHT
     grid_changed = False
@@ -418,5 +413,19 @@ def handle_event(event, state, remove_entity, place_entity):
         return None, grid_changed
     return None, grid_changed
 
-# Use PascalCase for entity class references in controls.py
-# (No direct references to class names, but ensure dynamic instantiation works with new class names)
+def handle_single_left_click_build(gx, gy, selected_entity_type, grid):
+    """
+    Handles single left-click construction logic: attempts to place an entity of selected_entity_type at (gx, gy).
+    Returns the placed entity if successful, else None.
+    """
+    if (
+        selected_entity_type is not None
+        and 0 <= gx < GRID_WIDTH
+        and 0 <= gy < GRID_HEIGHT
+        and grid[gy][gx] is None
+    ):
+        entity = selected_entity_type(gx, gy)
+        if hasattr(entity, 'load_icon'):
+            entity.load_icon()
+        return entity
+    return None
