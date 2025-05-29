@@ -37,10 +37,18 @@ class BaseEntity:
     upkeep = 0
     power_drain = 0  # Intended power drain when initialized (override in subclasses)
     _intended_power_drain = None  # Store intended value for restoration
+    display_name = None  # Enforce as a class attribute for all entities
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # Only set display_name if not set on the class itself (not inherited)
+        if 'display_name' not in cls.__dict__ or cls.display_name is None:
+            cls.display_name = to_display_name_from_classname(cls.__name__)
 
     def __init__(self, x, y):
         self.x, self.y = x, y
-        self.display_name = to_display_name_from_classname(self.__class__.__name__)
+        # Always set display_name instance attribute, using class attribute
+        self.display_name = self.__class__.display_name
         self._icon_surface = None
         self.id = BaseEntity._id_counter
         BaseEntity._id_counter += 1

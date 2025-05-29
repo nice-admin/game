@@ -34,11 +34,11 @@ class EntityButton:
         self.label = label
         self.icon_path = icon_path
         self.selected = selected
-        self.height = height if height is not None else self.DEFAULT_HEIGHT
-        self.width = width if width is not None else self.DEFAULT_WIDTH
-        self.icon_width = icon_width if icon_width is not None else self.DEFAULT_ICON_WIDTH
-        self.icon_height = icon_height if icon_height is not None else self.DEFAULT_ICON_HEIGHT
-        self.icon_top_margin = icon_top_margin if icon_top_margin is not None else self.DEFAULT_ICON_TOP_MARGIN
+        self.height = height or self.DEFAULT_HEIGHT
+        self.width = width or self.DEFAULT_WIDTH
+        self.icon_width = icon_width or self.DEFAULT_ICON_WIDTH
+        self.icon_height = icon_height or self.DEFAULT_ICON_HEIGHT
+        self.icon_top_margin = icon_top_margin or self.DEFAULT_ICON_TOP_MARGIN
         self.entity_class = entity_class
 
 # --- Helper Functions ---
@@ -58,20 +58,25 @@ def get_section_entity_defs():
     ]
 
 def get_entity_labels_and_icons(entity_classes, num_buttons):
-    items = [(cls.__name__, getattr(cls, '_icon', None), cls) for cls in entity_classes]
+    def get_display_name(cls):
+        return getattr(cls, 'display_name', cls.__name__)
+    items = [(get_display_name(cls), getattr(cls, '_icon', None), cls) for cls in entity_classes]
+    if not items:
+        return [], [], []
     items += [("empty button", None, None)] * (num_buttons - len(items))
     item_labels, entity_icons, entity_classes_out = zip(*items)
     return list(item_labels), list(entity_icons), list(entity_classes_out)
 
 def draw_icon(surface, icon_path, btn_rect, icon_width, icon_height, icon_top_margin):
-    if icon_path:
-        try:
-            icon_surf = pygame.image.load(icon_path).convert_alpha()
-            icon_surf = pygame.transform.smoothscale(icon_surf, (icon_width, icon_height))
-            icon_rect = icon_surf.get_rect(center=(btn_rect.centerx, btn_rect.top + icon_top_margin + icon_height//2))
-            surface.blit(icon_surf, icon_rect)
-        except Exception:
-            pass
+    if not icon_path:
+        return
+    try:
+        icon_surf = pygame.image.load(icon_path).convert_alpha()
+        icon_surf = pygame.transform.smoothscale(icon_surf, (icon_width, icon_height))
+        icon_rect = icon_surf.get_rect(center=(btn_rect.centerx, btn_rect.top + icon_top_margin + icon_height//2))
+        surface.blit(icon_surf, icon_rect)
+    except Exception as e:
+        print(f"Error loading icon {icon_path}: {e}")
 
 def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8):
     """
