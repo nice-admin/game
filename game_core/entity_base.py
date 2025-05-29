@@ -4,6 +4,7 @@ import random
 import time
 from .config import *
 from game_core.game_state import GameState
+from game_other.audio import *
 
 
 CELL_SIZE = 64  # Default cell size, can be overridden by main.py
@@ -122,6 +123,8 @@ class BaseEntity:
         if cost > 0:
             from game_other.audio import play_purchase_sound
             play_purchase_sound()
+        else:
+            play_build_sound()
 
     def on_initialized(self):
         """Call this when the entity becomes initialized to set power_drain to intended value."""

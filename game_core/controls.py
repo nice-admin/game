@@ -118,43 +118,27 @@ class PaintBrush:
                 return gx, gy, None, True
         return None
         
-
-def handle_global_controls(event, grid=None, entity_states=None):
-    if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-        return 'exit'
-    if event.type == pygame.KEYDOWN and event.key == pygame.K_DELETE:
-        if grid is not None and entity_states is not None:
-            for y, row in enumerate(grid):
-                for x, entity in enumerate(row):
-                    if entity is not None:
-                        entity_states.remove_entity_at(x, y)
-                        row[x] = None
-            return 'cleared'
+def keybinds(event, grid=None, entity_states=None):
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_ESCAPE:
+            return 'exit'
+        if event.key == pygame.K_DELETE:
+            if grid is not None and entity_states is not None:
+                for y, row in enumerate(grid):
+                    for x, entity in enumerate(row):
+                        if entity is not None:
+                            entity_states.remove_entity_at(x, y)
+                            row[x] = None
+                return 'cleared'
+        if pygame.K_1 <= event.key <= pygame.K_9:
+            return event.key - pygame.K_1
     return None
 
-def get_construction_panel_key(event):
-    if event.type == pygame.KEYDOWN and pygame.K_1 <= event.key <= pygame.K_9:
-        return event.key - pygame.K_1
-    return None
-
-def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, panel_height, selected_index, selected_entity_type, camera_offset, CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, grid, last_game_click=None, last_game_right_click=None):
-    # Only allow selection of entity button, no construction logic
-    idx = get_construction_panel_key(event)
-    if idx is not None:
-        if selected_index == idx:
-            selected_index = None
-            selected_entity_type = None
-        else:
-            selected_index = idx
-            selected_entity_type = None  # No entity type selection
-    return selected_index, selected_entity_type, None, None, [], None, [], None
-
-
-def handle_event(event, state, remove_entity, place_entity):
-    # Only allow entity button selection, left-click construction, and right-click deselect
+def general_handler(event, state, remove_entity, place_entity):
+    # Only allow entity button selection, left-click construction, right-click deselect, and right-click deconstruction
     grid_changed = False
-    idx = get_construction_panel_key(event)
-    if idx is not None:
+    idx = keybinds(event)
+    if isinstance(idx, int):
         entity_buttons = state.get('panel_btn_rects', {}).get('item', [])
         if 0 <= idx < len(entity_buttons):
             if state.get('selected_item', None) == idx:
@@ -181,15 +165,19 @@ def handle_event(event, state, remove_entity, place_entity):
                     state['selected_item'] = idx
                 return None, grid_changed
         # Handle left-click construction
-        from game_core.controls import left_click_construction_event
-        if left_click_construction_event(event, state, place_entity):
+        from game_core.controls import left_click_construction
+        if left_click_construction(event, state, place_entity):
             return None, True
     # Handle right-click deselect
-    from game_core.controls import right_click_deselect_event
-    if right_click_deselect_event(event, state):
+    from game_core.controls import right_click_deselect
+    if right_click_deselect(event, state):
         return None, grid_changed
+    # Handle right-click deconstruction
+    from game_core.controls import right_click_deconstruction
+    if right_click_deconstruction(event, state, remove_entity):
+        return None, True
     testing_layout.handle_testing_layout(event, state['grid'], state['entity_states'], state['GRID_WIDTH'], state['GRID_HEIGHT'])
-    global_result = handle_global_controls(event, grid=state['grid'], entity_states=state['entity_states'])
+    global_result = keybinds(event, grid=state['grid'], entity_states=state['entity_states'])
     if global_result == 'exit' or event.type == pygame.QUIT:
         return 'exit', grid_changed
     if global_result == 'cleared':
@@ -203,7 +191,19 @@ def handle_event(event, state, remove_entity, place_entity):
         return None, grid_changed
     return None, grid_changed
 
-def left_click_construction_event(event, state, place_entity):
+def construction_panel_selection(event, panel_x, panel_y, panel_width, panel_height, selected_index, selected_entity_type, camera_offset, CELL_SIZE, GRID_WIDTH, GRID_HEIGHT, grid, last_game_click=None, last_game_right_click=None):
+    # Only allow selection of entity button, no construction logic
+    idx = keybinds(event)
+    if isinstance(idx, int):
+        if selected_index == idx:
+            selected_index = None
+            selected_entity_type = None
+        else:
+            selected_index = idx
+            selected_entity_type = None  # No entity type selection
+    return selected_index, selected_entity_type, None, None, [], None, [], None
+
+def left_click_construction(event, state, place_entity):
     """
     If an entity button is selected and the user left-clicks on the grid, place an instance of the selected entity class at the clicked grid location.
     """
@@ -234,7 +234,7 @@ def left_click_construction_event(event, state, place_entity):
                     return True  # Grid changed
     return False  # No change
 
-def right_click_deselect_event(event, state):
+def right_click_deselect(event, state):
     """
     If an entity button is selected and the user right-clicks, deselect the entity button (set selected_item to None).
     """
@@ -242,4 +242,23 @@ def right_click_deselect_event(event, state):
         if state.get('selected_item', None) is not None:
             state['selected_item'] = None
             return True  # Selection changed
+    return False
+
+def right_click_deconstruction(event, state, remove_entity):
+    """
+    If no entity button is selected (selected_item is None) and the user right-clicks on an existing entity on the grid, delete that entity.
+    """
+    if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+        if state.get('selected_item', None) is None:
+            mx, my = pygame.mouse.get_pos()
+            camera_offset = state['camera_offset']
+            cell_size = state['cell_size']
+            gx = int((mx - camera_offset[0]) // cell_size)
+            gy = int((my - camera_offset[1]) // cell_size)
+            grid = state['grid']
+            entity_states = state['entity_states']
+            if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
+                if grid[gy][gx] is not None:
+                    remove_entity(grid, entity_states, gx, gy)
+                    return True  # Entity deleted
     return False

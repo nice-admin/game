@@ -154,7 +154,7 @@ def handle_events(state, remove_entity, place_entity):
             state['GRID_HEIGHT'],
             on_entity_placed=state.setdefault('testing_layout_grid_change_cb', handle_testing_layout_grid_change)
         )
-        result, _ = handle_event(event, state, remove_entity, place_entity)
+        result, _ = general_handler(event, state, remove_entity, place_entity)
         if result == 'exit':
             return False, False
     return True, False
