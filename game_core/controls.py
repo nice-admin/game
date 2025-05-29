@@ -23,13 +23,6 @@ def get_construction_panel_key(event):
         return event.key - pygame.K_1
     return None
 
-def is_mouse_blocked_by_bottom_bar(mx, my, screen, panel_x, panel_y, panel_width, panel_height):
-    """Returns True if mouse is in bottom 20% of screen and not over the construction panel."""
-    if not screen:
-        return False
-    over_panel = panel_x <= mx <= panel_x + panel_width and panel_y <= my <= panel_y + panel_height
-    return my > screen.get_height() * 0.93 and not over_panel
-
 def _handle_game_area_build(gx, gy, selected_entity_type, grid):
     if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
         return selected_entity_type(gx, gy)
@@ -83,8 +76,6 @@ def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, pa
     if event.type == pygame.MOUSEBUTTONDOWN:
         mx, my = pygame.mouse.get_pos()
         screen = pygame.display.get_surface()
-        if is_mouse_blocked_by_bottom_bar(mx, my, screen, panel_x, panel_y, panel_width, panel_height):
-            return selected_index, selected_entity_type, placed_entity, removed_coords, line_entities, last_game_click, erase_line_coords, last_game_right_click
         gx = int((mx - camera_offset[0]) // CELL_SIZE)
         gy = int((my - camera_offset[1]) // CELL_SIZE)
         over_panel = panel_x <= mx <= panel_x + panel_width and panel_y <= my <= panel_y + panel_height
@@ -112,8 +103,6 @@ def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, pa
             elif not shift_held:
                 mx, my = pygame.mouse.get_pos()
                 screen = pygame.display.get_surface()
-                if is_mouse_blocked_by_bottom_bar(mx, my, screen, panel_x, panel_y, panel_width, panel_height):
-                    return selected_index, selected_entity_type, placed_entity, removed_coords, line_entities, last_game_click, erase_line_coords, last_game_right_click
                 gx = int((mx - camera_offset[0]) // CELL_SIZE)
                 gy = int((my - camera_offset[1]) // CELL_SIZE)
                 over_panel = panel_x <= mx <= panel_x + panel_width and panel_y <= my <= panel_y + panel_height
@@ -123,8 +112,6 @@ def handle_construction_panel_selection(event, panel_x, panel_y, panel_width, pa
     if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
         mx, my = pygame.mouse.get_pos()
         screen = pygame.display.get_surface()
-        if is_mouse_blocked_by_bottom_bar(mx, my, screen, panel_x, panel_y, panel_width, panel_height):
-            return selected_index, selected_entity_type, placed_entity, removed_coords, line_entities, last_game_click, erase_line_coords, last_game_right_click
         selected_index, selected_entity_type = _handle_pipette_select(mx, my, camera_offset, CELL_SIZE, panel_x, panel_y, panel_width, panel_height, grid)
     return selected_index, selected_entity_type, placed_entity, removed_coords, line_entities, last_game_click, erase_line_coords, last_game_right_click
 
@@ -134,7 +121,7 @@ class CameraDrag:
         self.last_mouse_pos = None
         self.button = 2  # Use middle mouse button for drag
         self.left_drag_enabled = False
-        self.wsad_step = 25
+        self.wsad_step = 25+
         self._block_next_drag = False  # Initialize the block flag
 
     def handle_event(self, event, camera_offset, entity_preview_active=False, entity_held=False, grid=None, cell_size=None, GRID_SIZE=None):
