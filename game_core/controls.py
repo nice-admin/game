@@ -72,15 +72,25 @@ class PaintBrush:
         return int((mx - camera_offset[0]) // CELL_SIZE), int((my - camera_offset[1]) // CELL_SIZE)
 
     def handle_event(self, event, selected_entity_type, camera_offset, CELL_SIZE, grid):
+        screen = pygame.display.get_surface()
         if event.type == pygame.MOUSEBUTTONDOWN:
             mx, my = pygame.mouse.get_pos()
-            screen = pygame.display.get_surface()
             if screen and my > screen.get_height() * 0.8:
                 return None
             if event.button == self.button and selected_entity_type is not None:
                 self.active = True
+                # Paint immediately on click
+                gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
+                if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
+                    audio.play_build_sound()
+                    return gx, gy, selected_entity_type(gx, gy), False
             elif event.button == self.erase_button:
                 self.erase_active = True
+                # Erase immediately on click
+                gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
+                if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is not None:
+                    audio.play_build_sound()
+                    return gx, gy, None, True
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == self.button:
                 self.active = False
@@ -88,20 +98,20 @@ class PaintBrush:
                 self.erase_active = False
         elif event.type == pygame.MOUSEMOTION:
             mx, my = pygame.mouse.get_pos()
-            screen = pygame.display.get_surface()
             if screen and my > screen.get_height() * 0.8:
                 return None
             gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
             if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT:
                 if self.active and selected_entity_type is not None and grid[gy][gx] is None:
-                    audio.play_build_sound()  # Play sound for paintbrush build
+                    audio.play_build_sound()
                     return gx, gy, selected_entity_type(gx, gy), False
                 if self.erase_active and grid[gy][gx] is not None:
-                    audio.play_build_sound()  # Play sound for paintbrush erase
+                    audio.play_build_sound()
                     return gx, gy, None, True
         return None
 
     def handle_continuous_paint(self, selected_entity_type, camera_offset, CELL_SIZE, grid):
+        # This method can be used for continuous painting in the main loop if needed
         mx, my = pygame.mouse.get_pos()
         screen = pygame.display.get_surface()
         if screen and my > screen.get_height() * 0.8:
@@ -109,12 +119,12 @@ class PaintBrush:
         if self.active and selected_entity_type is not None:
             gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
             if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
-                audio.play_build_sound()  # Play sound for paintbrush build
+                audio.play_build_sound()
                 return gx, gy, selected_entity_type(gx, gy), False
         if self.erase_active:
             gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
             if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is not None:
-                audio.play_build_sound()  # Play sound for paintbrush erase
+                audio.play_build_sound()
                 return gx, gy, None, True
         return None
         
@@ -146,6 +156,38 @@ def general_handler(event, state, remove_entity, place_entity):
             else:
                 state['selected_item'] = idx
             return None, grid_changed
+    # --- PaintBrush drag-to-paint/erase logic ---
+    paint_brush = state.get('paint_brush', None)
+    if paint_brush is not None:
+        selected_item = state.get('selected_item', None)
+        panel_btn_rects = state.get('panel_btn_rects', {})
+        entity_buttons = panel_btn_rects.get('item', [])
+        entity_class = None
+        if selected_item is not None and 0 <= selected_item < len(entity_buttons):
+            entity_btn = entity_buttons[selected_item]
+            entity_class = getattr(entity_btn, 'entity_class', None)
+        paint_result = paint_brush.handle_event(
+            event,
+            entity_class,
+            state['camera_offset'],
+            state['cell_size'],
+            state['grid']
+        )
+        if paint_result:
+            gx, gy, entity, erase = paint_result
+            if erase:
+                if state['grid'][gy][gx] is not None:
+                    remove_entity(state['grid'], state['entity_states'], gx, gy)
+                    return None, True
+            else:
+                if state['grid'][gy][gx] is None and entity is not None:
+                    place_entity(state['grid'], state['entity_states'], entity)
+                    if hasattr(entity, 'on_built'):
+                        entity.on_built()
+                    if hasattr(entity, 'update'):
+                        entity.update(state['grid'])
+                    return None, True
+    # ...existing code for section/item button clicks, left_click_construction, right_click_deselect, right_click_deconstruction, etc...
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
         mx, my = pygame.mouse.get_pos()
         panel_btn_rects = state.get('panel_btn_rects', {})
