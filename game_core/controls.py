@@ -229,6 +229,8 @@ def left_click_construction_event(event, state, place_entity):
                     place_entity(grid, entity_states, entity)
                     if hasattr(entity, 'on_built'):
                         entity.on_built()
+                    if hasattr(entity, 'update'):
+                        entity.update(grid)  # Ensure bar1 and other state is initialized immediately
                     return True  # Grid changed
     return False  # No change
 

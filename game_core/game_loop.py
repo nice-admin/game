@@ -104,6 +104,12 @@ def run_game():
         running, _ = handle_events(state, remove_entity, place_entity)
         # Camera WSAD movement
         state['camera_offset'] = state['camera_drag'].handle_wsad(state['camera_offset'])
+        # --- Update all entities every 2 frames ---
+        if frame_count % 2 == 0:
+            for row in state['grid']:
+                for entity in row:
+                    if entity:
+                        entity.update(state['grid'])
         dt = clock.tick(FPS)
         # 1 in-game day = 10 seconds, so 30 days = 300 seconds
         seconds_per_month = 30 * 10
