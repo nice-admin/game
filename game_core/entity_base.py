@@ -360,6 +360,10 @@ class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
     power_drain = 0
     special_chance = 0.5
+    satisfaction_check_radius = 1
+    satisfaction_check_threshold = 1
+    satisfaction_check_type = 'outlet'
+    satisfaction_check_gamestate = 'is_nas_online'
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -383,9 +387,17 @@ class MonitorEntity(SatisfiableEntity):
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1
-    # You can add more attributes or override methods as needed
+    NAMES = [
+        "Marek Sosna",
+        "Radim Zeifart",
+        "Šimon Lánský",
+        "Ondřej Skalník",
+        "Jaroslav Novotný",
+        "Jan Reeh"
+    ]
     def __init__(self, x, y):
         super().__init__(x, y)
-        # Example: Give a default display name or other person-specific logic
+        import random
+        self.name = random.choice(self.NAMES)
         self.display_name = getattr(self, 'display_name', 'Person')
         # Add more initialization if needed

@@ -7,8 +7,6 @@ class BasicComputer(ComputerEntity):
     _icon = "data/graphics/computer-basic.png"
     has_special = 1
     power_drain = 200
-    satisfaction_check_type = 'outlet'
-    satisfaction_check_gamestate = 'is_nas_online'
 
 class AdvancedComputer(ComputerEntity):
     _icon = "data/graphics/computer-advanced.png"
@@ -50,7 +48,7 @@ class BasicMonitor(MonitorEntity):
             self.is_satisfied = 0
             self.state = "Mid"
 
-class Artist(SatisfiableEntity):
+class Artist(PersonEntity):
     _icon = "data/graphics/artist.png"
     satisfaction_check_type = 'monitor'
     satisfaction_check_radius = 1

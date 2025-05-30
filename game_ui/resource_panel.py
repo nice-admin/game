@@ -21,7 +21,7 @@ RESOURCE_PANEL_CELLS = {
         "value_getter": lambda gs: int(gs.game_time_days),
         "format": lambda v, gs: str(v),
     },
-    (0, 1): {
+    (0, 4): {
         "key": "power_drain",
         "label": "Power\ndrain",
         "icon": "data/graphics/resource_panel/power.png",
@@ -34,17 +34,24 @@ RESOURCE_PANEL_CELLS = {
         ),
         "extra_key": lambda gs: gs.total_breaker_strength,
     },
-    (0, 2): {
+    (1, 4): {
         "key": "breaker_strength",
         "label": "Breaker\nlimit",
         "icon": "data/graphics/resource_panel/breakers.png",
         "value_getter": lambda gs: gs.total_breaker_strength*0.001,
         "format": lambda v, gs: f"{int(v)} KW",
     },
-    (0, 3): {
+    (0, 1): {
         "key": "employees",
         "label": "Employees",
         "icon": "data/graphics/resource_panel/employees.png",
+        "value_getter": lambda gs: gs.total_employees,
+        "format": lambda v, gs: str(v),
+    },
+    (0, 2): {
+        "key": "employees",
+        "label": "Happiness",
+        "icon": "data/graphics/resource_panel/happiness.png",
         "value_getter": lambda gs: gs.total_employees,
         "format": lambda v, gs: str(v),
     },

@@ -116,6 +116,47 @@ def _draw_status(surface, font, messages, color, entity, attr_name=None, box_x=0
         surface.blit(msg_text, msg_rect)
 
 
+def draw_hovered_entity_info_box(surface, font, hovered_entity, panel_x, panel_y, panel_width, panel_height):
+    """Draws the info box for the hovered entity at the top of the info panel."""
+    box_width = panel_width - 16
+    box_height = 80
+    box_x = panel_x + 8
+    # Start at 50% height of the panel
+    box_y = panel_y + (panel_height // 2)
+    box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
+    pygame.draw.rect(surface, UI_BG1_COL, box_rect, border_radius=8)
+    # Icon
+    icon_path = get_entity_icon_path(hovered_entity)
+    icon_surf = get_icon_surface(icon_path) if icon_path else None
+    icon_size = 48
+    if icon_surf:
+        icon_surf = pygame.transform.smoothscale(icon_surf, (icon_size, icon_size))
+        icon_rect = icon_surf.get_rect(topleft=(box_x + 8, box_y - 3 + (box_height - icon_size) // 2))
+        surface.blit(icon_surf, icon_rect)
+    # Name
+    name = getattr(hovered_entity, 'display_name', hovered_entity.__class__.__name__)
+    name_text = font.render(name, True, (255, 255, 255))
+    name_rect = name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 18))
+    surface.blit(name_text, name_rect)
+    # Show 'name' attribute if present (e.g., for PersonEntity)
+    if hasattr(hovered_entity, 'name'):
+        person_name = getattr(hovered_entity, 'name')
+        person_name_text = font.render(person_name, True, (200, 255, 200))
+        person_name_rect = person_name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 60))
+        surface.blit(person_name_text, person_name_rect)
+        y_status = 58
+    else:
+        y_status = 38
+    # Optionally, show more info (e.g., status, power, etc.)
+    status = getattr(hovered_entity, 'status', None)
+    if status:
+        status_text = font.render(str(status), True, (200, 220, 255))
+        status_rect = status_text.get_rect(topleft=(box_x + icon_size + 18, box_y + y_status))
+        surface.blit(status_text, status_rect)
+    # Show a status message based on entity state
+    draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size)
+
+
 def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hovered_entity=None):
     global _last_hovered_entity_id, _last_ok_message
     """Draw the info panel with entity icons and counts in a grid layout. Optionally show hovered entity info."""
@@ -157,34 +198,7 @@ def draw_info_panel(surface, font, screen_width, screen_height, grid=None, hover
 
     # Draw hovered entity info box at the top of the panel if provided
     if hovered_entity is not None:
-        box_width = panel_width - 16
-        box_height = 80
-        box_x = panel_x + 8
-        # Start at 50% height of the panel
-        box_y = panel_y + (panel_height // 2)
-        box_rect = pygame.Rect(box_x, box_y, box_width, box_height)
-        pygame.draw.rect(surface, UI_BG1_COL, box_rect, border_radius=8)
-        # Icon
-        icon_path = get_entity_icon_path(hovered_entity)
-        icon_surf = get_icon_surface(icon_path) if icon_path else None
-        icon_size = 48
-        if icon_surf:
-            icon_surf = pygame.transform.smoothscale(icon_surf, (icon_size, icon_size))
-            icon_rect = icon_surf.get_rect(topleft=(box_x + 8, box_y - 3 + (box_height - icon_size) // 2))
-            surface.blit(icon_surf, icon_rect)
-        # Name
-        name = getattr(hovered_entity, 'display_name', hovered_entity.__class__.__name__)
-        name_text = font.render(name, True, (255, 255, 255))
-        name_rect = name_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 18))
-        surface.blit(name_text, name_rect)
-        # Optionally, show more info (e.g., status, power, etc.)
-        status = getattr(hovered_entity, 'status', None)
-        if status:
-            status_text = font.render(str(status), True, (200, 220, 255))
-            status_rect = status_text.get_rect(topleft=(box_x + icon_size + 18, box_y + 38))
-            surface.blit(status_text, status_rect)
-        # Show a status message based on entity state
-        draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size)
+        draw_hovered_entity_info_box(surface, font, hovered_entity, panel_x, panel_y, panel_width, panel_height)
 
 
     return panel_width
