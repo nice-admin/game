@@ -156,9 +156,3 @@ def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DE
             if not k.startswith('_') and k not in ("person_name", "display_name"):
                 attr_surf = font.render(f"{k}: {v}", True, TEXT_COL)
                 surface.blit(attr_surf, (x + 16, attr_y + idx * (22 + ROWS_SPACING)))
-    else:
-        # Placeholder
-        if font:
-            placeholder = font.render("No entity selected", True, TEXT_COL)
-            surface.blit(placeholder, (x + 16, y + MARGIN_FROM_TOP + 36))
-

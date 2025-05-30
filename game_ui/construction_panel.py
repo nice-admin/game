@@ -62,6 +62,7 @@ class EntityButton:
     DEFAULT_ICON_WIDTH = 60
     DEFAULT_ICON_HEIGHT = 60
     DEFAULT_ICON_TOP_MARGIN = 10
+    DEFAULT_LABEL_BOTTOM_MARGIN = 33
     def __init__(self, rect, entity_class=None, selected=False, height=None, width=None, icon_width=None, icon_height=None, icon_top_margin=None):
         self.rect = rect
         self.entity_class = entity_class
@@ -71,6 +72,7 @@ class EntityButton:
         self.icon_width = icon_width or self.DEFAULT_ICON_WIDTH
         self.icon_height = icon_height or self.DEFAULT_ICON_HEIGHT
         self.icon_top_margin = icon_top_margin or self.DEFAULT_ICON_TOP_MARGIN
+        self.label_bottom_margin = self.DEFAULT_LABEL_BOTTOM_MARGIN
         # Extract label, icon, and price from entity_class
         if entity_class is not None:
             self.label = getattr(entity_class, 'display_name', entity_class.__name__)
@@ -95,17 +97,19 @@ class EntityButton:
         # Draw label
         if font:
             text_surf = font.render(self.label, True, text_color)
-            text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 45))
+            text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - self.label_bottom_margin))
             surface.blit(text_surf, text_rect)
-        # Draw price/rental
+        # Draw price/rental with smaller font
         if font:
+            small_font_size = max(20, font.get_height() - 4)
+            small_font = pygame.font.Font(None, small_font_size)
             if self.purchase_cost == 0:
-                cost_surf = font.render("(rental)", True, text_color)
-                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 25))
+                cost_surf = small_font.render("(subscription)", True, text_color)
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.label_bottom_margin))
                 surface.blit(cost_surf, cost_rect)
             elif self.purchase_cost not in (None, 0):
-                cost_surf = font.render(f"${self.purchase_cost}", True, text_color)
-                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 25))
+                cost_surf = small_font.render(f"${self.purchase_cost}", True, text_color)
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.label_bottom_margin))
                 surface.blit(cost_surf, cost_rect)
 
 # --- Helper Functions ---
@@ -156,7 +160,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     - Second row: N item buttons (dynamically filled for section)
     Returns: (section_buttons, entity_buttons)
     """
-    # Panel sizing and positioningw
+    # Panel sizing and positioning
     item_btn_w = EntityButton.DEFAULT_WIDTH
     num_entity_buttons = number_of_entity_buttons
     width = item_btn_w * num_entity_buttons
@@ -189,7 +193,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
         entity_classes = section_entity_defs[selected_section]()
         entity_classes_out = list(entity_classes) + [None] * (number_of_entity_buttons - len(entity_classes))
     else:
-        entity_classes_out = [None] * number_of_entity_buttons
+        entity_classes_out = [None] * number_of_buttons
     item_btn_w = EntityButton.DEFAULT_WIDTH
     item_btn_h = EntityButton.DEFAULT_HEIGHT
     section_btn_h = SectionButton.DEFAULT_HEIGHT
