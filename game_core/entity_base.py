@@ -35,6 +35,8 @@ class BaseEntity:
     state = "Basic"
     purchase_cost = 0
     upkeep = 0
+    tier = 1
+    
     power_drain = 0  # Intended power drain when initialized (override in subclasses)
     _intended_power_drain = None  # Store intended value for restoration
     display_name = None  # Enforce as a class attribute for all entities

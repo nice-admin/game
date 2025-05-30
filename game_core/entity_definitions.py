@@ -14,6 +14,7 @@ class AdvancedComputer(ComputerEntity):
     power_drain = 400
     satisfaction_check_type = 'outlet'
     satisfaction_check_gamestate = 'is_nas_online'
+    tier = 2
 
 class BasicMonitor(MonitorEntity):
     _icon = "data/graphics/monitor.png"

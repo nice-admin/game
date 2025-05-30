@@ -105,7 +105,7 @@ def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygam
 
 def get_system_panel_bg():
     if not hasattr(get_system_panel_bg, "_bg_surface"):
-        bg = pygame.Surface((320, 100), pygame.SRCALPHA)
+        bg = pygame.Surface((320, 130), pygame.SRCALPHA)
         bg.fill(UI_BG1_COL)  # Use UI_BG1_COL from config.py
         pygame.draw.rect(bg, (100, 100, 100), bg.get_rect(), 2)  # border
         get_system_panel_bg._bg_surface = bg

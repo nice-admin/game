@@ -1,7 +1,8 @@
 import pygame
 import inspect
 from game_core import entity_definitions
-from game_core.entity_base import ComputerEntity
+from game_core.entity_base import *
+from game_core.entity_definitions import *
 
 # --- Constants ---
 BG_COLOR = (40, 40, 40)
@@ -11,38 +12,33 @@ TEXT_COLOR = (255, 255, 255)
 SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management"] + ["empty"] * 2
 
 def get_computer_entities():
-    return [obj for name, obj in inspect.getmembers(entity_definitions)
-            if inspect.isclass(obj) and issubclass(obj, ComputerEntity) and obj is not ComputerEntity]
+    # Get all ComputerEntity subclasses, sort by 'tier' attribute (default to 99 if missing)
+    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
+               if inspect.isclass(obj) and issubclass(obj, ComputerEntity) and obj is not ComputerEntity]
+    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_monitor_entities():
-    from game_core.entity_base import SatisfiableEntity
-    return [obj for name, obj in inspect.getmembers(entity_definitions)
+    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
             if inspect.isclass(obj) and issubclass(obj, SatisfiableEntity) and obj.__name__.lower().endswith('monitor')]
+    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_utility_entities():
-    from game_core.entity_base import BaseEntity, ComputerEntity, SatisfiableEntity
-    # Utility: all BaseEntity subclasses that are not ComputerEntity, not SatisfiableEntity, and not a Monitor
-    return [obj for name, obj in inspect.getmembers(entity_definitions)
-            if inspect.isclass(obj)
-            and issubclass(obj, BaseEntity)
-            and not issubclass(obj, ComputerEntity)
-            and not issubclass(obj, SatisfiableEntity)
-            and not obj.__name__.lower().endswith('monitor')
-            and obj is not BaseEntity]
+    classes = [Outlet, Breaker, Router, EspressoMachine, Snacks]
+    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_artist_entities():
-    from game_core.entity_base import SatisfiableEntity
-    return [obj for name, obj in inspect.getmembers(entity_definitions)
+    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
             if inspect.isclass(obj)
             and issubclass(obj, SatisfiableEntity)
             and 'artist' in obj.__name__.lower()]
+    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_management_entities():
-    from game_core.entity_base import SatisfiableEntity
-    return [obj for name, obj in inspect.getmembers(entity_definitions)
+    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
             if inspect.isclass(obj)
             and issubclass(obj, SatisfiableEntity)
             and ('manager' in obj.__name__.lower() or 'project' in obj.__name__.lower())]
+    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 class SectionButton:
     DEFAULT_HEIGHT = 40
@@ -55,9 +51,9 @@ class SectionButton:
 
 class EntityButton:
     DEFAULT_HEIGHT = 120
-    DEFAULT_WIDTH = 150
-    DEFAULT_ICON_WIDTH = 64
-    DEFAULT_ICON_HEIGHT = 64
+    DEFAULT_WIDTH = 180
+    DEFAULT_ICON_WIDTH = 60
+    DEFAULT_ICON_HEIGHT = 60
     DEFAULT_ICON_TOP_MARGIN = 10
     def __init__(self, rect, label, icon_path=None, selected=False, height=None, width=None, icon_width=None, icon_height=None, icon_top_margin=None, entity_class=None):
         self.rect = rect
@@ -75,23 +71,9 @@ class EntityButton:
 def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COLOR):
     pygame.draw.rect(surface, color, rect)
     if label and font:
-        # If label is two words, split into two rows (handle case-insensitive, ignore extra spaces)
-        words = label.strip().split()
-        if len(words) == 2:
-            text_surf1 = font.render(words[0], True, text_color)
-            text_surf2 = font.render(words[1], True, text_color)
-            # Center both lines vertically in the button
-            total_height = text_surf1.get_height() + text_surf2.get_height()
-            y1 = rect.centery - total_height // 2
-            y2 = y1 + text_surf1.get_height()
-            text_rect1 = text_surf1.get_rect(centerx=rect.centerx, y=y1)
-            text_rect2 = text_surf2.get_rect(centerx=rect.centerx, y=y2)
-            surface.blit(text_surf1, text_rect1)
-            surface.blit(text_surf2, text_rect2)
-        else:
-            text_surf = font.render(label, True, text_color)
-            text_rect = text_surf.get_rect(center=rect.center)
-            surface.blit(text_surf, text_rect)
+        text_surf = font.render(label, True, text_color)
+        text_rect = text_surf.get_rect(center=rect.center)
+        surface.blit(text_surf, text_rect)
 
 def get_section_entity_defs():
     return [
@@ -180,7 +162,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
         draw_icon(surface, icon_path, btn_rect, icon_width, icon_height, icon_top_margin)
         if font:
             text_surf = font.render(label, True, TEXT_COLOR)
-            text_rect = text_surf.get_rect(center=(btn_rect.centerx, btn_rect.bottom - 14))
+            text_rect = text_surf.get_rect(center=(btn_rect.centerx, btn_rect.bottom - 25))
             surface.blit(text_surf, text_rect)
         entity_buttons.append(EntityButton(
             btn_rect, label, icon_path, selected,
