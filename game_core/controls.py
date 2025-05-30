@@ -345,9 +345,10 @@ class GameControls:
 
     def right_click_deselect(self, event, state):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-            if self.selected_item is not None:
+            if self.selected_item is not None or GameState().current_construction_class is not None:
                 self.selected_item = None
                 state['selected_item'] = None
+                GameState().current_construction_class = None
                 return True
         return False
 

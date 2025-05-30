@@ -1,6 +1,11 @@
 import pygame
+from game_core.config import UI_BG1_COL
 
-MARGIN_FROM_TOP = 24  # Move all content down by this many pixels
+MARGIN_FROM_TOP = 10  # Move all content down by this many pixels
+ROWS_SPACING = 8     # Space between rows (icon, name, person_name, status, attributes)
+TEXT_COL = (255, 255, 255)  # Default text color for all non-status text
+DETAILS_PANEL_WIDTH = 400
+DETAILS_PANEL_HEIGHT = 160
 # --- Status message logic migrated from info_panel.py ---
 def draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size):
     """Draws a status message based on the entity's state."""
@@ -80,54 +85,80 @@ def _draw_status(surface, font, messages, color, entity, attr_name=None, box_x=0
         msg_rect = msg_text.get_rect(topleft=(box_x, box_y + y_offset))
         surface.blit(msg_text, msg_rect)
 
-def draw_details_panel(surface, font, x, y, width=400, height=300, entity=None):
+class Header:
+    """Renders the header section (icon + display_name) for an entity."""
+    def __init__(self, entity, font, x, y):
+        self.entity = entity
+        self.font = font
+        self.x = x
+        self.y = y
+        self.icon_rect = None
+        self.name_rect = None
+
+    def render(self, surface):
+        icon_path = getattr(self.entity, 'get_icon_path', None)
+        if callable(icon_path):
+            icon_path = icon_path()
+        else:
+            icon_path = getattr(self.entity, '_icon', None)
+        icon_surf = None
+        if icon_path:
+            try:
+                icon_surf = pygame.image.load(icon_path).convert_alpha()
+                icon_surf = pygame.transform.smoothscale(icon_surf, (64, 64))
+                surface.blit(icon_surf, (self.x + 16, self.y + MARGIN_FROM_TOP + ROWS_SPACING))
+                self.icon_rect = pygame.Rect(self.x + 16, self.y + MARGIN_FROM_TOP + ROWS_SPACING, 64, 64)
+            except Exception:
+                self.icon_rect = None
+        entity_name = getattr(self.entity, 'display_name', self.entity.__class__.__name__)
+        if self.font:
+            try:
+                big_font = pygame.font.Font(self.font.get_name(), 32)
+            except Exception:
+                big_font = pygame.font.SysFont(None, 32)
+            name_surf = big_font.render(entity_name, True, TEXT_COL)
+            name_rect = name_surf.get_rect(topleft=(self.x + 96, self.y + MARGIN_FROM_TOP + ROWS_SPACING))
+            surface.blit(name_surf, name_rect)
+            self.name_rect = name_rect
+        else:
+            self.name_rect = None
+
+def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=None):
     """
     Draws a details panel at (x, y) with the given width and height.
     If an entity is provided, show its details; otherwise, show a placeholder.
     """
     # Panel background
     panel_rect = pygame.Rect(x, y, width, height)
-    pygame.draw.rect(surface, (30, 30, 40), panel_rect, border_radius=10)
-    pygame.draw.rect(surface, (80, 80, 120), panel_rect, 2, border_radius=10)
+    pygame.draw.rect(surface, UI_BG1_COL, panel_rect)  # Use imported color
+    # Removed border
     # Removed the 'Details' title
     if entity is not None:
-        # Icon in top left
-        icon_path = getattr(entity, 'get_icon_path', None)
-        if callable(icon_path):
-            icon_path = icon_path()
-        else:
-            icon_path = getattr(entity, '_icon', None)
-        icon_surf = None
-        if icon_path:
-            try:
-                icon_surf = pygame.image.load(icon_path).convert_alpha()
-                icon_surf = pygame.transform.smoothscale(icon_surf, (64, 64))
-                surface.blit(icon_surf, (x + 16, y + MARGIN_FROM_TOP + 16))
-            except Exception:
-                pass
-        # display_name in bigger letters to the right of icon
-        entity_name = getattr(entity, 'display_name', entity.__class__.__name__)
-        if font:
-            # Use a larger font for display_name if available
-            try:
-                big_font = pygame.font.Font(font.get_name(), 32)
-            except Exception:
-                big_font = pygame.font.SysFont(None, 32)
-            name_surf = big_font.render(entity_name, True, (200, 255, 200))
-            surface.blit(name_surf, (x + 96, y + MARGIN_FROM_TOP + 8 + 16))
-        # person_name (if present) under display_name
-        y_status = y + MARGIN_FROM_TOP + 48 + 16
+        # --- HEADER ---
+        header = Header(entity, font, x, y)
+        header.render(surface)
+        # --- MAIN SECTION (10px below header) ---
+        section_y = (header.name_rect.bottom if header.name_rect else y + MARGIN_FROM_TOP + ROWS_SPACING + 32) + 5
+        # person_name (if present) under display_name, with dynamic spacing
         if hasattr(entity, 'person_name'):
             person_name = getattr(entity, 'person_name')
-            person_name_surf = font.render(person_name, True, (200, 255, 200))
-            surface.blit(person_name_surf, (x + 96, y_status))
-            y_status += 32
+            person_name_surf = font.render(person_name, True, TEXT_COL)
+            person_name_rect = person_name_surf.get_rect(topleft=(x + 96, section_y))
+            surface.blit(person_name_surf, person_name_rect)
+            y_status = person_name_rect.bottom + ROWS_SPACING
+        else:
+            y_status = section_y + ROWS_SPACING
         # Status message row (same mechanic as info_panel)
         draw_status_by_state(surface, font, entity, x + 96, y_status - 8, 0)
         # List public attributes (skip person_name/display_name)
-        attr_y = y + MARGIN_FROM_TOP + 80 + 16
+        attr_y = y_status + ROWS_SPACING
         for idx, (k, v) in enumerate(sorted(entity.__dict__.items())):
             if not k.startswith('_') and k not in ("person_name", "display_name"):
-                attr_surf = font.render(f"{k}: {v}", True, (220, 220, 220))
-                surface.blit(attr_surf, (x + 16, attr_y + idx * 22))
+                attr_surf = font.render(f"{k}: {v}", True, TEXT_COL)
+                surface.blit(attr_surf, (x + 16, attr_y + idx * (22 + ROWS_SPACING)))
+    else:
+        # Placeholder
+        if font:
+            placeholder = font.render("No entity selected", True, TEXT_COL)
+            surface.blit(placeholder, (x + 16, y + MARGIN_FROM_TOP + 36))
 

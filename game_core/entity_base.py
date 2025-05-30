@@ -383,6 +383,7 @@ class MonitorEntity(SatisfiableEntity):
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1
+    happiness = 10
     NAMES = [
         "Marek Sosna",
         "Radim Zeifart",
