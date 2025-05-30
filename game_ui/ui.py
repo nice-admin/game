@@ -9,6 +9,7 @@ from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
 from game_ui.details_panel import draw_details_panel, DETAILS_PANEL_WIDTH, DETAILS_PANEL_HEIGHT
+from game_ui.overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
 from game_core.game_state import GameState
 
 
@@ -36,11 +37,15 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         panel_btn_rects['section'] = section_btn_rects
         panel_btn_rects['item'] = item_btn_rects
 
-    # Draw details panel to the right of the construction panel
-    if section_btn_rects:
-        details_panel_x = section_btn_rects[-1].rect.right + 0
-        details_panel_y = section_btn_rects[0].rect.top - 2
-        draw_details_panel(surface, font, details_panel_x, details_panel_y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=hovered_entity)
+    # Anchor overview panel to bottom left
+    overview_panel_x = 0
+    overview_panel_y = surface.get_height() - OVERVIEW_PANEL_HEIGHT
+    draw_overview_panel(surface, font, overview_panel_x, overview_panel_y, width=OVERVIEW_PANEL_WIDTH, height=OVERVIEW_PANEL_HEIGHT, grid=grid)
+
+    # Anchor details panel to bottom right
+    details_panel_x = surface.get_width() - DETAILS_PANEL_WIDTH
+    details_panel_y = surface.get_height() - DETAILS_PANEL_HEIGHT
+    draw_details_panel(surface, font, details_panel_x, details_panel_y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=hovered_entity)
 
     info_panel_width = get_info_panel_width(surface.get_width())
     check_alerts(grid, surface.get_width())
