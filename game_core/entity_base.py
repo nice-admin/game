@@ -166,7 +166,6 @@ class SatisfiableEntity(BaseEntity):
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.is_initialized = 0
         self.bar1 = 0.0 if self.has_bar1 else None
         self.bar1_timer = 0 if self.has_bar1 else None
         self.special = 0.0 if self.has_special else None
@@ -382,6 +381,12 @@ class ComputerEntity(SatisfiableEntity):
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
                 gs = GameState()
                 gs.render_progress_current += 1
+
+class LaptopEntity(SatisfiableEntity):
+    is_initialized = 1
+    is_satisfied = 1
+    has_bar1 = 0
+    pass
 
 class MonitorEntity(SatisfiableEntity):
     has_special = 0

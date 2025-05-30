@@ -16,6 +16,11 @@ class AdvancedComputer(ComputerEntity):
     satisfaction_check_type = 'outlet'
     satisfaction_check_gamestate = 'is_nas_online'
 
+class Macbook(LaptopEntity):
+    _icon = "data/graphics/macbook.png"
+    tier = 3
+    power_drain = 50
+
 class BasicMonitor(MonitorEntity):
     _icon = "data/graphics/basic-monitor.png"
     power_drain = 20
@@ -93,5 +98,10 @@ class Breaker(SatisfiableEntity):
             self.state = "Good"
 
 # region Decoration
+
 class FlowerPot(DecorationEntity):
     _icon = "data/graphics/flower-pot.png"
+
+
+class Cactus(DecorationEntity):
+    _icon = "data/graphics/cactus.png"

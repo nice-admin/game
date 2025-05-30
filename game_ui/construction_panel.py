@@ -6,14 +6,17 @@ from game_core.entity_definitions import *
 
 # --- Constants ---
 BG_COLOR = (40, 40, 40)
-BTN_COLOR = (80, 80, 80)
-BTN_SELECTED = (120, 120, 120)
+BTN_COLOR = (60, 60, 60)
+BTN_SELECTED = (100, 100, 100)
 TEXT_COLOR = (255, 255, 255)
 SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management", "Decoration"] + ["empty"]
 
 def get_computer_entities():
-    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
-               if inspect.isclass(obj) and issubclass(obj, ComputerEntity) and obj is not ComputerEntity]
+    classes = set()
+    for base in (ComputerEntity, LaptopEntity):
+        for name, obj in inspect.getmembers(entity_definitions):
+            if inspect.isclass(obj) and issubclass(obj, base) and obj is not base:
+                classes.add(obj)
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_monitor_entities():
@@ -59,17 +62,51 @@ class EntityButton:
     DEFAULT_ICON_WIDTH = 60
     DEFAULT_ICON_HEIGHT = 60
     DEFAULT_ICON_TOP_MARGIN = 10
-    def __init__(self, rect, label, icon_path=None, selected=False, height=None, width=None, icon_width=None, icon_height=None, icon_top_margin=None, entity_class=None):
+    def __init__(self, rect, entity_class=None, selected=False, height=None, width=None, icon_width=None, icon_height=None, icon_top_margin=None):
         self.rect = rect
-        self.label = label
-        self.icon_path = icon_path
+        self.entity_class = entity_class
         self.selected = selected
         self.height = height or self.DEFAULT_HEIGHT
         self.width = width or self.DEFAULT_WIDTH
         self.icon_width = icon_width or self.DEFAULT_ICON_WIDTH
         self.icon_height = icon_height or self.DEFAULT_ICON_HEIGHT
         self.icon_top_margin = icon_top_margin or self.DEFAULT_ICON_TOP_MARGIN
-        self.entity_class = entity_class
+        # Extract label, icon, and price from entity_class
+        if entity_class is not None:
+            self.label = getattr(entity_class, 'display_name', entity_class.__name__)
+            self.icon_path = getattr(entity_class, '_icon', None)
+            self.purchase_cost = getattr(entity_class, 'purchase_cost', None)
+        else:
+            self.label = "-"
+            self.icon_path = None
+            self.purchase_cost = None
+
+    def draw(self, surface, font, text_color=TEXT_COLOR):
+        pygame.draw.rect(surface, BTN_SELECTED if self.selected else BTN_COLOR, self.rect)
+        # Draw icon
+        if self.icon_path:
+            try:
+                icon_surf = pygame.image.load(self.icon_path).convert_alpha()
+                icon_surf = pygame.transform.smoothscale(icon_surf, (self.icon_width, self.icon_height))
+                icon_rect = icon_surf.get_rect(center=(self.rect.centerx, self.rect.top + self.icon_top_margin + self.icon_height//2))
+                surface.blit(icon_surf, icon_rect)
+            except Exception as e:
+                print(f"Error loading icon {self.icon_path}: {e}")
+        # Draw label
+        if font:
+            text_surf = font.render(self.label, True, text_color)
+            text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 45))
+            surface.blit(text_surf, text_rect)
+        # Draw price/rental
+        if font:
+            if self.purchase_cost == 0:
+                cost_surf = font.render("(rental)", True, text_color)
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 25))
+                surface.blit(cost_surf, cost_rect)
+            elif self.purchase_cost not in (None, 0):
+                cost_surf = font.render(f"${self.purchase_cost}", True, text_color)
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - 25))
+                surface.blit(cost_surf, cost_rect)
 
 # --- Helper Functions ---
 def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COLOR):
@@ -89,15 +126,17 @@ def get_section_entity_defs():
         lambda: get_decoration_entities(),
     ]
 
-def get_entity_labels_and_icons(entity_classes, num_buttons):
+def get_entity_labels_icons_costs(entity_classes, num_buttons):
     def get_display_name(cls):
         return getattr(cls, 'display_name', cls.__name__)
-    items = [(get_display_name(cls), getattr(cls, '_icon', None), cls) for cls in entity_classes]
+    def get_purchase_cost(cls):
+        return getattr(cls, 'purchase_cost', None)
+    items = [(get_display_name(cls), getattr(cls, '_icon', None), cls, get_purchase_cost(cls)) for cls in entity_classes]
     if not items:
-        return [], [], []
-    items += [("-", None, None)] * (num_buttons - len(items))
-    item_labels, entity_icons, entity_classes_out = zip(*items)
-    return list(item_labels), list(entity_icons), list(entity_classes_out)
+        return [], [], [], []
+    items += [("-", None, None, None)] * (num_buttons - len(items))
+    item_labels, entity_icons, entity_classes_out, purchase_costs = zip(*items)
+    return list(item_labels), list(entity_icons), list(entity_classes_out), list(purchase_costs)
 
 def draw_icon(surface, icon_path, btn_rect, icon_width, icon_height, icon_top_margin):
     if not icon_path:
@@ -148,31 +187,26 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     section_entity_defs = get_section_entity_defs()
     if 0 <= selected_section < len(section_entity_defs):
         entity_classes = section_entity_defs[selected_section]()
-        item_labels, entity_icons, entity_classes_out = get_entity_labels_and_icons(entity_classes, num_entity_buttons)
+        entity_classes_out = list(entity_classes) + [None] * (number_of_entity_buttons - len(entity_classes))
     else:
-        item_labels = ["empty button"] * num_entity_buttons
-        entity_icons = [None] * num_entity_buttons
-        entity_classes_out = [None] * num_entity_buttons
+        entity_classes_out = [None] * number_of_entity_buttons
+    item_btn_w = EntityButton.DEFAULT_WIDTH
     item_btn_h = EntityButton.DEFAULT_HEIGHT
+    section_btn_h = SectionButton.DEFAULT_HEIGHT
     entity_buttons = []
-    for i, label in enumerate(item_labels):
+    for i, entity_class in enumerate(entity_classes_out):
         btn_rect = pygame.Rect(x + i * item_btn_w + 2, y + section_btn_h + 2, item_btn_w - 4, item_btn_h - 4)
         selected = (selected_item is not None and i == selected_item)
-        color = BTN_SELECTED if selected else BTN_COLOR
-        pygame.draw.rect(surface, color, btn_rect)
-        icon_path = entity_icons[i]
-        icon_width = EntityButton.DEFAULT_ICON_WIDTH
-        icon_height = EntityButton.DEFAULT_ICON_HEIGHT
-        icon_top_margin = EntityButton.DEFAULT_ICON_TOP_MARGIN
-        draw_icon(surface, icon_path, btn_rect, icon_width, icon_height, icon_top_margin)
-        if font:
-            text_surf = font.render(label, True, TEXT_COLOR)
-            text_rect = text_surf.get_rect(center=(btn_rect.centerx, btn_rect.bottom - 25))
-            surface.blit(text_surf, text_rect)
-        entity_buttons.append(EntityButton(
-            btn_rect, label, icon_path, selected,
-            height=item_btn_h - 4, width=btn_rect.width,
-            icon_width=icon_width, icon_height=icon_height, icon_top_margin=icon_top_margin,
-            entity_class=entity_classes_out[i]
-        ))
+        entity_button = EntityButton(
+            btn_rect,
+            entity_class=entity_class,
+            selected=selected,
+            height=item_btn_h - 4,
+            width=btn_rect.width,
+            icon_width=EntityButton.DEFAULT_ICON_WIDTH,
+            icon_height=EntityButton.DEFAULT_ICON_HEIGHT,
+            icon_top_margin=EntityButton.DEFAULT_ICON_TOP_MARGIN,
+        )
+        entity_button.draw(surface, font)
+        entity_buttons.append(entity_button)
     return section_buttons, entity_buttons

@@ -54,7 +54,7 @@ def get_system_panel_cells(font=None):
     system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
     def get_internet_label():
         gs = GameState()
-        return "Connected" if getattr(gs, 'is_internet_online', True) else "Disconnected"
+        return "Online" if getattr(gs, 'is_internet_online', True) else "Offline"
     system_grid = [
         [
             SystemCell(label=None, font=font, icon=system_icons[0], dynamic_label_func=get_internet_label),
