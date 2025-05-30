@@ -103,15 +103,33 @@ def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygam
     update_icon_surfaces._icon_surfaces = icon_surfaces
     update_icon_surfaces._icon_state = (is_internet_online, is_nas_online)
 
-def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
+def get_system_panel_bg():
+    if not hasattr(get_system_panel_bg, "_bg_surface"):
+        bg = pygame.Surface((320, 100), pygame.SRCALPHA)
+        bg.fill(UI_BG1_COL)  # Use UI_BG1_COL from config.py
+        pygame.draw.rect(bg, (100, 100, 100), bg.get_rect(), 2)  # border
+        get_system_panel_bg._bg_surface = bg
+    return get_system_panel_bg._bg_surface
+
+def draw_resource_panel_system(surface: pygame.Surface, font: Optional[pygame.font.Font] = None, x: int = 0, y: int = 0):
     """
     Draws the system icons (internet, NAS, wifi, storage) in the resource panel, using the correct tint for online/offline states.
     Optimized for clarity and maintainability.
+    Now supports drawing at an (x, y) offset.
     """
     font = font or get_cached_font(18)
     gs = GameState()
     is_internet_online = gs.is_internet_online
     is_nas_online = getattr(gs, 'is_nas_online', True)
+
+    # Blit the prebaked background first
+    bg = get_system_panel_bg()
+    surface.blit(bg, (x, y))
+
+    # Draw header
+    header = Header(320, text="SYSTEM HEALTH", font=font)
+    surface.blit(header.get_surface(), (x, y))
+    header_height = header.header_height
 
     # Only update icon surfaces if state changed or never initialized
     if (not hasattr(update_icon_surfaces, "_icon_state") or
@@ -122,8 +140,8 @@ def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None)
     # Get system cell positions (assume 2x2 grid, 160x50 per cell)
     icon_size = 40
     system_grid = get_system_panel_cells(font)
-    system_x = 0
-    system_y = 0
+    system_x = x
+    system_y = y + header_height
     for row_idx, row in enumerate(system_grid):
         for col_idx, cell in enumerate(row):
             icon_x = system_x + col_idx * cell.cell_width + 10
@@ -133,3 +151,25 @@ def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None)
                 surface.blit(icon_surfaces[icon_idx], (icon_x, icon_y))
             # Draw dynamic label
             cell.blit_dynamic_text(surface, (system_x + col_idx * cell.cell_width, system_y + row_idx * cell.cell_height), font)
+
+class Header:
+    header_height = 30
+    def __init__(self, width: int, height: Optional[int] = None, text: str = "SYSTEM HEALTH", font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None):
+        self.width = width
+        self.height = height if height is not None else self.header_height
+        self.text = text
+        self.font = font or pygame.font.SysFont(None, 24)
+        self.text_color = text_color if text_color is not None else TEXT1_COL
+        self.surface = self._create_surface()
+
+    def _create_surface(self) -> pygame.Surface:
+        surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        surface.fill(UI_BG1_COL)
+        pygame.draw.rect(surface, UI_BORDER1_COL, surface.get_rect(), 2)
+        text_surf = self.font.render(self.text, True, self.text_color)
+        text_rect = text_surf.get_rect(center=(self.width//2, self.height//2 + 2))
+        surface.blit(text_surf, text_rect)
+        return surface
+
+    def get_surface(self) -> pygame.Surface:
+        return self.surface
