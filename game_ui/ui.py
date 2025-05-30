@@ -27,13 +27,33 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if all(v is not None for v in [selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
         draw_entity_preview(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     if ALLOW_RESOURCE_PANEL:
-        draw_resource_panel_general(surface, font)
+        # --- Combine resource panels into a single centered rectangle, side by side, with correct spacing ---
         baked = get_baked_panel(font)
-        resource_panel_height = baked['total_height']
-        # Draw system panel to the right of the resource panel
-        system_panel_x = ((surface.get_width() - baked['total_width']) // 2) + baked['total_width'] + 10
-        system_panel_y = 0
-        draw_resource_panel_system(surface, font, system_panel_x, system_panel_y)
+        general_width = baked['total_width']
+        general_height = baked['total_height']
+        system_width = 320
+        system_height = 130
+        panel_gap = 10
+        # The total width is the sum of both panel widths plus the gap
+        combined_width = general_width + panel_gap + system_width
+        combined_height = max(general_height, system_height)
+        combined_x = (surface.get_width() - combined_width) // 2
+        combined_y = 0
+        # Draw background rectangle
+        import pygame
+        from game_core.config import UI_BG1_COL, UI_BORDER1_COL
+        bg_rect = pygame.Rect(combined_x, combined_y, combined_width, combined_height)
+        pygame.draw.rect(surface, UI_BG1_COL, bg_rect)
+        pygame.draw.rect(surface, UI_BORDER1_COL, bg_rect, 2)
+        # Draw general panel on the left, vertically centered in the block
+        general_x = combined_x
+        general_y = combined_y + (combined_height - general_height) // 2
+        draw_resource_panel_general(surface.subsurface(pygame.Rect(general_x, general_y, general_width, general_height)), font)
+        # Draw system panel on the right, vertically centered in the block
+        system_x = combined_x + general_width + panel_gap
+        system_y = combined_y + (combined_height - system_height) // 2
+        draw_resource_panel_system(surface, font, system_x, system_y)
+        resource_panel_height = combined_height
     section_btn_rects, item_btn_rects = draw_construction_panel(
         surface, selected_section=selected_section, selected_item=selected_item, font=font
     )
