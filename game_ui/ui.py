@@ -8,9 +8,14 @@ from game_ui.resource_panel import draw_resource_panel, draw_icons, get_baked_pa
 from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
+from game_core.game_state import GameState
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
+    from game_core.game_state import GameState
+    # Always preview the current construction class if set
+    if all(v is not None for v in [camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]) and callable(GameState().current_construction_class):
+        draw_entity_preview(surface, None, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     selected_entity_class = None
     if entity_buttons is not None and selected_item is not None and 0 <= selected_item < len(entity_buttons):
         selected_entity_class = entity_buttons[selected_item].entity_class
@@ -44,7 +49,9 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
 
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
-    if not callable(selected_entity_type):
+    # Always use the global singleton for construction class
+    entity_type = GameState().current_construction_class
+    if not callable(entity_type):
         return
     from game_core.entity_definitions import get_icon_surface
     mx, my = pygame.mouse.get_pos()
@@ -54,7 +61,7 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
         return
     if grid[grid_y][grid_x] is not None:
         return
-    preview_entity = selected_entity_type(grid_x, grid_y)
+    preview_entity = entity_type(grid_x, grid_y)
     icon_path = getattr(preview_entity, '_icon', None)
     icon_surf = get_icon_surface(icon_path) if icon_path else None
     if icon_surf:

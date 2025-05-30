@@ -22,6 +22,7 @@ class GameState:
             cls._instance.total_shots_finished = 0
             cls._instance.jobs_finished = 0
             cls._instance.job_id = 0
+            cls._instance.current_construction_class = None  # Track what the user is currently constructing
         return cls._instance
 
     def summarize_entities(self, grid):

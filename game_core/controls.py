@@ -2,6 +2,7 @@
 import pygame
 import game_other.audio as audio
 from game_core.config import GRID_WIDTH, GRID_HEIGHT
+from game_core.game_state import GameState
 # --- Merged from input_events.py ---
 import game_other.testing_layout as testing_layout
 
@@ -150,29 +151,64 @@ class GameControls:
         self.selected_section = None
         self.paint_brush = PaintBrush()
         self.camera_drag = CameraDrag()
+        self.pipette_entity_class = None  # For pipette tool
         # Add more state as needed
+
+    def pipette(self, state):
+        mx, my = pygame.mouse.get_pos()
+        camera_offset = state['camera_offset']
+        cell_size = state['cell_size']
+        gx = int((mx - camera_offset[0]) // cell_size)
+        gy = int((my - camera_offset[1]) // cell_size)
+        grid = state['grid']
+        if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
+            entity = grid[gy][gx]
+            if entity is not None:
+                # Try to select the corresponding item in the construction panel if present
+                panel_btn_rects = state.get('panel_btn_rects', {})
+                entity_buttons = panel_btn_rects.get('item', [])
+                for idx, button in enumerate(entity_buttons):
+                    if hasattr(button, 'entity_class') and type(entity) == button.entity_class:
+                        self.selected_item = idx
+                        state['selected_item'] = idx
+                        self.pipette_entity_class = None
+                        GameState().current_construction_class = button.entity_class
+                        return
+                # If not in panel, just store the class for painting
+                self.selected_item = None
+                state['selected_item'] = None
+                self.pipette_entity_class = type(entity)
+                GameState().current_construction_class = type(entity)
+            else:
+                self.selected_item = None
+                state['selected_item'] = None
+                self.pipette_entity_class = None
+                GameState().current_construction_class = None
 
     def handle_event(self, event, state, remove_entity, place_entity):
         grid_changed = False
+        # --- Pipette tool: Q key ---
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+            self.pipette(state)
+            return None, grid_changed
         idx = keybinds(event)
         if isinstance(idx, int):
             entity_buttons = state.get('panel_btn_rects', {}).get('item', [])
             if 0 <= idx < len(entity_buttons):
                 if self.selected_item == idx:
                     self.selected_item = None
+                    GameState().current_construction_class = None
                 else:
                     self.selected_item = idx
+                    entity_btn = entity_buttons[idx]
+                    GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                 state['selected_item'] = self.selected_item
+                self.pipette_entity_class = None
                 return None, grid_changed
         # PaintBrush drag-to-paint/erase logic
         paint_brush = self.paint_brush
-        selected_item = self.selected_item
-        panel_btn_rects = state.get('panel_btn_rects', {})
-        entity_buttons = panel_btn_rects.get('item', [])
-        entity_class = None
-        if selected_item is not None and 0 <= selected_item < len(entity_buttons):
-            entity_btn = entity_buttons[selected_item]
-            entity_class = getattr(entity_btn, 'entity_class', None)
+        # Always use the global singleton for construction class
+        entity_class = GameState().current_construction_class
         paint_result = paint_brush.handle_event(
             event,
             entity_class,
@@ -205,6 +241,8 @@ class GameControls:
                     self.selected_item = None
                     state['selected_section'] = self.selected_section
                     state['selected_item'] = self.selected_item
+                    self.pipette_entity_class = None
+                    GameState().current_construction_class = None
                     return None, grid_changed
             # Item buttons
             for idx, button in enumerate(panel_btn_rects.get('item', [])):
@@ -212,18 +250,26 @@ class GameControls:
                     # Deselect if already selected
                     if self.selected_item == idx:
                         self.selected_item = None
+                        GameState().current_construction_class = None
                     else:
                         self.selected_item = idx
+                        GameState().current_construction_class = getattr(button, 'entity_class', None)
                     state['selected_item'] = self.selected_item
+                    self.pipette_entity_class = None
                     return None, grid_changed
             # Handle left-click construction
             if self.left_click_construction(event, state, place_entity):
+                self.pipette_entity_class = None
                 return None, True
         # Handle right-click deselect
         if self.right_click_deselect(event, state):
+            self.pipette_entity_class = None
+            GameState().current_construction_class = None
             return None, grid_changed
         # Handle right-click deconstruction
         if self.right_click_deconstruction(event, state, remove_entity):
+            self.pipette_entity_class = None
+            GameState().current_construction_class = None
             return None, True
         # Testing layout (leave as is, not migrated)
         testing_layout.handle_testing_layout(event, state['grid'], state['entity_states'], state['GRID_WIDTH'], state['GRID_HEIGHT'])
@@ -231,6 +277,8 @@ class GameControls:
         if global_result == 'exit' or event.type == pygame.QUIT:
             return 'exit', grid_changed
         if global_result == 'cleared':
+            self.pipette_entity_class = None
+            GameState().current_construction_class = None
             return None, True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
             from game_ui.hidden_info_panel import handle_panel_toggle_event
@@ -242,37 +290,34 @@ class GameControls:
 
     def left_click_construction(self, event, state, place_entity):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            selected_item = self.selected_item
-            panel_btn_rects = state.get('panel_btn_rects', {})
-            entity_buttons = panel_btn_rects.get('item', [])
-            if selected_item is not None and 0 <= selected_item < len(entity_buttons):
-                entity_btn = entity_buttons[selected_item]
-                entity_class = getattr(entity_btn, 'entity_class', None)
-                if entity_class is not None:
-                    mx, my = pygame.mouse.get_pos()
-                    camera_offset = state['camera_offset']
-                    cell_size = state['cell_size']
-                    gx = int((mx - camera_offset[0]) // cell_size)
-                    gy = int((my - camera_offset[1]) // cell_size)
-                    grid = state['grid']
-                    entity_states = state['entity_states']
-                    if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT'] and grid[gy][gx] is None:
-                        entity = entity_class(gx, gy)
-                        if hasattr(entity, 'load_icon'):
-                            entity.load_icon()
-                        place_entity(grid, entity_states, entity)
-                        if hasattr(entity, 'on_built'):
-                            entity.on_built()
-                        if hasattr(entity, 'update'):
-                            entity.update(grid)
-                        return True
+            entity_class = GameState().current_construction_class
+            if entity_class is not None:
+                mx, my = pygame.mouse.get_pos()
+                camera_offset = state['camera_offset']
+                cell_size = state['cell_size']
+                gx = int((mx - camera_offset[0]) // cell_size)
+                gy = int((my - camera_offset[1]) // cell_size)
+                grid = state['grid']
+                entity_states = state['entity_states']
+                if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT'] and grid[gy][gx] is None:
+                    entity = entity_class(gx, gy)
+                    if hasattr(entity, 'load_icon'):
+                        entity.load_icon()
+                    place_entity(grid, entity_states, entity)
+                    if hasattr(entity, 'on_built'):
+                        entity.on_built()
+                    if hasattr(entity, 'update'):
+                        entity.update(grid)
+                    return True
         return False
 
     def right_click_deselect(self, event, state):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-            if self.selected_item is not None:
+            if self.selected_item is not None or self.pipette_entity_class is not None:
                 self.selected_item = None
+                self.pipette_entity_class = None
                 state['selected_item'] = None
+                GameState().current_construction_class = None
                 return True
         return False
 
