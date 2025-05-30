@@ -8,6 +8,7 @@ from game_ui.resource_panel import draw_resource_panel, draw_icons, get_baked_pa
 from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
+from game_ui.details_panel import draw_details_panel
 from game_core.game_state import GameState
 
 
@@ -34,6 +35,12 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if panel_btn_rects is not None:
         panel_btn_rects['section'] = section_btn_rects
         panel_btn_rects['item'] = item_btn_rects
+
+    # Draw details panel to the right of the construction panel
+    details_panel_x = section_btn_rects[-1].rect.right + 16 if section_btn_rects else 420
+    details_panel_y = section_btn_rects[0].rect.top if section_btn_rects else 0
+    draw_details_panel(surface, font, details_panel_x, details_panel_y, width=400, height=300, entity=hovered_entity)
+
     info_panel_width = get_info_panel_width(surface.get_width())
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:

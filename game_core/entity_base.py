@@ -360,10 +360,6 @@ class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
     power_drain = 0
     special_chance = 0.5
-    satisfaction_check_radius = 1
-    satisfaction_check_threshold = 1
-    satisfaction_check_type = 'outlet'
-    satisfaction_check_gamestate = 'is_nas_online'
 
     def __init__(self, x, y):
         super().__init__(x, y)
@@ -398,6 +394,6 @@ class PersonEntity(SatisfiableEntity):
     def __init__(self, x, y):
         super().__init__(x, y)
         import random
-        self.name = random.choice(self.NAMES)
+        self.person_name = random.choice(self.NAMES)
         self.display_name = getattr(self, 'display_name', 'Person')
         # Add more initialization if needed
