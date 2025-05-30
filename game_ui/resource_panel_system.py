@@ -67,7 +67,12 @@ def get_system_panel_cells(font=None):
     ]
     return system_grid
 
-def update_icon_surfaces(is_internet_online, is_nas_online, font=None):
+# --- System Panel Robust Logic (from resource_panel_system_old.py) ---
+def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygame.font.Font] = None):
+    """
+    Tint and cache the icon surfaces for the current is_internet_online and is_nas_online state.
+    This should be called only at game start and when either state changes.
+    """
     icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
     icon_size = 40
     if not hasattr(update_icon_surfaces, "_icon_cache"):
@@ -97,19 +102,34 @@ def update_icon_surfaces(is_internet_online, is_nas_online, font=None):
         icon_surfaces.append(tint_icon(icon, color))
     update_icon_surfaces._icon_surfaces = icon_surfaces
     update_icon_surfaces._icon_state = (is_internet_online, is_nas_online)
-    return icon_surfaces
 
-def draw_system_panel(surface, font, x, y, system_grid=None):
-    if system_grid is None:
-        system_grid = get_system_panel_cells(font)
+def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
+    """
+    Draws the system icons (internet, NAS, wifi, storage) in the resource panel, using the correct tint for online/offline states.
+    Optimized for clarity and maintainability.
+    """
+    font = font or get_cached_font(18)
+    gs = GameState()
+    is_internet_online = gs.is_internet_online
+    is_nas_online = getattr(gs, 'is_nas_online', True)
+
+    # Only update icon surfaces if state changed or never initialized
+    if (not hasattr(update_icon_surfaces, "_icon_state") or
+        update_icon_surfaces._icon_state != (is_internet_online, is_nas_online)):
+        update_icon_surfaces(is_internet_online, is_nas_online, font)
+    icon_surfaces = update_icon_surfaces._icon_surfaces
+
+    # Get system cell positions (assume 2x2 grid, 160x50 per cell)
     icon_size = 40
+    system_grid = get_system_panel_cells(font)
+    system_x = 0
+    system_y = 0
     for row_idx, row in enumerate(system_grid):
         for col_idx, cell in enumerate(row):
-            icon_x = x + col_idx * cell.cell_width + 10
-            icon_y = y + row_idx * cell.cell_height + (cell.cell_height - icon_size) // 2
-            # Draw icon (should be tinted by update_icon_surfaces)
-            if hasattr(update_icon_surfaces, '_icon_surfaces'):
-                icon_surf = update_icon_surfaces._icon_surfaces[row_idx*2+col_idx]
-                surface.blit(icon_surf, (icon_x, icon_y))
+            icon_x = system_x + col_idx * cell.cell_width + 10
+            icon_y = system_y + row_idx * cell.cell_height + (cell.cell_height - icon_size) // 2
+            icon_idx = row_idx * 2 + col_idx
+            if icon_idx < len(icon_surfaces):
+                surface.blit(icon_surfaces[icon_idx], (icon_x, icon_y))
             # Draw dynamic label
-            cell.blit_dynamic_text(surface, (x + col_idx * cell.cell_width, y + row_idx * cell.cell_height), font)
+            cell.blit_dynamic_text(surface, (system_x + col_idx * cell.cell_width, system_y + row_idx * cell.cell_height), font)

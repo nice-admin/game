@@ -5,7 +5,7 @@ from game_ui.info_panel import draw_info_panel, get_info_panel_width
 from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel import draw_resource_panel, get_baked_panel
-from game_ui.resource_panel_system import draw_system_panel
+from game_ui.resource_panel_system import draw_icons
 from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
@@ -33,7 +33,8 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         # Draw system panel to the right of the resource panel
         system_panel_x = ((surface.get_width() - baked['total_width']) // 2) + baked['total_width'] + 10
         system_panel_y = 0
-        draw_system_panel(surface, font, system_panel_x, system_panel_y)
+        # Use draw_icons for robust dynamic system panel
+        draw_icons(surface, font)
     section_btn_rects, item_btn_rects = draw_construction_panel(
         surface, selected_section=selected_section, selected_item=selected_item, font=font
     )
