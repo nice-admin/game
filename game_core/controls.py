@@ -6,6 +6,50 @@ from game_core.game_state import GameState
 # --- Merged from input_events.py ---
 import game_other.testing_layout as testing_layout
 
+def line_build(x0, y0, x1, y1, grid, entity_class):
+    line_entities = []
+    dx = abs(x1 - x0)
+    dy = abs(y1 - y0)
+    sx = 1 if x0 < x1 else -1
+    sy = 1 if y0 < y1 else -1
+    err = dx - dy
+    x, y = x0, y0
+    while True:
+        if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT and grid[y][x] is None:
+            line_entities.append(entity_class(x, y))
+        if (x, y) == (x1, y1):
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+    return line_entities
+
+def line_deconstruct(x0, y0, x1, y1, grid):
+    erase_line_coords = []
+    dx = abs(x1 - x0)
+    dy = abs(y1 - y0)
+    sx = 1 if x0 < x1 else -1
+    sy = 1 if y0 < y1 else -1
+    err = dx - dy
+    x, y = x0, y0
+    while True:
+        if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
+            erase_line_coords.append((x, y))
+        if (x, y) == (x1, y1):
+            break
+        e2 = 2 * err
+        if e2 > -dy:
+            err -= dy
+            x += sx
+        if e2 < dx:
+            err += dx
+            y += sy
+    return erase_line_coords
+
 class CameraDrag:
     def __init__(self):
         self.dragging = False
@@ -152,6 +196,7 @@ class GameControls:
         self.paint_brush = PaintBrush()
         self.camera_drag = CameraDrag()
         self.pipette_entity_class = None  # For pipette tool
+        self.line_starting_position = None  # Always track last clicked cell
         # Add more state as needed
 
     def pipette(self, state):
@@ -187,6 +232,37 @@ class GameControls:
 
     def handle_event(self, event, state, remove_entity, place_entity):
         grid_changed = False
+        # --- Always track last clicked cell as line_starting_position ---
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            mx, my = pygame.mouse.get_pos()
+            camera_offset = state['camera_offset']
+            cell_size = state['cell_size']
+            gx = int((mx - camera_offset[0]) // cell_size)
+            gy = int((my - camera_offset[1]) // cell_size)
+            grid = state['grid']
+            if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
+                # --- Shift-click line build/deconstruct using line_starting_position ---
+                if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and self.line_starting_position is not None and (gx, gy) != self.line_starting_position:
+                    start = self.line_starting_position
+                    if event.button == 1:  # Shift + Left Click: Line Build
+                        entity_class = GameState().current_construction_class
+                        if entity_class is not None:
+                            for e in line_build(start[0], start[1], gx, gy, grid, entity_class):
+                                if hasattr(e, 'load_icon'):
+                                    e.load_icon()
+                                place_entity(grid, state['entity_states'], e)
+                                if hasattr(e, 'on_built'):
+                                    e.on_built()
+                            self.line_starting_position = (gx, gy)  # Update to new end
+                            return None, True
+                    elif event.button == 3:  # Shift + Right Click: Line Deconstruct
+                        for x, y in line_deconstruct(start[0], start[1], gx, gy, grid):
+                            if grid[y][x] is not None:
+                                remove_entity(grid, state['entity_states'], x, y)
+                        self.line_starting_position = (gx, gy)  # Update to new end
+                        return None, True
+                # Always update line_starting_position to current click
+                self.line_starting_position = (gx, gy)
         # --- Pipette tool: Q key ---
         if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
             self.pipette(state)
