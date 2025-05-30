@@ -4,7 +4,7 @@ from game_ui.alerts_panel import draw_alert_panel, check_alerts
 from game_ui.info_panel import draw_info_panel, get_info_panel_width
 from game_other.feature_toggle import *
 import pygame
-from game_ui.resource_panel import draw_resource_panel, draw_icons, get_baked_panel
+from game_ui.resource_panel import draw_resource_panel, get_baked_panel
 from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
@@ -27,7 +27,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_entity_preview(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     if ALLOW_RESOURCE_PANEL:
         draw_resource_panel(surface, font)
-        draw_icons(surface, font)
         baked = get_baked_panel(font)
         resource_panel_height = baked['total_height']
     section_btn_rects, item_btn_rects = draw_construction_panel(

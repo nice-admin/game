@@ -192,25 +192,6 @@ class ProblemCell(GeneralCell):
     def __init__(self, label: Optional[str] = None, font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, icon: Optional[pygame.Surface] = None):
         super().__init__(label=label, font=font, text_color=text_color if text_color is not None else TEXT1_COL, icon=icon)
 
-class SystemCell(GeneralCell):
-    cell_width = 160
-    def __init__(self, label: str = "Connected", font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None, value_font_size: int = 25, label_text_size: int = 15, icon: Optional[pygame.Surface] = None):
-        super().__init__(label=None, font=font, text_color=text_color if text_color is not None else TEXT1_COL, value_font_size=value_font_size, label_text_size=label_text_size)
-        self.custom_label = label
-        self.icon = icon
-        self._draw_text()
-
-    def _draw_icon(self):
-        return 10  # Icon rendering is handled elsewhere
-
-    def _draw_text(self):
-        x_offset = self._draw_icon() + 50
-        if self.custom_label:
-            label_font = get_cached_font(self.label_text_size)
-            surf = label_font.render(str(self.custom_label), True, self.text_color)
-            rect = surf.get_rect(midleft=(x_offset, self.cell_height//2))
-            self.surface.blit(surf, rect)
-
 class Header:
     header_height = 30
     def __init__(self, width: int, height: Optional[int] = None, text: str = "hello", font: Optional[pygame.font.Font] = None, text_color: Optional[Tuple[int, int, int]] = None):
@@ -259,17 +240,11 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
             if problems_grid[row][col] is None:
                 problems_grid[row][col] = ProblemCell(label="", font=font)
     # --- SYSTEM PANEL: Restore to 2 rows x 2 columns ---
-    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
-    system_labels = [
-        "Connected", "Running",
-        "WiFi OK", "15 / 25 TB"
-    ]
-    system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
-    system_grid = [[SystemCell(label=system_labels[row*2+col], font=font, icon=system_icons[row*2+col]) for col in range(2)] for row in range(2)]
+    # (System panel logic removed; now handled in resource_panel_systems.py)
     general_width = 5 * GeneralCell.cell_width
     problems_width = 2 * ProblemCell.cell_width
-    system_width = 2 * SystemCell.cell_width
-    total_width = general_width + gap + problems_width + gap + system_width
+    # system_width = 2 * SystemCell.cell_width  # No longer needed here
+    total_width = general_width + gap + problems_width  # Removed system panel width
     total_height = 2 * GeneralCell.cell_height + Header.header_height
     panel_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
     start_x = 0
@@ -284,8 +259,8 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
                 panel_surface.blit(cell.surface, (x, y))
     for header_text, width, x, grid, cell_cls in [
         ("GENERAL INFORMATION", general_width, start_x, general_grid, GeneralCell),
-        ("WARNING PANEL", problems_width, start_x + general_width + gap, problems_grid, ProblemCell),
-        ("SYSTEM HEALTH", system_width, start_x + general_width + gap + problems_width + gap, system_grid, SystemCell)
+        ("WARNING PANEL", problems_width, start_x + general_width + gap, problems_grid, ProblemCell)
+        # System panel removed
     ]:
         header = Header(width, text=header_text, font=font)
         panel_surface.blit(header.get_surface(), (x, 0))
@@ -295,7 +270,7 @@ def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, An
         'panel_surface': panel_surface,
         'general_grid': general_grid,
         'problems_grid': problems_grid,
-        'system_grid': system_grid,
+        # 'system_grid': system_grid,  # Removed
         'start_x': start_x,
         'start_y': start_y,
         'surf_x': None,
@@ -341,81 +316,5 @@ def draw_resource_panel(surface: pygame.Surface, font: Optional[pygame.font.Font
         cell.blit_to(panel_surface, (cell.x, cell.y))
     # System cells can be handled similarly if desired
     surface.blit(panel_surface, (surf_x, surf_y))
-
-def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygame.font.Font] = None):
-    """
-    Tint and cache the icon surfaces for the current is_internet_online and is_nas_online state.
-    This should be called only at game start and when either state changes.
-    """
-    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
-    icon_size = 40
-    if not hasattr(update_icon_surfaces, "_icon_cache"):
-        update_icon_surfaces._icon_cache = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
-    system_icons = update_icon_surfaces._icon_cache
-    def tint_icon(icon, color):
-        icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))
-        tinted = icon.copy()
-        arr = pygame.surfarray.pixels3d(tinted)
-        arr[:, :, 0] = color[0]
-        arr[:, :, 1] = color[1]
-        arr[:, :, 2] = color[2]
-        del arr
-        return tinted
-    ONLINE = (0, 255, 0)
-    OFFLINE = (0, 0, 0)
-    icon_surfaces = []
-    for idx, icon in enumerate(system_icons):
-        if idx == 0:  # internet.png
-            color = ONLINE if is_internet_online else OFFLINE
-        elif idx == 1:  # nas.png
-            color = ONLINE if is_nas_online else OFFLINE
-        elif idx == 2:  # wifi.png
-            color = ONLINE if is_internet_online else OFFLINE
-        else:
-            color = ONLINE
-        icon_surfaces.append(tint_icon(icon, color))
-    update_icon_surfaces._icon_surfaces = icon_surfaces
-    update_icon_surfaces._icon_state = (is_internet_online, is_nas_online)
-
-def draw_icons(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
-    """
-    Draws the system icons (internet, NAS, wifi, storage) in the resource panel, using the correct tint for online/offline states.
-    Optimized for clarity and maintainability.
-    """
-    font = font or get_font1(18)
-    gs = GameState()
-    is_internet_online = gs.is_internet_online
-    is_nas_online = getattr(gs, 'is_nas_online', True)
-
-    # Only update icon surfaces if state changed or never initialized
-    if (not hasattr(update_icon_surfaces, "_icon_state") or
-        update_icon_surfaces._icon_state != (is_internet_online, is_nas_online)):
-        update_icon_surfaces(is_internet_online, is_nas_online, font)
-    icon_surfaces = update_icon_surfaces._icon_surfaces
-
-    # Get baked panel and system cell positions
-    baked = get_baked_panel(font)
-    system_grid = baked['system_grid']
-    general_width = 5 * GeneralCell.cell_width
-    problems_width = 2 * ProblemCell.cell_width
-    gap = 10
-    start_y = Header.header_height
-    system_x = general_width + gap + problems_width + gap
-    surf_x = baked['surf_x'] or 0
-    surf_y = baked['surf_y'] or 0
-    icon_size = 40
-
-    # Calculate icon positions dynamically (no caching, always correct if layout changes)
-    icon_positions = [
-        (
-            surf_x + system_x + col_idx * SystemCell.cell_width + 10,
-            surf_y + start_y + row_idx * SystemCell.cell_height + (SystemCell.cell_height - icon_size) // 2
-        )
-        for row_idx, row in enumerate(system_grid)
-        for col_idx, _ in enumerate(row)
-    ]
-
-    for icon_surf, (x, y) in zip(icon_surfaces, icon_positions):
-        surface.blit(icon_surf, (x, y))
 
 
