@@ -1,5 +1,6 @@
 import pygame
 import inspect
+import hashlib
 from game_core import entity_definitions
 from game_core.entity_base import *
 from game_core.entity_definitions import *
@@ -153,6 +154,14 @@ def draw_icon(surface, icon_path, btn_rect, icon_width, icon_height, icon_top_ma
     except Exception as e:
         print(f"Error loading icon {icon_path}: {e}")
 
+_baked_panel_cache = {
+    'surface': None,
+    'section_buttons': None,
+    'entity_buttons': None,
+    'state': None,
+    'size': None,
+}
+
 def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8):
     """
     Draws a new construction panel with two rows:
@@ -166,26 +175,41 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     width = item_btn_w * num_entity_buttons
     x = (surface.get_width() - width) // 2
     y = surface.get_height() - (SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT)
-
-    # Panel background
     panel_height = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT
     panel_rect = pygame.Rect(x, y, width, panel_height)
-    pygame.draw.rect(surface, BG_COLOR, panel_rect)
+
+    # Create a hash of the current panel state for cache invalidation
+    state_tuple = (selected_section, selected_item, surface.get_width(), surface.get_height())
+    state_hash = hashlib.md5(str(state_tuple).encode()).hexdigest()
+    size_tuple = (width, panel_height)
+
+    # Check if we can use the cached panel
+    if (
+        _baked_panel_cache['surface'] is not None and
+        _baked_panel_cache['state'] == state_hash and
+        _baked_panel_cache['size'] == size_tuple
+    ):
+        # Blit the cached panel
+        surface.blit(_baked_panel_cache['surface'], (x, y))
+        return _baked_panel_cache['section_buttons'], _baked_panel_cache['entity_buttons']
+
+    # Otherwise, bake a new panel
+    panel_surf = pygame.Surface((width, panel_height), pygame.SRCALPHA)
+    panel_surf.fill(BG_COLOR)
 
     # First row: Section buttons
     section_btn_w = width // 7
     section_btn_h = SectionButton.DEFAULT_HEIGHT
     section_buttons = []
     for i, label in enumerate(SECTION_LABELS):
-        # For the last button, extend to the right edge
         if i == len(SECTION_LABELS) - 1:
-            btn_rect = pygame.Rect(x + i * section_btn_w + 2, y + 2, width - (section_btn_w * i) - 4, section_btn_h - 4)
+            btn_rect = pygame.Rect(x + i * section_btn_w + 2 - x, 2, width - (section_btn_w * i) - 4, section_btn_h - 4)
         else:
-            btn_rect = pygame.Rect(x + i * section_btn_w + 2, y + 2, section_btn_w - 4, section_btn_h - 4)
+            btn_rect = pygame.Rect(x + i * section_btn_w + 2 - x, 2, section_btn_w - 4, section_btn_h - 4)
         selected = (i == selected_section)
         color = BTN_SELECTED if selected else BTN_COLOR
-        draw_button(surface, btn_rect, color, label, font)
-        section_buttons.append(SectionButton(btn_rect, label, selected, height=section_btn_h - 4, width=btn_rect.width))
+        draw_button(panel_surf, btn_rect, color, label, font)
+        section_buttons.append(SectionButton(btn_rect.move(x, y), label, selected, height=section_btn_h - 4, width=btn_rect.width))
 
     # Second row: Entity buttons
     section_entity_defs = get_section_entity_defs()
@@ -193,16 +217,14 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
         entity_classes = section_entity_defs[selected_section]()
         entity_classes_out = list(entity_classes) + [None] * (number_of_entity_buttons - len(entity_classes))
     else:
-        entity_classes_out = [None] * number_of_buttons
-    item_btn_w = EntityButton.DEFAULT_WIDTH
+        entity_classes_out = [None] * number_of_entity_buttons
     item_btn_h = EntityButton.DEFAULT_HEIGHT
-    section_btn_h = SectionButton.DEFAULT_HEIGHT
     entity_buttons = []
     for i, entity_class in enumerate(entity_classes_out):
-        btn_rect = pygame.Rect(x + i * item_btn_w + 2, y + section_btn_h + 2, item_btn_w - 4, item_btn_h - 4)
+        btn_rect = pygame.Rect(i * item_btn_w + 2, section_btn_h + 2, item_btn_w - 4, item_btn_h - 4)
         selected = (selected_item is not None and i == selected_item)
         entity_button = EntityButton(
-            btn_rect,
+            btn_rect,  # Do NOT move(x, y) here!
             entity_class=entity_class,
             selected=selected,
             height=item_btn_h - 4,
@@ -211,6 +233,26 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
             icon_height=EntityButton.DEFAULT_ICON_HEIGHT,
             icon_top_margin=EntityButton.DEFAULT_ICON_TOP_MARGIN,
         )
-        entity_button.draw(surface, font)
-        entity_buttons.append(entity_button)
+        entity_button.draw(panel_surf, font)
+        # For event handling, store the button rect relative to the main surface
+        entity_buttons.append(EntityButton(
+            btn_rect.move(x, y),
+            entity_class=entity_class,
+            selected=selected,
+            height=item_btn_h - 4,
+            width=btn_rect.width,
+            icon_width=EntityButton.DEFAULT_ICON_WIDTH,
+            icon_height=EntityButton.DEFAULT_ICON_HEIGHT,
+            icon_top_margin=EntityButton.DEFAULT_ICON_TOP_MARGIN,
+        ))
+
+    # Cache the baked panel
+    _baked_panel_cache['surface'] = panel_surf
+    _baked_panel_cache['section_buttons'] = section_buttons
+    _baked_panel_cache['entity_buttons'] = entity_buttons
+    _baked_panel_cache['state'] = state_hash
+    _baked_panel_cache['size'] = size_tuple
+
+    # Blit the baked panel
+    surface.blit(panel_surf, (x, y))
     return section_buttons, entity_buttons
