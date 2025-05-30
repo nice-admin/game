@@ -2,7 +2,7 @@ from .entity_base import *
 import random
 from game_other.audio import play_breaker_break_sound
 
-# --- Entity subclasses ---
+# region Tech
 class BasicComputer(ComputerEntity):
     _icon = "data/graphics/computer-basic.png"
     has_special = 1
@@ -10,59 +10,29 @@ class BasicComputer(ComputerEntity):
 
 class AdvancedComputer(ComputerEntity):
     _icon = "data/graphics/computer-advanced.png"
+    tier = 2
     has_special = 1
     power_drain = 400
     satisfaction_check_type = 'outlet'
     satisfaction_check_gamestate = 'is_nas_online'
-    tier = 2
 
 class BasicMonitor(MonitorEntity):
-    _icon = "data/graphics/monitor.png"
-    has_special = 0
+    _icon = "data/graphics/basic-monitor.png"
     power_drain = 20
-    satisfaction_check_type = ComputerEntity
-    satisfaction_check_radius = 1
-    satisfaction_check_threshold = 1
 
-    def satisfaction_check(self, grid):
-        # Standard proximity check for ComputerEntity in radius 1
-        count = self.count_entities_in_proximity(
-            grid, ComputerEntity, self.satisfaction_check_radius
-        )
-        # If any adjacent ComputerEntity is rendering, 20% chance to become unsatisfied
-        for row in grid:
-            for entity in row:
-                if (
-                    isinstance(entity, ComputerEntity)
-                    and abs(entity.x - self.x) + abs(entity.y - self.y) <= self.satisfaction_check_radius
-                    and getattr(entity, 'is_rendering', 0) == 1
-                ):
-                    if random.random() < 0.2:
-                        self.is_satisfied = 0
-                        self.state = "Mid"
-                        return
-        # Otherwise, use normal logic
-        if count >= self.satisfaction_check_threshold:
-            self.is_satisfied = 1
-            self.state = "Good"
-        else:
-            self.is_satisfied = 0
-            self.state = "Mid"
+class AdvancedMonitor(MonitorEntity):
+    _icon = "data/graphics/advanced-monitor.png"
+    tier = 2
+    power_drain = 40
 
+# region Humans
 class Artist(PersonEntity):
     _icon = "data/graphics/artist.png"
-    satisfaction_check_type = 'monitor'
+    satisfaction_check_type = BasicMonitor
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
     is_person = 1
     upkeep = 2000
-
-class EspressoMachine(BaseEntity):
-    _icon = "data/graphics/coffee-machine.png"
-
-class Outlet(BaseEntity):
-    _icon = "data/graphics/outlet.png"
-    purchase_cost = 20
 
 class ProjectManager(SatisfiableEntity):
     _icon = "data/graphics/project-manager.png"
@@ -70,6 +40,14 @@ class ProjectManager(SatisfiableEntity):
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
     upkeep = 3000
+
+# region Utility
+class EspressoMachine(BaseEntity):
+    _icon = "data/graphics/coffee-machine.png"
+
+class Outlet(BaseEntity):
+    _icon = "data/graphics/outlet.png"
+    purchase_cost = 20
 
 class Snacks(BaseEntity):
     _icon = "data/graphics/snacks.png"
@@ -113,3 +91,7 @@ class Breaker(SatisfiableEntity):
             self.is_risky = 0
             self.is_satisfied = 1
             self.state = "Good"
+
+# region Decoration
+class FlowerPot(DecorationEntity):
+    _icon = "data/graphics/flower-pot.png"

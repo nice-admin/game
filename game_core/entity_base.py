@@ -358,6 +358,9 @@ class SatisfiableEntity(BaseEntity):
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
 
+class DecorationEntity(BaseEntity):
+    pass
+
 class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
     power_drain = 0
@@ -381,7 +384,35 @@ class ComputerEntity(SatisfiableEntity):
                 gs.render_progress_current += 1
 
 class MonitorEntity(SatisfiableEntity):
-    satisfaction_check_type = 'computer'
+    has_special = 0
+    satisfaction_check_type = ComputerEntity
+    satisfaction_check_radius = 1
+    satisfaction_check_threshold = 1
+
+    def satisfaction_check(self, grid):
+        # Standard proximity check for ComputerEntity in radius 1
+        count = self.count_entities_in_proximity(
+            grid, ComputerEntity, self.satisfaction_check_radius
+        )
+        # If any adjacent ComputerEntity is rendering, 20% chance to become unsatisfied
+        for row in grid:
+            for entity in row:
+                if (
+                    isinstance(entity, ComputerEntity)
+                    and abs(entity.x - self.x) + abs(entity.y - self.y) <= self.satisfaction_check_radius
+                    and getattr(entity, 'is_rendering', 0) == 1
+                ):
+                    if random.random() < 0.2:
+                        self.is_satisfied = 0
+                        self.state = "Mid"
+                        return
+        # Otherwise, use normal logic
+        if count >= self.satisfaction_check_threshold:
+            self.is_satisfied = 1
+            self.state = "Good"
+        else:
+            self.is_satisfied = 0
+            self.state = "Mid"
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1

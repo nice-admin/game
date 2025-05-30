@@ -2,7 +2,7 @@ import pygame
 from game_core.config import UI_BG1_COL
 
 MARGIN_FROM_TOP = 10  # Move all content down by this many pixels
-ROWS_SPACING = 8     # Space between rows (icon, name, person_name, status, attributes)
+ROWS_SPACING = 10    # Space between rows (icon, name, person_name, status, attributes)
 TEXT_COL = (255, 255, 255)  # Default text color for all non-status text
 DETAILS_PANEL_WIDTH = 400
 DETAILS_PANEL_HEIGHT = 160

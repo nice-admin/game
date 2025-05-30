@@ -60,7 +60,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     info_panel_width = get_info_panel_width(surface.get_width())
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:
-        draw_alert_panel(surface, font, surface.get_width() - info_panel_width, surface.get_height())
+        draw_alert_panel(surface, font, surface.get_width(), surface.get_height())
     if ALLOW_INFO_PANEL:
         draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid)
     if ENTITY_STATE_PANEL:

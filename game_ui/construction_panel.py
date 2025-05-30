@@ -9,10 +9,9 @@ BG_COLOR = (40, 40, 40)
 BTN_COLOR = (80, 80, 80)
 BTN_SELECTED = (120, 120, 120)
 TEXT_COLOR = (255, 255, 255)
-SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management"] + ["empty"] * 2
+SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management", "Decoration"] + ["empty"]
 
 def get_computer_entities():
-    # Get all ComputerEntity subclasses, sort by 'tier' attribute (default to 99 if missing)
     classes = [obj for name, obj in inspect.getmembers(entity_definitions)
                if inspect.isclass(obj) and issubclass(obj, ComputerEntity) and obj is not ComputerEntity]
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
@@ -38,6 +37,11 @@ def get_management_entities():
             if inspect.isclass(obj)
             and issubclass(obj, SatisfiableEntity)
             and ('manager' in obj.__name__.lower() or 'project' in obj.__name__.lower())]
+    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
+
+def get_decoration_entities():
+    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
+               if inspect.isclass(obj) and issubclass(obj, DecorationEntity) and obj is not DecorationEntity]
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 class SectionButton:
@@ -82,6 +86,7 @@ def get_section_entity_defs():
         lambda: get_utility_entities(),
         lambda: get_artist_entities(),
         lambda: get_management_entities(),
+        lambda: get_decoration_entities(),
     ]
 
 def get_entity_labels_and_icons(entity_classes, num_buttons):
