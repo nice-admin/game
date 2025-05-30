@@ -5,13 +5,14 @@ from game_ui.info_panel import draw_info_panel, get_info_panel_width
 from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel_general import draw_resource_panel_general, get_baked_panel
-from game_ui.resource_panel_system import draw_resource_panel_system
+from game_ui.resource_panel_system import draw_resource_panel_system, get_system_panel_bg
 from game_ui.render_queue_panel import draw_render_queue_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
 from game_ui.details_panel import draw_details_panel, DETAILS_PANEL_WIDTH, DETAILS_PANEL_HEIGHT
 from game_ui.overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
 from game_core.game_state import GameState
+from game_core.config import UI_BG1_COL, UI_BORDER1_COL
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -27,33 +28,18 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if all(v is not None for v in [selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
         draw_entity_preview(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     if ALLOW_RESOURCE_PANEL:
-        # --- Combine resource panels into a single centered rectangle, side by side, with correct spacing ---
         baked = get_baked_panel(font)
-        general_width = baked['total_width']
-        general_height = baked['total_height']
-        system_width = 320
-        system_height = 130
+        general_width, general_height = baked['total_width'], baked['total_height']
+        system_bg = get_system_panel_bg()
+        system_width, system_height = system_bg.get_width(), system_bg.get_height()
         panel_gap = 10
-        # The total width is the sum of both panel widths plus the gap
-        combined_width = general_width + panel_gap + system_width
-        combined_height = max(general_height, system_height)
-        combined_x = (surface.get_width() - combined_width) // 2
-        combined_y = 0
-        # Draw background rectangle
-        import pygame
-        from game_core.config import UI_BG1_COL, UI_BORDER1_COL
-        bg_rect = pygame.Rect(combined_x, combined_y, combined_width, combined_height)
-        pygame.draw.rect(surface, UI_BG1_COL, bg_rect)
-        pygame.draw.rect(surface, UI_BORDER1_COL, bg_rect, 2)
-        # Draw general panel on the left, vertically centered in the block
-        general_x = combined_x
-        general_y = combined_y + (combined_height - general_height) // 2
-        draw_resource_panel_general(surface.subsurface(pygame.Rect(general_x, general_y, general_width, general_height)), font)
-        # Draw system panel on the right, vertically centered in the block
-        system_x = combined_x + general_width + panel_gap
-        system_y = combined_y + (combined_height - system_height) // 2
-        draw_resource_panel_system(surface, font, system_x, system_y)
-        resource_panel_height = combined_height
+        total_width = general_width + panel_gap + system_width
+        total_height = max(general_height, system_height)
+        x0 = (surface.get_width() - total_width) // 2
+        y0 = 0
+        draw_resource_panel_general(surface.subsurface(pygame.Rect(x0, y0 + (total_height - general_height) // 2, general_width, general_height)),font)
+        draw_resource_panel_system(surface,font,x0 + general_width + panel_gap,y0 + (total_height - system_height) // 2)
+        resource_panel_height = total_height
     section_btn_rects, item_btn_rects = draw_construction_panel(
         surface, selected_section=selected_section, selected_item=selected_item, font=font
     )

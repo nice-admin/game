@@ -104,8 +104,13 @@ def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygam
     update_icon_surfaces._icon_state = (is_internet_online, is_nas_online)
 
 def get_system_panel_bg():
-    if not hasattr(get_system_panel_bg, "_bg_surface"):
-        bg = pygame.Surface((320, 130), pygame.SRCALPHA)
+    # Calculate width and height based on cell size and grid
+    cols = 2
+    rows = 2
+    width = SystemCell.cell_width * cols
+    height = Header.header_height + SystemCell.cell_height * rows
+    if not hasattr(get_system_panel_bg, "_bg_surface") or get_system_panel_bg._bg_surface.get_width() != width or get_system_panel_bg._bg_surface.get_height() != height:
+        bg = pygame.Surface((width, height), pygame.SRCALPHA)
         bg.fill(UI_BG1_COL)  # Use UI_BG1_COL from config.py
         pygame.draw.rect(bg, (100, 100, 100), bg.get_rect(), 2)  # border
         get_system_panel_bg._bg_surface = bg
@@ -147,6 +152,9 @@ def draw_resource_panel_system(surface: pygame.Surface, font: Optional[pygame.fo
             icon_x = system_x + col_idx * cell.cell_width + 10
             icon_y = system_y + row_idx * cell.cell_height + (cell.cell_height - icon_size) // 2
             icon_idx = row_idx * 2 + col_idx
+            cell_rect = pygame.Rect(system_x + col_idx * cell.cell_width, system_y + row_idx * cell.cell_height, cell.cell_width, cell.cell_height)
+            # Draw cell border for grid effect
+            pygame.draw.rect(surface, UI_BORDER1_COL, cell_rect, 1)
             if icon_idx < len(icon_surfaces):
                 surface.blit(icon_surfaces[icon_idx], (icon_x, icon_y))
             # Draw dynamic label
