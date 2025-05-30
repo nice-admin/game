@@ -6,6 +6,22 @@ from game_core.game_state import GameState
 # --- Merged from input_events.py ---
 import game_other.testing_layout as testing_layout
 
+def keybinds(event, grid=None, entity_states=None):
+    if event.type == pygame.KEYDOWN:
+        if event.key == pygame.K_ESCAPE:
+            return 'exit'
+        if event.key == pygame.K_DELETE:
+            if grid is not None and entity_states is not None:
+                for y, row in enumerate(grid):
+                    for x, entity in enumerate(row):
+                        if entity is not None:
+                            entity_states.remove_entity_at(x, y)
+                            row[x] = None
+                return 'cleared'
+        if pygame.K_1 <= event.key <= pygame.K_9:
+            return event.key - pygame.K_1
+    return None
+
 def line_build(x0, y0, x1, y1, grid, entity_class):
     line_entities = []
     dx = abs(x1 - x0)
@@ -105,6 +121,13 @@ class CameraDrag:
             camera_offset[0] -= step
         return camera_offset
     
+def mouse_to_grid(camera_offset, cell_size):
+    """Convert mouse position to grid coordinates."""
+    mx, my = pygame.mouse.get_pos()
+    gx = int((mx - camera_offset[0]) // cell_size)
+    gy = int((my - camera_offset[1]) // cell_size)
+    return gx, gy
+
 class PaintBrush:
     def __init__(self):
         self.active = False
@@ -112,27 +135,21 @@ class PaintBrush:
         self.erase_active = False
         self.erase_button = 3
 
-    def _get_grid_coords(self, camera_offset, CELL_SIZE):
-        mx, my = pygame.mouse.get_pos()
-        return int((mx - camera_offset[0]) // CELL_SIZE), int((my - camera_offset[1]) // CELL_SIZE)
-
-    def handle_event(self, event, selected_entity_type, camera_offset, CELL_SIZE, grid):
+    def handle_event(self, event, selected_entity_type, camera_offset, cell_size, grid):
+        """Handle painting and erasing entities on the grid."""
         screen = pygame.display.get_surface()
+        mx, my = pygame.mouse.get_pos()
+        if screen and my > screen.get_height() * 0.8:
+            return None
+        gx, gy = mouse_to_grid(camera_offset, cell_size)
         if event.type == pygame.MOUSEBUTTONDOWN:
-            mx, my = pygame.mouse.get_pos()
-            if screen and my > screen.get_height() * 0.8:
-                return None
             if event.button == self.button and selected_entity_type is not None:
                 self.active = True
-                # Paint immediately on click
-                gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
                 if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
                     audio.play_build_sound()
                     return gx, gy, selected_entity_type(gx, gy), False
             elif event.button == self.erase_button:
                 self.erase_active = True
-                # Erase immediately on click
-                gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
                 if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is not None:
                     audio.play_build_sound()
                     return gx, gy, None, True
@@ -142,10 +159,6 @@ class PaintBrush:
             elif event.button == self.erase_button:
                 self.erase_active = False
         elif event.type == pygame.MOUSEMOTION:
-            mx, my = pygame.mouse.get_pos()
-            if screen and my > screen.get_height() * 0.8:
-                return None
-            gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
             if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT:
                 if self.active and selected_entity_type is not None and grid[gy][gx] is None:
                     audio.play_build_sound()
@@ -155,115 +168,70 @@ class PaintBrush:
                     return gx, gy, None, True
         return None
 
-    def handle_continuous_paint(self, selected_entity_type, camera_offset, CELL_SIZE, grid):
-        # This method can be used for continuous painting in the main loop if needed
-        mx, my = pygame.mouse.get_pos()
-        screen = pygame.display.get_surface()
-        if screen and my > screen.get_height() * 0.8:
-            return None
-        if self.active and selected_entity_type is not None:
-            gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
-            if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
-                audio.play_build_sound()
-                return gx, gy, selected_entity_type(gx, gy), False
-        if self.erase_active:
-            gx, gy = self._get_grid_coords(camera_offset, CELL_SIZE)
-            if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is not None:
-                audio.play_build_sound()
-                return gx, gy, None, True
-        return None
-        
-def keybinds(event, grid=None, entity_states=None):
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_ESCAPE:
-            return 'exit'
-        if event.key == pygame.K_DELETE:
-            if grid is not None and entity_states is not None:
-                for y, row in enumerate(grid):
-                    for x, entity in enumerate(row):
-                        if entity is not None:
-                            entity_states.remove_entity_at(x, y)
-                            row[x] = None
-                return 'cleared'
-        if pygame.K_1 <= event.key <= pygame.K_9:
-            return event.key - pygame.K_1
-    return None
-
 class GameControls:
     def __init__(self):
         self.selected_item = None
         self.selected_section = None
         self.paint_brush = PaintBrush()
         self.camera_drag = CameraDrag()
-        self.pipette_entity_class = None  # For pipette tool
         self.line_starting_position = None  # Always track last clicked cell
-        # Add more state as needed
 
     def pipette(self, state):
-        mx, my = pygame.mouse.get_pos()
-        camera_offset = state['camera_offset']
-        cell_size = state['cell_size']
-        gx = int((mx - camera_offset[0]) // cell_size)
-        gy = int((my - camera_offset[1]) // cell_size)
+        """Set the current construction class to the entity under the mouse cursor."""
+        gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
         grid = state['grid']
         if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
             entity = grid[gy][gx]
             if entity is not None:
-                # Try to select the corresponding item in the construction panel if present
                 panel_btn_rects = state.get('panel_btn_rects', {})
                 entity_buttons = panel_btn_rects.get('item', [])
                 for idx, button in enumerate(entity_buttons):
                     if hasattr(button, 'entity_class') and type(entity) == button.entity_class:
                         self.selected_item = idx
                         state['selected_item'] = idx
-                        self.pipette_entity_class = None
                         GameState().current_construction_class = button.entity_class
                         return
-                # If not in panel, just store the class for painting
                 self.selected_item = None
                 state['selected_item'] = None
-                self.pipette_entity_class = type(entity)
                 GameState().current_construction_class = type(entity)
             else:
                 self.selected_item = None
                 state['selected_item'] = None
-                self.pipette_entity_class = None
                 GameState().current_construction_class = None
 
+    def handle_line_action(self, event, state, remove_entity, place_entity, gx, gy):
+        """Handle shift+click line build/deconstruct logic."""
+        if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and self.line_starting_position is not None and (gx, gy) != self.line_starting_position:
+            start = self.line_starting_position
+            if event.button == 1:  # Shift + Left Click: Line Build
+                entity_class = GameState().current_construction_class
+                if entity_class is not None:
+                    for e in line_build(start[0], start[1], gx, gy, state['grid'], entity_class):
+                        if hasattr(e, 'load_icon'):
+                            e.load_icon()
+                        place_entity(state['grid'], state['entity_states'], e)
+                        if hasattr(e, 'on_built'):
+                            e.on_built()
+                    self.line_starting_position = (gx, gy)
+                    return True
+            elif event.button == 3:  # Shift + Right Click: Line Deconstruct
+                for x, y in line_deconstruct(start[0], start[1], gx, gy, state['grid']):
+                    if state['grid'][y][x] is not None:
+                        remove_entity(state['grid'], state['entity_states'], x, y)
+                self.line_starting_position = (gx, gy)
+                return True
+        return False
+
     def handle_event(self, event, state, remove_entity, place_entity):
+        """Main event handler for all game controls."""
         grid_changed = False
-        # --- Always track last clicked cell as line_starting_position ---
         if event.type == pygame.MOUSEBUTTONDOWN:
-            mx, my = pygame.mouse.get_pos()
-            camera_offset = state['camera_offset']
-            cell_size = state['cell_size']
-            gx = int((mx - camera_offset[0]) // cell_size)
-            gy = int((my - camera_offset[1]) // cell_size)
+            gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
             grid = state['grid']
             if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
-                # --- Shift-click line build/deconstruct using line_starting_position ---
-                if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and self.line_starting_position is not None and (gx, gy) != self.line_starting_position:
-                    start = self.line_starting_position
-                    if event.button == 1:  # Shift + Left Click: Line Build
-                        entity_class = GameState().current_construction_class
-                        if entity_class is not None:
-                            for e in line_build(start[0], start[1], gx, gy, grid, entity_class):
-                                if hasattr(e, 'load_icon'):
-                                    e.load_icon()
-                                place_entity(grid, state['entity_states'], e)
-                                if hasattr(e, 'on_built'):
-                                    e.on_built()
-                            self.line_starting_position = (gx, gy)  # Update to new end
-                            return None, True
-                    elif event.button == 3:  # Shift + Right Click: Line Deconstruct
-                        for x, y in line_deconstruct(start[0], start[1], gx, gy, grid):
-                            if grid[y][x] is not None:
-                                remove_entity(grid, state['entity_states'], x, y)
-                        self.line_starting_position = (gx, gy)  # Update to new end
-                        return None, True
-                # Always update line_starting_position to current click
+                if self.handle_line_action(event, state, remove_entity, place_entity, gx, gy):
+                    return None, True
                 self.line_starting_position = (gx, gy)
-        # --- Pipette tool: Q key ---
         if event.type == pygame.KEYDOWN and event.key == pygame.K_q:
             self.pipette(state)
             return None, grid_changed
@@ -279,11 +247,9 @@ class GameControls:
                     entity_btn = entity_buttons[idx]
                     GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                 state['selected_item'] = self.selected_item
-                self.pipette_entity_class = None
                 return None, grid_changed
         # PaintBrush drag-to-paint/erase logic
         paint_brush = self.paint_brush
-        # Always use the global singleton for construction class
         entity_class = GameState().current_construction_class
         paint_result = paint_brush.handle_event(
             event,
@@ -317,7 +283,6 @@ class GameControls:
                     self.selected_item = None
                     state['selected_section'] = self.selected_section
                     state['selected_item'] = self.selected_item
-                    self.pipette_entity_class = None
                     GameState().current_construction_class = None
                     return None, grid_changed
             # Item buttons
@@ -331,20 +296,16 @@ class GameControls:
                         self.selected_item = idx
                         GameState().current_construction_class = getattr(button, 'entity_class', None)
                     state['selected_item'] = self.selected_item
-                    self.pipette_entity_class = None
                     return None, grid_changed
             # Handle left-click construction
             if self.left_click_construction(event, state, place_entity):
-                self.pipette_entity_class = None
                 return None, True
         # Handle right-click deselect
         if self.right_click_deselect(event, state):
-            self.pipette_entity_class = None
             GameState().current_construction_class = None
             return None, grid_changed
         # Handle right-click deconstruction
         if self.right_click_deconstruction(event, state, remove_entity):
-            self.pipette_entity_class = None
             GameState().current_construction_class = None
             return None, True
         # Testing layout (leave as is, not migrated)
@@ -353,7 +314,6 @@ class GameControls:
         if global_result == 'exit' or event.type == pygame.QUIT:
             return 'exit', grid_changed
         if global_result == 'cleared':
-            self.pipette_entity_class = None
             GameState().current_construction_class = None
             return None, True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
@@ -368,11 +328,7 @@ class GameControls:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             entity_class = GameState().current_construction_class
             if entity_class is not None:
-                mx, my = pygame.mouse.get_pos()
-                camera_offset = state['camera_offset']
-                cell_size = state['cell_size']
-                gx = int((mx - camera_offset[0]) // cell_size)
-                gy = int((my - camera_offset[1]) // cell_size)
+                gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
                 grid = state['grid']
                 entity_states = state['entity_states']
                 if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT'] and grid[gy][gx] is None:
@@ -389,22 +345,16 @@ class GameControls:
 
     def right_click_deselect(self, event, state):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
-            if self.selected_item is not None or self.pipette_entity_class is not None:
+            if self.selected_item is not None:
                 self.selected_item = None
-                self.pipette_entity_class = None
                 state['selected_item'] = None
-                GameState().current_construction_class = None
                 return True
         return False
 
     def right_click_deconstruction(self, event, state, remove_entity):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
             if self.selected_item is None:
-                mx, my = pygame.mouse.get_pos()
-                camera_offset = state['camera_offset']
-                cell_size = state['cell_size']
-                gx = int((mx - camera_offset[0]) // cell_size)
-                gy = int((my - camera_offset[1]) // cell_size)
+                gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
                 grid = state['grid']
                 entity_states = state['entity_states']
                 if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
