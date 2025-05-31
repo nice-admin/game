@@ -10,7 +10,7 @@ def toggle_entity_panel():
     global ENTITY_PANEL_VISIBLE
     ENTITY_PANEL_VISIBLE = not ENTITY_PANEL_VISIBLE
 
-def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5, y_offset=20, font_size=15, col_spacing=150):
+def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5, y_offset=170, font_size=15, col_spacing=150):
     """
     Draws a debug panel in the bottom left corner showing the contents of the hovered entity
     and the current game_state global variables.

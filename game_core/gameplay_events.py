@@ -65,7 +65,7 @@ class JobFinished:
 
     def trigger(self):
         state = GameState()
-        if state.render_progress_goal > 0 and state.render_progress_current == state.render_progress_goal:
+        if state.total_shots_goal > 0 and state.total_shots_finished == state.total_shots_goal:
             if not self._last_project_finished:
                 game_other.audio.play_project_finished_sound()
                 state.current_job_finished = 1

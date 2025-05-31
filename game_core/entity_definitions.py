@@ -53,7 +53,7 @@ class Artist(PersonEntity):
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
                 gs = GameState()
                 gs.generalist_progress_current += 1
-                gs.update_render_progress_allowed()
+                gs.cap_render_progress_allowed()
 
 class ProjectManager(SatisfiableEntity):
     _icon = "data/graphics/project-manager.png"
