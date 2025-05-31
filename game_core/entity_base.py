@@ -389,12 +389,13 @@ class ComputerEntity(SatisfiableEntity):
             self.power_drain = self._intended_power_drain
         else:
             self.power_drain = 0
-        # Increment render_progress if special just completed (allow for float rounding or special drop)
+        # Increment render_progress_current if special just completed (allow for float rounding or special drop)
         if prev_special is not None and prev_special >= 0.99:
             # If special is now gone or reset to 0, count as completed
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
                 gs = GameState()
-                gs.render_progress_current += 1
+                if gs.render_progress_current < gs.render_progress_allowed:
+                    gs.render_progress_current += 1
 
 class LaptopEntity(SatisfiableEntity):
     is_initialized = 1

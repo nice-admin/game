@@ -59,6 +59,20 @@ class NasCrashed(GamePlayEvent):
         game_other.audio.play_system_back_sound()
         self._crashed = False
 
+class JobFinished:
+    def __init__(self):
+        self._last_project_finished = False
+
+    def trigger(self):
+        state = GameState()
+        if state.render_progress_goal > 0 and state.render_progress_current == state.render_progress_goal:
+            if not self._last_project_finished:
+                game_other.audio.play_project_finished_sound()
+                state.current_job_finished = 1
+                self._last_project_finished = True
+        else:
+            self._last_project_finished = False
+
 class JobArrived(GamePlayEvent):
     def __init__(self):
         self._last_jobs_finished = None
@@ -66,18 +80,22 @@ class JobArrived(GamePlayEvent):
 
     def trigger(self):
         state = GameState()
-        # Only allow new job if previous job is fully completed
-        if getattr(state, 'total_shots_finished', 0) != getattr(state, 'total_shots_unfinished', 0):
+        # Only allow new job if previous job is fully completed and current_job_finished is 1
+        if getattr(state, 'total_shots_finished', 0) != getattr(state, 'total_shots_goal', 0):
+            return False
+        if getattr(state, 'current_job_finished', 0) != 1:
             return False
         n = self._n
         self._n += 1  # Increment for next job
-        state.total_shots_unfinished = n
+        state.total_shots_goal = n
         state.job_id += 1
         state.generalist_progress_current = 0
         state.generalist_progress_goal = 10 * n
         state.render_progress_current = 0
         state.render_progress_goal = n * 100
         state.job_budget = 10000 * n
+        state.current_job_finished = 0  # Reset for next job
+        game_other.audio.play_job_arrived_sound()
         return True
 
     def notify_jobs_finished(self, jobs_finished):
@@ -116,6 +134,7 @@ RANDOM_GAMEPLAY_EVENTS = [
 
 DETERMINISTIC_GAMEPLAY_EVENTS = [
     JobArrived(),
+    JobFinished(),
     # Add more deterministic situation instances here...
 ]
 
@@ -139,6 +158,7 @@ def start_random_gameplay_events():
 
 def start_deterministic_gameplay_events():
     def deterministic_event_loop():
+        time.sleep(2)  # Wait 2 seconds at game start
         while True:
             for event in DETERMINISTIC_GAMEPLAY_EVENTS:
                 event.trigger()
@@ -146,12 +166,4 @@ def start_deterministic_gameplay_events():
     thread = threading.Thread(target=deterministic_event_loop, daemon=True)
     thread.start()
 
-def trigger_first_job_on_start():
-    # Call JobArrived once at game start
-    for event in DETERMINISTIC_GAMEPLAY_EVENTS:
-        if isinstance(event, JobArrived):
-            event.trigger()
-            break
-
 power_outage = PowerOutage()
-trigger_first_job_on_start()

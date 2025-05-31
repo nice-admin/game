@@ -53,7 +53,7 @@ def save_game(
         'game_time_seconds', 'game_time_days', 'total_money', 'total_upkeep', 'total_power_drain',
         'total_breaker_strength', 'total_employees', 'total_risky_entities',
         'total_broken_entities', 'is_internet_online', 'is_wifi_online', 'is_nas_online',
-        'render_progress_current', 'render_progress_goal', 'total_shots_unfinished',
+        'render_progress_current', 'render_progress_goal', 'total_shots_goal',
         'total_shots_finished', 'jobs_finished', 'job_id'
     ]
     singleton_data = {k: getattr(gs, k, None) for k in singleton_vars}

@@ -49,3 +49,9 @@ def play_power_up_sound(sound_path=None):
 
 def play_purchase_sound(sound_path=None):
     play_sound_effect('data/audio/sounds/purchase1.wav', sound_path)
+
+def play_project_finished_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/project-finished1.wav', sound_path) 
+
+def play_job_arrived_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/job-arrived1.wav', sound_path) 

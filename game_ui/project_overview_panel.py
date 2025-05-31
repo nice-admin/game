@@ -20,7 +20,7 @@ RQI_TOP_MARGIN = 50
 
 def get_expanded_extra_height():
     gs = GameState()
-    shot_rows = getattr(gs, 'total_shots_unfinished', 10)
+    shot_rows = getattr(gs, 'total_shots_goal', 10)
     return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN
 
 
@@ -126,7 +126,7 @@ class Header:
 
     def draw(self, surface, y=0):
         gs = GameState()
-        shots_in_queue = gs.total_shots_finished + gs.total_shots_unfinished
+        shots_in_queue = gs.total_shots_finished + gs.total_shots_goal
         # Title (centered)
         title_str = f"Project overview - {gs.total_shots_finished} / {shots_in_queue} shots finished"
         title_text = self.font.render(title_str, True, TEXT1_COL)
@@ -151,10 +151,11 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     panel_height = _render_queue_panel_current_height
     panel_width = RQ_WIDTH
     gs = GameState()
-    shot_rows = getattr(gs, 'total_shots_unfinished', 10)
+    # Use total_shots_goal for shot_rows
+    shot_rows = getattr(gs, 'total_shots_goal', 10)
     job_id = getattr(gs, 'job_id', 0)
     total_shots_finished = getattr(gs, 'total_shots_finished', 0)
-    total_shots_unfinished = getattr(gs, 'total_shots_unfinished', 0)
+    total_shots_goal = getattr(gs, 'total_shots_goal', 0)
     render_progress_current = getattr(gs, 'render_progress_current', 0)
     generalist_progress_current = getattr(gs, 'generalist_progress_current', 0)
     # Only re-bake if job_id, shot_rows, panel size, or render_progress changed

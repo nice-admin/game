@@ -21,8 +21,9 @@ class GameState:
             cls._instance.render_progress_current = 0
             cls._instance.render_progress_allowed = 0
             cls._instance.render_progress_goal = 0
-            cls._instance.total_shots_unfinished = 0
+            cls._instance.total_shots_goal = 0
             cls._instance.total_shots_finished = 0
+            cls._instance.current_job_finished = 1
             cls._instance.jobs_finished = 0
             cls._instance.job_id = 0
             cls._instance.current_construction_class = None  # Track what the user is currently constructing
@@ -97,11 +98,11 @@ class GameState:
 
     def finish_job(self):
         if (
-            self.total_shots_unfinished == self.total_shots_finished
+            self.total_shots_goal == self.total_shots_finished
             and self.total_shots_finished > 0
         ):
             self.jobs_finished += 1
-            self.total_shots_unfinished = 0
+            self.total_shots_goal = 0
             self.total_shots_finished = 0
 
     def update_render_progress_allowed(self):
