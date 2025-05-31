@@ -6,7 +6,7 @@ from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel_general import draw_resource_panel_general, get_baked_panel
 from game_ui.resource_panel_system import draw_resource_panel_system, get_system_panel_bg
-from game_ui.render_queue_panel import draw_render_queue_panel
+from game_ui.project_overview_panel import draw_project_overview_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
 from game_ui.details_panel import draw_details_panel, DETAILS_PANEL_WIDTH, DETAILS_PANEL_HEIGHT
@@ -68,7 +68,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_entity_state_panel(surface, font, hovered_entity=hovered_entity)
     draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     if ALLOW_RENDER_QUEUE_PANEL:
-        draw_render_queue_panel(surface, font, surface.get_width(), resource_panel_height)
+        draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height)
     power_outage.draw_overlay(surface)
 
 

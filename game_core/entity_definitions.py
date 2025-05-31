@@ -79,7 +79,7 @@ class Router(UtilityEntity):
 
 class Ac(UtilityEntity):
     _icon = "data/graphics/ac.png"
-    purchase_cost = 1000
+    purchase_cost = 5000
 
 class Breaker(SatisfiableEntity):
     _icon = "data/graphics/breaker.png"

@@ -11,7 +11,7 @@ import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
 from game_core.game_state import update_totals_from_grid
 import game_core.gameplay_events
-from game_ui.render_queue_panel import handle_render_queue_panel_event
+from game_ui.project_overview_panel import handle_render_queue_panel_event
 
 
 # --- Game Grid ---
