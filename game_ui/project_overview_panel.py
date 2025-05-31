@@ -25,10 +25,18 @@ def get_expanded_extra_height():
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
-    global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
+    global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
     panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
     panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, _render_queue_panel_current_height)
+    gs = GameState()
+    # If job_id changed while expanded, update expanded area
+    if _render_queue_panel_expanded:
+        if _last_baked_panel_job_id != gs.job_id:
+            expanded_height = get_expanded_extra_height()
+            _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + expanded_height
+            _render_queue_panel_anim_start_time = time.time()
+            _last_baked_panel_job_id = gs.job_id
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and panel_rect.collidepoint(*event.pos):
         _render_queue_panel_expanded = not _render_queue_panel_expanded
         expanded_height = get_expanded_extra_height()
@@ -226,9 +234,17 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     return panel_surface
 
 def draw_project_overview_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
-    global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
+    global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
     panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
+    gs = GameState()
+    # Always check if job_id changed while expanded, even if no event
+    if _render_queue_panel_expanded:
+        if _last_baked_panel_job_id != gs.job_id:
+            expanded_height = get_expanded_extra_height()
+            _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + expanded_height
+            _render_queue_panel_anim_start_time = time.time()
+            _last_baked_panel_job_id = gs.job_id
     # Animate height
     if _render_queue_panel_anim_start_time is not None:
         elapsed = time.time() - _render_queue_panel_anim_start_time
