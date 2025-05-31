@@ -83,12 +83,22 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
     grid_y = int((my - camera_offset[1]) // cell_size)
     if not (0 <= grid_x < GRID_WIDTH and 0 <= grid_y < GRID_HEIGHT):
         return
-    if grid[grid_y][grid_x] is not None:
-        return
+    # Remove the check for existing entity so preview always shows
     preview_entity = entity_type(grid_x, grid_y)
     icon_path = getattr(preview_entity, '_icon', None)
     icon_surf = get_icon_surface(icon_path) if icon_path else None
     if icon_surf:
         icon_surf = pygame.transform.smoothscale(icon_surf, (cell_size, cell_size)).copy()
         icon_surf.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT)
-        surface.blit(icon_surf, (grid_x * cell_size + camera_offset[0], grid_y * cell_size + camera_offset[1]))
+        icon_x = grid_x * cell_size + camera_offset[0]
+        icon_y = grid_y * cell_size + camera_offset[1]
+        surface.blit(icon_surf, (icon_x, icon_y))
+        # Draw purchase_cost label to the right of the icon, only if purchase_cost is a number > 0
+        purchase_cost = getattr(preview_entity, 'purchase_cost', None)
+        if isinstance(purchase_cost, (int, float)) and purchase_cost > 0:
+            font = pygame.font.Font(None, max(28, cell_size // 2))
+            cost_text = f"-${purchase_cost}"
+            text_surf = font.render(cost_text, True, (255, 0, 0))
+            # Draw label to the right, vertically centered with the icon
+            text_rect = text_surf.get_rect(midleft=(icon_x - 10 + cell_size + 10, icon_y + 30 + cell_size // 2))
+            surface.blit(text_surf, text_rect)
