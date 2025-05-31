@@ -156,7 +156,7 @@ class SatisfiableEntity(BaseEntity):
     has_special = 0
     bar1_hidden = 0  # New: allows hiding bar1
     special_hidden = 0  # New: allows hiding special bar
-    special_chance = 0
+    special_chance = 1
     warning_hidden = 0
     is_satisfied = 0
     is_initialized = 0
@@ -368,8 +368,9 @@ class UtilityEntity(BaseEntity):
 
 class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
-    power_drain = 0
+    has_special = 1
     special_chance = 0.5
+    power_drain = 0
 
     def __init__(self, x, y):
         super().__init__(x, y)

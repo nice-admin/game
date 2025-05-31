@@ -5,7 +5,6 @@ from game_other.audio import play_breaker_break_sound
 # region Tech
 class BasicComputer(ComputerEntity):
     _icon = "data/graphics/computer-basic.png"
-    has_special = 1
     power_drain = 200
     upkeep = 50
 
@@ -13,7 +12,6 @@ class BasicComputer(ComputerEntity):
 class AdvancedComputer(ComputerEntity):
     _icon = "data/graphics/computer-advanced.png"
     tier = 2
-    has_special = 1
     power_drain = 400
     upkeep = 100
     satisfaction_check_type = 'outlet'
@@ -39,11 +37,22 @@ class AdvancedMonitor(MonitorEntity):
 # region Humans
 class Artist(PersonEntity):
     _icon = "data/graphics/artist.png"
+    has_special = 1
     satisfaction_check_type = BasicMonitor
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
     is_person = 1
     upkeep = 2000
+
+    def _update_special(self, grid):
+        prev_special = self.special if hasattr(self, 'special') else None
+        prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
+        super()._update_special(grid)
+        # Increment generalist_progress_current if special just completed
+        if prev_special is not None and prev_special >= 0.99:
+            if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
+                gs = GameState()
+                gs.generalist_progress_current += 1
 
 class ProjectManager(SatisfiableEntity):
     _icon = "data/graphics/project-manager.png"

@@ -38,10 +38,12 @@ def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
     return False
 
 
-class RenderQueueItem:
-    def __init__(self, name, progress=0.0):
+class BaseItem:
+    def __init__(self, name, progress=0.0, grad_start_col=(69, 79, 95), grad_end_col=(0, 187, 133)):
         self.name = name
         self.progress = progress  # 0.0 to 1.0
+        self.grad_start_col = grad_start_col
+        self.grad_end_col = grad_end_col
 
     def draw(self, surface, x, y, width, height, font):
         bar_width = int(width * 0.9)
@@ -53,7 +55,7 @@ class RenderQueueItem:
         # Draw background with rounded corners
         pygame.draw.rect(surface, bg_col, (bar_x, bar_y, bar_width, bar_height), border_radius=border_radius)
         # Gradient progress bar with rounded corners
-        left_col, right_col = (69, 79, 95), (0, 187, 133)
+        left_col, right_col = self.grad_start_col, self.grad_end_col
         fill_width = max(0, min(int(bar_width * self.progress), bar_width))
         if fill_width > 0:
             grad_surf = pygame.Surface((fill_width, bar_height), pygame.SRCALPHA)
@@ -94,14 +96,14 @@ _last_progress_items = None
 
 def bake_render_queue_items(job_id, shot_rows):
     """Create and return a baked list of RenderQueueItem objects for the current job."""
-    return [RenderQueueItem(f"Shot {i+1}", progress=0.5) for i in range(shot_rows)]
+    return [BaseItem(f"Shot {i+1}", progress=0.5) for i in range(shot_rows)]
 
 def get_progress_items(job_id, shot_rows, render_progress):
     """Return a list of RenderQueueItem with progress distributed according to render_progress.
     Each bar represents 0-100 units. Only one bar fills at a time.
     When a bar fills, increment GameState().total_shots_finished if not already counted."""
     gs = GameState()
-    items = [RenderQueueItem(f"Shot {i+1}") for i in range(shot_rows)]
+    items = [BaseItem(f"Shot {i+1}") for i in range(shot_rows)]
     finished_count = 0
     for i in range(shot_rows):
         if render_progress >= (i + 1) * 100:
@@ -117,18 +119,28 @@ def get_progress_items(job_id, shot_rows, render_progress):
     return items
 
 class Header:
-    def __init__(self, width, font, total_finished, total_unfinished):
+    def __init__(self, width, font):
         self.width = width
         self.font = font
-        self.total_finished = total_finished
-        self.total_unfinished = total_unfinished
 
     def draw(self, surface, y=0):
-        shots_in_queue = self.total_finished + self.total_unfinished
-        title_str = f"Render Queue - 0 / {shots_in_queue} shots in queue"
+        gs = GameState()
+        shots_in_queue = gs.total_shots_finished + gs.total_shots_unfinished
+        # Title (centered)
+        title_str = f"Job Overview - {gs.total_shots_finished} / {shots_in_queue} shots finished"
         title_text = self.font.render(title_str, True, TEXT1_COL)
         title_rect = title_text.get_rect(midtop=(self.width // 2, y + 7))
         surface.blit(title_text, title_rect)
+        # Artist work (left, same row)
+        artist_str = f"Artist work: {gs.generalist_progress_current} / {gs.generalist_progress_goal}"
+        artist_text = self.font.render(artist_str, True, TEXT1_COL)
+        artist_rect = artist_text.get_rect(midleft=(20, title_rect.centery))
+        surface.blit(artist_text, artist_rect)
+        # Render work (right, same row)
+        render_str = f"Render work: {gs.render_progress_current} / {gs.render_progress_goal}"
+        render_text = self.font.render(render_str, True, TEXT1_COL)
+        render_rect = render_text.get_rect(midright=(self.width - 20, title_rect.centery))
+        surface.blit(render_text, render_rect)
 
 def bake_render_queue_panel(font, screen_width, resource_panel_height):
     """Bake the static render queue panel (background, border, title, and RenderQueueItems) into a surface."""
@@ -159,14 +171,33 @@ def bake_render_queue_panel(font, screen_width, resource_panel_height):
     pygame.draw.rect(panel_surface, UI_BG1_COL, (0, 0, panel_width, panel_height))
     pygame.draw.rect(panel_surface, UI_BORDER1_COL, (0, 0, panel_width, panel_height), 2)
     # Header
-    header = Header(panel_width, font, total_shots_finished, total_shots_unfinished)
+    header = Header(panel_width, font)
     header.draw(panel_surface, y=0)
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress_current)
     _last_progress_items = items
-    for idx, item in enumerate(items):
+    # Two columns: left for generalist_progress_current, right for render_progress_current
+    num_cols = 2
+    col_width = panel_width // num_cols
+    # Get generalist progress for each shot
+    generalist_progress_current = getattr(gs, 'generalist_progress_current', 0)
+    # Each shot is 100 units, like render_progress
+    generalist_items = [BaseItem(f"Shot {idx+1}",
+                                 progress=(1.0 if generalist_progress_current >= (idx+1)*100 else (generalist_progress_current-idx*100)/100.0 if generalist_progress_current >= idx*100 else 0.0),
+                                 grad_start_col=(255, 67, 0), grad_end_col=(255, 174, 0))
+                        for idx in range(len(items))]
+    for idx in range(len(items)):
+        # Left column: generalist progress
+        left_item = generalist_items[idx]
+        x_left = 0
         y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
-        item.draw(panel_surface, 0, y, panel_width, RQI_HEIGHT, font)
+        left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, font)
+        # Right column: render progress (use previous gradient colors)
+        right_item = items[idx]
+        right_item.grad_start_col = (69, 79, 95)  # Previous left color
+        right_item.grad_end_col = (0, 187, 133)   # Previous right color
+        x_right = col_width
+        right_item.draw(panel_surface, x_right, y, col_width, RQI_HEIGHT, font)
     # Cache
     _last_baked_panel = panel_surface
     _last_baked_panel_job_id = job_id
