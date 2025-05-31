@@ -19,6 +19,7 @@ class GameState:
             cls._instance.generalist_progress_current = 0
             cls._instance.generalist_progress_goal = 0
             cls._instance.render_progress_current = 0
+            cls._instance.render_progress_allowed = 0
             cls._instance.render_progress_goal = 0
             cls._instance.total_shots_unfinished = 0
             cls._instance.total_shots_finished = 0
@@ -102,6 +103,10 @@ class GameState:
             self.jobs_finished += 1
             self.total_shots_unfinished = 0
             self.total_shots_finished = 0
+
+    def update_render_progress_allowed(self):
+        if self.generalist_progress_current > 0 and self.generalist_progress_current % 10 == 0:
+            self.render_progress_allowed = self.generalist_progress_current * 10
 
 def get_totals_dict():
     return GameState().get_totals_dict()
