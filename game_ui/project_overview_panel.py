@@ -39,11 +39,12 @@ def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
 
 
 class BaseItem:
-    def __init__(self, name, progress=0.0, grad_start_col=(69, 79, 95), grad_end_col=(0, 187, 133)):
+    def __init__(self, name, progress=0.0, grad_start_col=(69, 79, 95), grad_end_col=(0, 187, 133), partitions=100):
         self.name = name
         self.progress = progress  # 0.0 to 1.0
         self.grad_start_col = grad_start_col
         self.grad_end_col = grad_end_col
+        self.partitions = partitions  # The value the bar represents (e.g., 10 or 100)
 
     def draw(self, surface, x, y, width, height, font):
         bar_width = int(width * 0.9)
@@ -76,9 +77,9 @@ class BaseItem:
         name_text = font.render(self.name, True, TEXT1_COL)
         name_rect = name_text.get_rect(topleft=(bar_x + 10, bar_y - 4 - name_text.get_height()))
         surface.blit(name_text, name_rect)
-        # Draw progress number in the center of the bar
-        percent = int(self.progress * 100)
-        progress_text = font.render(f"{percent} / 100%", True, TEXT1_COL)
+        # Draw progress number in the center of the bar as integer value (0-partitions)
+        value = int(self.progress * self.partitions)
+        progress_text = font.render(f"{value} / {self.partitions}", True, TEXT1_COL)
         progress_rect = progress_text.get_rect(center=(bar_x + bar_width // 2, bar_y + bar_height // 2))
         surface.blit(progress_text, progress_rect)
 
@@ -155,6 +156,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     total_shots_finished = getattr(gs, 'total_shots_finished', 0)
     total_shots_unfinished = getattr(gs, 'total_shots_unfinished', 0)
     render_progress_current = getattr(gs, 'render_progress_current', 0)
+    generalist_progress_current = getattr(gs, 'generalist_progress_current', 0)
     # Only re-bake if job_id, shot_rows, panel size, or render_progress changed
     global _last_render_progress, _last_progress_items
     if (
@@ -179,23 +181,35 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     # Two columns: left for generalist_progress_current, right for render_progress_current
     num_cols = 2
     col_width = panel_width // num_cols
-    # Get generalist progress for each shot
-    generalist_progress_current = getattr(gs, 'generalist_progress_current', 0)
-    # Each shot is 100 units, like render_progress
-    generalist_items = [BaseItem(f"Shot {idx+1}",
-                                 progress=(1.0 if generalist_progress_current >= (idx+1)*100 else (generalist_progress_current-idx*100)/100.0 if generalist_progress_current >= idx*100 else 0.0),
-                                 grad_start_col=(255, 67, 0), grad_end_col=(255, 174, 0))
-                        for idx in range(len(items))]
+    # Get generalist progress for each shot (clearer version)
+    generalist_items = []
+    for idx in range(len(items)):
+        start = idx * 10
+        end = (idx + 1) * 10
+        if generalist_progress_current >= end:
+            progress = 1.0
+        elif generalist_progress_current > start:
+            progress = (generalist_progress_current - start) / 10.0
+        else:
+            progress = 0.0
+        generalist_items.append(BaseItem(
+            f"Shot {idx+1}",
+            progress=progress,
+            grad_start_col=(86, 60, 52),
+            grad_end_col=(203, 186, 72),
+            partitions=10
+        ))
     for idx in range(len(items)):
         # Left column: generalist progress
         left_item = generalist_items[idx]
         x_left = 0
         y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
         left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, font)
-        # Right column: render progress (use previous gradient colors)
+        # Right column: render progress (use previous gradient colors, partitions=100)
         right_item = items[idx]
         right_item.grad_start_col = (69, 79, 95)  # Previous left color
         right_item.grad_end_col = (0, 187, 133)   # Previous right color
+        right_item.partitions = 100
         x_right = col_width
         right_item.draw(panel_surface, x_right, y, col_width, RQI_HEIGHT, font)
     # Cache

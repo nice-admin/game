@@ -62,21 +62,22 @@ class NasCrashed(GamePlayEvent):
 class JobArrived(GamePlayEvent):
     def __init__(self):
         self._last_jobs_finished = None
+        self._n = 2  # Start at 2
 
     def trigger(self):
         state = GameState()
         # Only allow new job if previous job is fully completed
         if getattr(state, 'total_shots_finished', 0) != getattr(state, 'total_shots_unfinished', 0):
             return False
-        import random
-        n = random.randint(2, 4)
+        n = self._n
+        self._n += 1  # Increment for next job
         state.total_shots_unfinished = n
-        state.job_id += 1  # Mark a new job event (renamed from job_arrived_id)
-        state.render_progress_current = 0  # Reset render progress for new job
-        state.render_progress_goal = n * 100  # Set goal to total shots * 100
-        # Roll job_budget: 10000 * n
+        state.job_id += 1
+        state.generalist_progress_current = 0
+        state.generalist_progress_goal = 10 * n
+        state.render_progress_current = 0
+        state.render_progress_goal = n * 100
         state.job_budget = 10000 * n
-        # You can add a sound or alert here if desired
         return True
 
     def notify_jobs_finished(self, jobs_finished):
@@ -145,4 +146,12 @@ def start_deterministic_gameplay_events():
     thread = threading.Thread(target=deterministic_event_loop, daemon=True)
     thread.start()
 
+def trigger_first_job_on_start():
+    # Call JobArrived once at game start
+    for event in DETERMINISTIC_GAMEPLAY_EVENTS:
+        if isinstance(event, JobArrived):
+            event.trigger()
+            break
+
 power_outage = PowerOutage()
+trigger_first_job_on_start()
