@@ -48,11 +48,11 @@ class Artist(PersonEntity):
         prev_special = self.special if hasattr(self, 'special') else None
         prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
         super()._update_special(grid)
-        # Increment generalist_progress_current if special just completed
+        # Increment artist_progress_current if special just completed
         if prev_special is not None and prev_special >= 0.99:
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
                 gs = GameState()
-                gs.generalist_progress_current += 1
+                gs.cap_artist_progress_current()
                 gs.cap_render_progress_allowed()
 
 class ProjectManager(SatisfiableEntity):

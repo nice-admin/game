@@ -94,6 +94,7 @@ _last_baked_panel_width = None
 _last_baked_panel_height = None
 _last_render_progress = None
 _last_progress_items = None
+_last_artist_progress = None
 
 def bake_render_queue_items(job_id, shot_rows):
     """Create and return a baked list of RenderQueueItem objects for the current job."""
@@ -133,7 +134,7 @@ class Header:
         title_rect = title_text.get_rect(midtop=(self.width // 2, y + 7))
         surface.blit(title_text, title_rect)
         # Artist work (left, same row)
-        artist_str = f"Artist work: {gs.generalist_progress_current} / {gs.generalist_progress_goal}"
+        artist_str = f"Artist work: {gs.artist_progress_current} / {gs.artist_progress_goal}"
         artist_text = self.font.render(artist_str, True, TEXT1_COL)
         artist_rect = artist_text.get_rect(midleft=(20, title_rect.centery))
         surface.blit(artist_text, artist_rect)
@@ -157,16 +158,17 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     total_shots_finished = getattr(gs, 'total_shots_finished', 0)
     total_shots_goal = getattr(gs, 'total_shots_goal', 0)
     render_progress_current = getattr(gs, 'render_progress_current', 0)
-    generalist_progress_current = getattr(gs, 'generalist_progress_current', 0)
-    # Only re-bake if job_id, shot_rows, panel size, or render_progress changed
-    global _last_render_progress, _last_progress_items
+    artist_progress_current = getattr(gs, 'artist_progress_current', 0)
+    # Only re-bake if job_id, shot_rows, panel size, render_progress, or artist_progress changed
+    global _last_render_progress, _last_progress_items, _last_artist_progress
     if (
         _last_baked_panel is not None and
         _last_baked_panel_job_id == job_id and
         _last_baked_panel_shot_rows == shot_rows and
         _last_baked_panel_width == panel_width and
         _last_baked_panel_height == panel_height and
-        _last_render_progress == render_progress_current
+        _last_render_progress == render_progress_current and
+        _last_artist_progress == artist_progress_current
     ):
         return _last_baked_panel
     # Bake new panel
@@ -179,21 +181,21 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress_current)
     _last_progress_items = items
-    # Two columns: left for generalist_progress_current, right for render_progress_current
+    # Two columns: left for artist_progress_current, right for render_progress_current
     num_cols = 2
     col_width = panel_width // num_cols
-    # Get generalist progress for each shot (clearer version)
-    generalist_items = []
+    # Get artist progress for each shot (clearer version)
+    artist_items = []
     for idx in range(len(items)):
         start = idx * 10
         end = (idx + 1) * 10
-        if generalist_progress_current >= end:
+        if artist_progress_current >= end:
             progress = 1.0
-        elif generalist_progress_current > start:
-            progress = (generalist_progress_current - start) / 10.0
+        elif artist_progress_current > start:
+            progress = (artist_progress_current - start) / 10.0
         else:
             progress = 0.0
-        generalist_items.append(BaseItem(
+        artist_items.append(BaseItem(
             f"Shot {idx+1}",
             progress=progress,
             grad_start_col=(86, 60, 52),
@@ -201,8 +203,8 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
             partitions=10
         ))
     for idx in range(len(items)):
-        # Left column: generalist progress
-        left_item = generalist_items[idx]
+        # Left column: artist progress
+        left_item = artist_items[idx]
         x_left = 0
         y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
         left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, font)
@@ -220,6 +222,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     _last_baked_panel_width = panel_width
     _last_baked_panel_height = panel_height
     _last_render_progress = render_progress_current
+    _last_artist_progress = artist_progress_current
     return panel_surface
 
 def draw_project_overview_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):

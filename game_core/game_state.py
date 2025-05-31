@@ -16,8 +16,8 @@ class GameState:
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
-            cls._instance.generalist_progress_current = 0
-            cls._instance.generalist_progress_goal = 0
+            cls._instance.artist_progress_current = 0
+            cls._instance.artist_progress_goal = 0
             cls._instance.render_progress_current = 0
             cls._instance.render_progress_allowed = 0
             cls._instance.render_progress_goal = 0
@@ -106,8 +106,14 @@ class GameState:
             self.total_shots_finished = 0
 
     def cap_render_progress_allowed(self):
-        if self.generalist_progress_current > 0 and self.generalist_progress_current % 10 == 0:
-            self.render_progress_allowed = self.generalist_progress_current * 10
+        if self.artist_progress_current > 0 and self.artist_progress_current % 10 == 0:
+            self.render_progress_allowed = self.artist_progress_current * 10
+
+    def cap_artist_progress_current(self):
+        if self.artist_progress_current < self.artist_progress_goal:
+            self.artist_progress_current += 1
+        else:
+            self.artist_progress_current = self.artist_progress_goal
 
 def get_totals_dict():
     return GameState().get_totals_dict()

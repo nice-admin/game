@@ -89,8 +89,8 @@ class JobArrived(GamePlayEvent):
         self._n += 1  # Increment for next job
         state.total_shots_goal = n
         state.job_id += 1
-        state.generalist_progress_current = 0
-        state.generalist_progress_goal = 10 * n
+        state.artist_progress_current = 0
+        state.artist_progress_goal = 10 * n
         state.render_progress_current = 0
         state.render_progress_goal = n * 100
         state.job_budget = 10000 * n
