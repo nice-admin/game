@@ -16,12 +16,14 @@ class GameState:
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
+            cls._instance.generalist_work_current = 0
+            cls._instance.generalist_work_goal = 50
             cls._instance.render_progress_current = 0
-            cls._instance.render_progress_goal = 0
-            cls._instance.total_shots_unfinished = 0
+            cls._instance.render_progress_goal = 100
+            cls._instance.total_shots_unfinished = 2
             cls._instance.total_shots_finished = 0
             cls._instance.jobs_finished = 0
-            cls._instance.job_id = 0
+            cls._instance.job_id = 1
             cls._instance.current_construction_class = None  # Track what the user is currently constructing
         return cls._instance
 

@@ -26,7 +26,13 @@ def get_monitor_entities():
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_utility_entities():
-    classes = [Outlet, Breaker, Router, EspressoMachine, Snacks]
+    classes = []
+    # Add Breaker first
+    classes.append(entity_definitions.Breaker)
+    for base in (UtilityEntity,):
+        for name, obj in inspect.getmembers(entity_definitions):
+            if inspect.isclass(obj) and issubclass(obj, base) and obj is not base and obj is not entity_definitions.Breaker:
+                classes.append(obj)
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_artist_entities():

@@ -341,6 +341,7 @@ class SatisfiableEntity(BaseEntity):
         if gs_var is not None:
             if not hasattr(gs, gs_var) or getattr(gs, gs_var) != 1:
                 self.is_satisfied = 0
+                self.power_drain = 0
                 return
         # 2. If an entity_type is specified, proximity count must meet threshold
         if entity_type:
@@ -353,11 +354,16 @@ class SatisfiableEntity(BaseEntity):
                 return
             if count < threshold:
                 self.is_satisfied = 0
+                self.power_drain = 0
                 return
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
+        self.power_drain = self._intended_power_drain
 
 class DecorationEntity(BaseEntity):
+    pass
+
+class UtilityEntity(BaseEntity):
     pass
 
 class ComputerEntity(SatisfiableEntity):
@@ -375,6 +381,13 @@ class ComputerEntity(SatisfiableEntity):
         super()._update_special(grid)
         # Update is_rendering based on special presence
         self.is_rendering = 1 if self.special is not None else 0
+        # Set power_drain to 3x intended if special is active, else normal logic
+        if self.special is not None:
+            self.power_drain = self._intended_power_drain * 3
+        elif self.is_satisfied:
+            self.power_drain = self._intended_power_drain
+        else:
+            self.power_drain = 0
         # Increment render_progress if special just completed (allow for float rounding or special drop)
         if prev_special is not None and prev_special >= 0.99:
             # If special is now gone or reset to 0, count as completed

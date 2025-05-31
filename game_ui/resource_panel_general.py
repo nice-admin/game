@@ -26,7 +26,7 @@ RESOURCE_PANEL_CELLS = {
         "label": "Power\ndrain",
         "icon": "data/graphics/resource_panel/power.png",
         "value_getter": lambda gs: gs.total_power_drain*0.001,
-        "format": lambda v, gs: f"{int(v)} KW",
+        "format": lambda v, gs: f"{v:.1f} KW",
         "color": lambda v, gs: (
             (255,255,255) if v == 0 else
             (255,0,0) if gs.total_breaker_strength <= 0 else

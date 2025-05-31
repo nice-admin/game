@@ -77,6 +77,8 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
             LineSpawn(ComputerEntity, 16, on_entity_placed=on_entity_placed),
             LineSpawn(Outlet, 17, on_entity_placed=on_entity_placed),
             LineSpawn(ComputerEntity, 18, on_entity_placed=on_entity_placed),
+            LineSpawn(Breaker, 19, on_entity_placed=on_entity_placed),
+            LineSpawn(Breaker, 20, on_entity_placed=on_entity_placed),
         ]
         for line in line_spawns:
             line.spawn(grid, entity_states, GRID_WIDTH, GRID_HEIGHT)
