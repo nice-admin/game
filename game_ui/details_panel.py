@@ -128,13 +128,13 @@ def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DE
     Draws a details panel at (x, y) with the given width and height.
     If an entity is provided, show its details; otherwise, show a placeholder.
     """
-    # Panel background
-    panel_rect = pygame.Rect(x, y, width, height)
-    pygame.draw.rect(surface, UI_BG1_COL, panel_rect)  # Use imported color
-    # Removed border
-    # Removed the 'Details' title
+    # Panel background using UI_BG1_COL (with alpha if present)
+    bg_col = UI_BG1_COL
+    panel_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+    pygame.draw.rect(panel_surf, bg_col, panel_surf.get_rect())
+    surface.blit(panel_surf, (x, y))
+    # --- HEADER ---
     if entity is not None:
-        # --- HEADER ---
         header = Header(entity, font, x, y)
         header.render(surface)
         # --- MAIN SECTION (10px below header) ---

@@ -4,11 +4,12 @@ import hashlib
 from game_core import entity_definitions
 from game_core.entity_base import *
 from game_core.entity_definitions import *
+from game_core.config import UI_BG1_COL, exposure_color
 
 # --- Constants ---
-BG_COLOR = (40, 40, 40)
-BTN_COLOR = (60, 60, 60)
-BTN_SELECTED = (100, 100, 100)
+BG_COLOR = UI_BG1_COL
+BTN_COLOR = exposure_color(UI_BG1_COL, 1.3)
+BTN_SELECTED = exposure_color(UI_BG1_COL, 1.7)
 TEXT_COLOR = (255, 255, 255)
 SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management", "Decoration"] + ["empty"]
 

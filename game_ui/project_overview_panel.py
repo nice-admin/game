@@ -2,6 +2,7 @@ import pygame
 import time
 from game_core.entity_definitions import *
 from game_core.config import *
+from game_core.config import exposure_color
 from game_core.game_state import GameState
 
 RQ_WIDTH = 1000
@@ -59,7 +60,7 @@ class BaseItem:
         bar_height = 20
         bar_x = x + (width - bar_width) // 2
         bar_y = y
-        bg_col = tuple(int(c * 0.5) for c in UI_BG1_COL)
+        bg_col = exposure_color(UI_BG1_COL, 0.5)
         border_radius = bar_height // 3
         # Draw background with rounded corners
         pygame.draw.rect(surface, bg_col, (bar_x, bar_y, bar_width, bar_height), border_radius=border_radius)
@@ -238,28 +239,20 @@ def draw_project_overview_panel(surface, font, screen_width, resource_panel_heig
     panel_x = (screen_width - RQ_WIDTH) // 2
     panel_y = resource_panel_height
     gs = GameState()
-    # Always check if job_id changed while expanded, even if no event
-    if _render_queue_panel_expanded:
-        if _last_baked_panel_job_id != gs.job_id:
-            expanded_height = get_expanded_extra_height()
-            _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + expanded_height
-            _render_queue_panel_anim_start_time = time.time()
-            _last_baked_panel_job_id = gs.job_id
+    # Update expansion/height if job_id changed while expanded
+    if _render_queue_panel_expanded and _last_baked_panel_job_id != gs.job_id:
+        _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + get_expanded_extra_height()
+        _render_queue_panel_anim_start_time = time.time()
+        _last_baked_panel_job_id = gs.job_id
     # Animate height
-    if _render_queue_panel_anim_start_time is not None:
-        elapsed = time.time() - _render_queue_panel_anim_start_time
-        t = min(elapsed / ANIMATION_DURATION, 1.0)
-        _render_queue_panel_current_height = int(
-            _render_queue_panel_current_height + (_render_queue_panel_target_height - _render_queue_panel_current_height) * t
-        )
+    if _render_queue_panel_anim_start_time:
+        t = min((time.time() - _render_queue_panel_anim_start_time) / ANIMATION_DURATION, 1.0)
+        _render_queue_panel_current_height += int((_render_queue_panel_target_height - _render_queue_panel_current_height) * t)
         if t >= 1.0:
             _render_queue_panel_current_height = _render_queue_panel_target_height
             _render_queue_panel_anim_start_time = None
     else:
         _render_queue_panel_current_height = _render_queue_panel_target_height
-    panel_height = _render_queue_panel_current_height
-    panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, panel_height)
-    # Use baked panel for static content
-    baked_panel = bake_project_overview_panel(font, screen_width, resource_panel_height)
-    surface.blit(baked_panel, (panel_x, panel_y))
+    panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, _render_queue_panel_current_height)
+    surface.blit(bake_project_overview_panel(font, screen_width, resource_panel_height), (panel_x, panel_y))
     return panel_rect
