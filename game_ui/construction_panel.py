@@ -4,14 +4,14 @@ import hashlib
 from game_core import entity_definitions
 from game_core.entity_base import *
 from game_core.entity_definitions import *
-from game_core.config import BASE_COL, UI_BG1_COL, exposure_color
+from game_core.config import BASE_COL, UI_BG1_COL, exposure_color, adjust_color
 
 # --- Constants ---
 BG_COLOR = UI_BG1_COL
-BTN_COLOR = exposure_color(UI_BG1_COL, 1.3)
-BTN_SELECTED = exposure_color(UI_BG1_COL, 1.7)
 TEXT_COLOR = (255, 255, 255)
 SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management", "Decoration"]
+BUTTON_SPACING = 8  # Spacing between entity buttons
+BUTTONS_TOP_MARGIN = 10  # Top margin for section buttons
 
 def get_computer_entities():
     classes = set()
@@ -58,6 +58,8 @@ def get_decoration_entities():
 class SectionButton:
     DEFAULT_HEIGHT = 40
     DEFAULT_WIDTH = 150
+    BG_COL = adjust_color(BASE_COL, white_factor=0.15, exposure=1)
+    BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0.35, exposure=1)  # Added for selected state
     def __init__(self, rect, label, selected=False, height=None, width=None):
         self.rect = rect
         self.label = label
@@ -67,15 +69,15 @@ class SectionButton:
 
 class EntityButton:
     DEFAULT_HEIGHT = 130
-    DEFAULT_WIDTH = 150
-    DEFAULT_ICON_WIDTH = 60
-    DEFAULT_ICON_HEIGHT = 60
-    DEFAULT_ICON_TOP_MARGIN = 10
+    DEFAULT_WIDTH = 130
+    DEFAULT_ICON_WIDTH = 80
+    DEFAULT_ICON_HEIGHT = DEFAULT_ICON_WIDTH
+    DEFAULT_ICON_TOP_MARGIN = 13
     DEFAULT_LABEL_BOTTOM_MARGIN = 33
     ROUNDING = 10  # Default corner radius for button rounding
-    BG_COL = (211,218,221) # Default background color for entity button
-    BG_COL_GRAD_START = (230,240,245)  # Gradient start color
-    BG_COL_GRAD_END = (180,190,200)    # Gradient end color
+    BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.9, exposure=1)  # Use adjust_color for gradient start
+    BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.8, exposure=1)    # Gradient end color
+    BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0.9, exposure=1)
     TEXT_COL = (46, 62, 79)  # Default text color for entity button
     INNER_SHADOW_COLOR = (0, 0, 0, 60)  # RGBA for subtle shadow
     INNER_SHADOW_OFFSET = -7  # How far the shadow is offset (for 45°)
@@ -90,13 +92,11 @@ class EntityButton:
         self.icon_height = icon_height or self.DEFAULT_ICON_HEIGHT
         self.icon_top_margin = icon_top_margin or self.DEFAULT_ICON_TOP_MARGIN
         self.label_bottom_margin = self.DEFAULT_LABEL_BOTTOM_MARGIN
-        # Extract label, icon, and price from entity_class
+        # Extract icon and price from entity_class (label is ignored)
         if entity_class is not None:
-            self.label = getattr(entity_class, 'display_name', entity_class.__name__).upper()
             self.icon_path = getattr(entity_class, '_icon', None)
             self.purchase_cost = getattr(entity_class, 'purchase_cost', None)
         else:
-            self.label = "-"
             self.icon_path = None
             self.purchase_cost = None
 
@@ -146,7 +146,7 @@ class EntityButton:
         self._draw_gradient(surface)
         self._draw_inner_shadow(surface)
         if self.selected:
-            pygame.draw.rect(surface, BTN_SELECTED, self.rect, border_radius=self.ROUNDING)
+            pygame.draw.rect(surface, self.BG_COL_SELECTED, self.rect, border_radius=self.ROUNDING)
         # Draw icon
         if self.icon_path:
             try:
@@ -156,16 +156,12 @@ class EntityButton:
                 surface.blit(icon_surf, icon_rect)
             except Exception as e:
                 print(f"Error loading icon {self.icon_path}: {e}")
-        # Draw label
-        col = text_color if text_color is not None else self.TEXT_COL
-        if font:
-            text_surf = font.render(self.label, True, col)
-            text_rect = text_surf.get_rect(center=(self.rect.centerx, self.rect.bottom - self.label_bottom_margin))
-            surface.blit(text_surf, text_rect)
+        # Label is not drawn
         # Draw price/rental with smaller font
         if font:
             small_font_size = max(20, font.get_height() - 4)
             small_font = pygame.font.Font(None, small_font_size)
+            col = text_color if text_color is not None else self.TEXT_COL
             if self.purchase_cost == 0:
                 cost_surf = small_font.render("(subscription)", True, col)
                 cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.label_bottom_margin))
@@ -176,25 +172,42 @@ class EntityButton:
                 surface.blit(cost_surf, cost_rect)
 
 class Background:
-    DEFAULT_COLOR = BG_COLOR
-    DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 25  # Default for 8 entity buttons
-    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT
+    DEFAULT_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
+    DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 8 * BUTTON_SPACING + 40  # Default for 8 entity buttons
+    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 20
     ROUNDING = 12  # Default corner radius for background rounding
+    BORDER_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=2)  # Default border color (matches UI_BORDER1_COL)
+    BORDER_WIDTH = 5
 
-    def __init__(self, x=0, y=0, width=None, height=None, color=None, rounding=None):
+    def __init__(self, x=0, y=0, width=None, height=None, color=None, rounding=None, border_color=None, border_width=None, extend_below=0):
         self.x = x
         self.y = y
         self.width = width if width is not None else self.DEFAULT_WIDTH
-        self.height = height if height is not None else self.DEFAULT_HEIGHT
+        self.height = (height if height is not None else self.DEFAULT_HEIGHT) + extend_below
         self.color = color if color is not None else self.DEFAULT_COLOR
         self.rounding = rounding if rounding is not None else self.ROUNDING
+        self.border_color = border_color if border_color is not None else self.BORDER_COLOR
+        self.border_width = border_width if border_width is not None else self.BORDER_WIDTH
+        self.extend_below = extend_below
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def draw(self, surface):
+        # Draw filled background
         pygame.draw.rect(
             surface,
             self.color,
             self.rect,
+            border_top_left_radius=self.rounding,
+            border_top_right_radius=self.rounding,
+            border_bottom_left_radius=0,
+            border_bottom_right_radius=0
+        )
+        # Draw border
+        pygame.draw.rect(
+            surface,
+            self.border_color,
+            self.rect,
+            width=self.border_width,
             border_top_left_radius=self.rounding,
             border_top_right_radius=self.rounding,
             border_bottom_left_radius=0,
@@ -251,7 +264,7 @@ _baked_panel_cache = {
 }
 
 
-def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8):
+def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8, extend_below=0):
     """
     Draws a new construction panel with two rows:
     - First row: 7 section buttons ("Computers", "Monitors", rest are "empty")
@@ -259,11 +272,11 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     Returns: (section_buttons, entity_buttons)
     """
     # Panel sizing and positioning
-    background = Background()
+    background = Background(extend_below=extend_below)
     width = background.width
     panel_height = background.height
     x = (surface.get_width() - width) // 2
-    y = surface.get_height() - panel_height
+    y = surface.get_height() - panel_height + extend_below
     panel_rect = pygame.Rect(x, y, width, panel_height)
 
     # Create a hash of the current panel state for cache invalidation
@@ -293,9 +306,9 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     section_btns_x_offset = (width - total_section_width) // 2
     section_buttons = []
     for i, label in enumerate(SECTION_LABELS):
-        btn_rect = pygame.Rect(section_btns_x_offset + i * section_btn_w + 2, 2, section_btn_w - 4, section_btn_h - 4)
+        btn_rect = pygame.Rect(section_btns_x_offset + i * section_btn_w + 2, BUTTONS_TOP_MARGIN, section_btn_w - 4, section_btn_h - 4)
         selected = (i == selected_section)
-        color = BTN_SELECTED if selected else BTN_COLOR
+        color = SectionButton.BG_COL_SELECTED if selected else SectionButton.BG_COL
         draw_button(panel_surf, btn_rect, color, label, font)
         section_buttons.append(SectionButton(btn_rect.move(x, y), label, selected, height=section_btn_h - 4, width=btn_rect.width))
 
@@ -309,11 +322,13 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     item_btn_w = EntityButton.DEFAULT_WIDTH
     item_btn_h = EntityButton.DEFAULT_HEIGHT
     entity_buttons = []
-    # Center entity buttons horizontally in the panel
-    total_btns_width = number_of_entity_buttons * item_btn_w
+    # Center entity buttons horizontally in the panel with spacing
+    total_btns_width = number_of_entity_buttons * item_btn_w + (number_of_entity_buttons - 1) * BUTTON_SPACING
     entity_btns_x_offset = (width - total_btns_width) // 2
+    entity_btns_y = BUTTONS_TOP_MARGIN + section_btn_h + 2
     for i, entity_class in enumerate(entity_classes_out):
-        btn_rect = pygame.Rect(entity_btns_x_offset + i * item_btn_w + 2, section_btn_h + 2, item_btn_w - 4, item_btn_h - 4)
+        btn_x = entity_btns_x_offset + i * (item_btn_w + BUTTON_SPACING)
+        btn_rect = pygame.Rect(btn_x, entity_btns_y, item_btn_w, item_btn_h - 4)
         selected = (selected_item is not None and i == selected_item)
         entity_button = EntityButton(
             btn_rect,  # Do NOT move(x, y) here!

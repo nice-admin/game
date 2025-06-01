@@ -42,7 +42,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         resource_panel_height = total_height
     if ALLOW_CONSTRUCTION_PANEL:
         section_btn_rects, item_btn_rects = draw_construction_panel(
-            surface, selected_section=selected_section, selected_item=selected_item, font=font
+            surface, selected_section=selected_section, selected_item=selected_item, font=font, extend_below=20
         )
         if panel_btn_rects is not None:
             panel_btn_rects['section'] = section_btn_rects
