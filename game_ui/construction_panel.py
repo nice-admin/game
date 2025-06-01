@@ -4,7 +4,7 @@ import hashlib
 from game_core import entity_definitions
 from game_core.entity_base import *
 from game_core.entity_definitions import *
-from game_core.config import UI_BG1_COL, exposure_color
+from game_core.config import BASE_COL, UI_BG1_COL, exposure_color
 
 # --- Constants ---
 BG_COLOR = UI_BG1_COL
@@ -74,12 +74,12 @@ class EntityButton:
     DEFAULT_LABEL_BOTTOM_MARGIN = 33
     ROUNDING = 10  # Default corner radius for button rounding
     BG_COL = (211,218,221) # Default background color for entity button
-    BG_COL_GRAD_START = (211,218,221)  # Gradient start color
-    BG_COL_GRAD_END = (168,181,188)    # Gradient end color
-    TEXT_COL = (40, 40, 40)  # Default text color for entity button
-    INNER_SHADOW_COLOR = (120, 130, 140, 60)  # RGBA for subtle shadow
-    INNER_SHADOW_OFFSET = 6  # How far the shadow is offset (for 45°)
-    INNER_SHADOW_BLUR = 10   # Blur radius (not true blur, but feathering)
+    BG_COL_GRAD_START = (230,240,245)  # Gradient start color
+    BG_COL_GRAD_END = (180,190,200)    # Gradient end color
+    TEXT_COL = (46, 62, 79)  # Default text color for entity button
+    INNER_SHADOW_COLOR = (0, 0, 0, 60)  # RGBA for subtle shadow
+    INNER_SHADOW_OFFSET = -7  # How far the shadow is offset (for 45°)
+    INNER_SHADOW_BLUR = 7  # Blur radius (not true blur, but feathering)
     def __init__(self, rect, entity_class=None, selected=False, height=None, width=None, icon_width=None, icon_height=None, icon_top_margin=None):
         self.rect = rect
         self.entity_class = entity_class
@@ -92,7 +92,7 @@ class EntityButton:
         self.label_bottom_margin = self.DEFAULT_LABEL_BOTTOM_MARGIN
         # Extract label, icon, and price from entity_class
         if entity_class is not None:
-            self.label = getattr(entity_class, 'display_name', entity_class.__name__)
+            self.label = getattr(entity_class, 'display_name', entity_class.__name__).upper()
             self.icon_path = getattr(entity_class, '_icon', None)
             self.purchase_cost = getattr(entity_class, 'purchase_cost', None)
         else:
@@ -102,8 +102,13 @@ class EntityButton:
 
     def _draw_gradient(self, surface):
         grad_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        # Offset the gradient start/end lower by shifting the ratio
+        offset = int(self.rect.height * 0.18)  # 18% down
         for y in range(self.rect.height):
-            ratio = y / max(1, self.rect.height - 1)
+            # Shift the gradient so it starts lower
+            shifted_y = max(0, y - offset)
+            ratio = shifted_y / max(1, self.rect.height - 1 - offset)
+            ratio = min(max(ratio, 0), 1)  # Clamp between 0 and 1
             r = int(self.BG_COL_GRAD_START[0] * (1 - ratio) + self.BG_COL_GRAD_END[0] * ratio)
             g = int(self.BG_COL_GRAD_START[1] * (1 - ratio) + self.BG_COL_GRAD_END[1] * ratio)
             b = int(self.BG_COL_GRAD_START[2] * (1 - ratio) + self.BG_COL_GRAD_END[2] * ratio)
@@ -170,6 +175,32 @@ class EntityButton:
                 cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.label_bottom_margin))
                 surface.blit(cost_surf, cost_rect)
 
+class Background:
+    DEFAULT_COLOR = BG_COLOR
+    DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 25  # Default for 8 entity buttons
+    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT
+    ROUNDING = 12  # Default corner radius for background rounding
+
+    def __init__(self, x=0, y=0, width=None, height=None, color=None, rounding=None):
+        self.x = x
+        self.y = y
+        self.width = width if width is not None else self.DEFAULT_WIDTH
+        self.height = height if height is not None else self.DEFAULT_HEIGHT
+        self.color = color if color is not None else self.DEFAULT_COLOR
+        self.rounding = rounding if rounding is not None else self.ROUNDING
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+    def draw(self, surface):
+        pygame.draw.rect(
+            surface,
+            self.color,
+            self.rect,
+            border_top_left_radius=self.rounding,
+            border_top_right_radius=self.rounding,
+            border_bottom_left_radius=0,
+            border_bottom_right_radius=0
+        )
+
 # --- Helper Functions ---
 def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COLOR):
     pygame.draw.rect(surface, color, rect)
@@ -219,21 +250,6 @@ _baked_panel_cache = {
     'size': None,
 }
 
-class Background:
-    DEFAULT_COLOR = BG_COLOR
-    DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 50  # Default for 8 entity buttons
-    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT
-
-    def __init__(self, x=0, y=0, width=None, height=None, color=None):
-        self.x = x
-        self.y = y
-        self.width = width if width is not None else self.DEFAULT_WIDTH
-        self.height = height if height is not None else self.DEFAULT_HEIGHT
-        self.color = color if color is not None else self.DEFAULT_COLOR
-        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
 
 def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8):
     """

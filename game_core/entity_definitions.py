@@ -3,13 +3,13 @@ import random
 from game_other.audio import play_breaker_break_sound
 
 # region Tech
-class BasicComputer(ComputerEntity):
+class ComputerT1(ComputerEntity):
     _icon = "data/graphics/computer-basic.png"
     power_drain = 200
     upkeep = 50
 
 
-class AdvancedComputer(ComputerEntity):
+class ComputerT2(ComputerEntity):
     _icon = "data/graphics/computer-advanced.png"
     tier = 2
     power_drain = 400
