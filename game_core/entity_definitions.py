@@ -38,7 +38,7 @@ class AdvancedMonitor(MonitorEntity):
 class Artist(PersonEntity):
     _icon = "data/graphics/artist.png"
     has_special = 1
-    satisfaction_check_type = BasicMonitor
+    satisfaction_check_type = MonitorEntity
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
     is_person = 1
