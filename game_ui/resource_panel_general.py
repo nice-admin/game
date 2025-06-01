@@ -21,7 +21,14 @@ RESOURCE_PANEL_CELLS = {
         "value_getter": lambda gs: int(gs.game_time_days),
         "format": lambda v, gs: str(v),
     },
-    (0, 4): {
+    (0, 3): {
+        "key": "temperature",
+        "label": "Temperature",
+        "icon": "data/graphics/resource_panel/temperature.png",
+        "value_getter": lambda gs: int(gs.temperature),
+        "format": lambda v, gs: f"{v} °C",
+    },
+    (1, 4): {
         "key": "power_drain",
         "label": "Power\ndrain",
         "icon": "data/graphics/resource_panel/power.png",
@@ -34,7 +41,7 @@ RESOURCE_PANEL_CELLS = {
         ),
         "extra_key": lambda gs: gs.total_breaker_strength,
     },
-    (1, 4): {
+    (0, 4): {
         "key": "breaker_strength",
         "label": "Breaker\nlimit",
         "icon": "data/graphics/resource_panel/breakers.png",
@@ -92,22 +99,22 @@ PROBLEM_PANEL_CELLS = {
 class BasicCell:
     cell_width = 200
     cell_height = 50
+    ICON_COLOR = adjust_color(BASE_COL, white_factor=0.5, exposure=1)
     def __init__(self, label: str = "", font: Optional[pygame.font.Font] = None, value_font_size: int = 23, label_text_size: int = 17, icon: Optional[pygame.Surface] = None):
         self.label = label or ""
         self.font = font or get_cached_font(label_text_size)
         self.value_font_size = int(value_font_size)
         self.label_text_size = int(label_text_size)
         self.icon = None
-        # If icon is a string (path), load it; if it's a Surface, use it; otherwise, no icon
         if isinstance(icon, str):
-            try:
-                self.icon = pygame.image.load(icon).convert_alpha()
-                self.icon = pygame.transform.smoothscale(self.icon, (36, 36))
-            except Exception:
-                self.icon = None
-        elif icon is not None:
-            self.icon = icon
-        # No fallback to RESOURCE_ICON_PATHS or label-based lookup
+            loaded_icon = pygame.image.load(icon).convert_alpha()
+            loaded_icon = pygame.transform.smoothscale(loaded_icon, (36, 36))
+            color = self.ICON_COLOR
+            colored_icon = pygame.Surface(loaded_icon.get_size(), pygame.SRCALPHA)
+            colored_icon.fill(color)  # Fill with color, alpha 0
+            alpha = pygame.surfarray.pixels_alpha(loaded_icon)
+            pygame.surfarray.pixels_alpha(colored_icon)[:, :] = alpha[:, :]
+            self.icon = colored_icon
         self.surface = self._create_surface()
         self.value_surface = None
         self.last_value = None

@@ -71,8 +71,6 @@ class JobFinished:
                 state.current_job_finished = 1
                 # Add job_budget to total_money when job is finished
                 state.total_money += state.job_budget
-                # Reset render_progress_allowed to 0 when job is finished
-                state.render_progress_allowed = 0
                 self._last_project_finished = True
         else:
             self._last_project_finished = False
@@ -90,6 +88,8 @@ class JobArrived(GamePlayEvent):
         if getattr(state, 'current_job_finished', 0) != 1:
             return False
         n = self._n
+        # Reset render_progress_allowed to 0 when job is finished
+        state.render_progress_allowed = 0
         self._n += 1  # Increment for next job
         state.total_shots_goal = n
         state.job_id += 1
