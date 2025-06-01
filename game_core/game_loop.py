@@ -145,11 +145,18 @@ def handle_events(state, game_controls, remove_entity, place_entity):
     baked = get_baked_panel(font)
     resource_panel_height = baked['total_height']
 
-    # Define the callback for async grid changes (must be in this scope)
     def handle_testing_layout_grid_change():
         state['testing_layout_grid_changed'] = True
 
+    num_sections = 6  # Number of construction panel sections (update if dynamic)
+
     for event in pygame.event.get():
+        # Handle mouse wheel for section switching
+        if game_controls.handle_section_scroll(event, num_sections):
+            state['selected_section'] = game_controls.selected_section
+            state['selected_item'] = None
+            GameState().current_construction_class = None
+            continue
         # Handle render queue panel click/expand
         handle_render_queue_panel_event(event, screen_width, resource_panel_height)
         # Wire up testing layout async grid change callback

@@ -175,6 +175,22 @@ class GameControls:
         self.paint_brush = PaintBrush()
         self.camera_drag = CameraDrag()
         self.line_starting_position = None  # Always track last clicked cell
+        self.just_changed_section = False  # Track if section was just changed
+
+    def handle_section_scroll(self, event, num_sections):
+        """Handle mouse wheel events to change the selected section index."""
+        if event.type == pygame.MOUSEWHEEL:
+            if self.selected_section is None:
+                self.selected_section = 0
+            if event.y > 0:
+                # Scroll up: previous section
+                self.selected_section = (self.selected_section - 1) % num_sections
+            elif event.y < 0:
+                # Scroll down: next section
+                self.selected_section = (self.selected_section + 1) % num_sections
+            self.just_changed_section = True  # Mark that section just changed
+            return True
+        return False
 
     def pipette(self, state):
         """Set the current construction class to the entity under the mouse cursor."""
@@ -239,13 +255,20 @@ class GameControls:
         if isinstance(idx, int):
             entity_buttons = state.get('panel_btn_rects', {}).get('item', [])
             if 0 <= idx < len(entity_buttons):
-                if self.selected_item == idx:
-                    self.selected_item = None
-                    GameState().current_construction_class = None
-                else:
+                # If section was just changed, always select the entity
+                if self.just_changed_section:
                     self.selected_item = idx
                     entity_btn = entity_buttons[idx]
                     GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
+                    self.just_changed_section = False
+                else:
+                    if self.selected_item == idx:
+                        self.selected_item = None
+                        GameState().current_construction_class = None
+                    else:
+                        self.selected_item = idx
+                        entity_btn = entity_buttons[idx]
+                        GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                 state['selected_item'] = self.selected_item
                 return None, grid_changed
         # PaintBrush drag-to-paint/erase logic

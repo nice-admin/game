@@ -374,3 +374,16 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     # Blit the baked panel
     surface.blit(panel_surf, (x, y))
     return section_buttons, entity_buttons
+
+# Add this function to handle mouse wheel for section switching
+
+def handle_section_scroll(event, selected_section, num_sections):
+    """Handle mouse wheel events to change the selected section index."""
+    if event.type == pygame.MOUSEWHEEL:
+        if event.y > 0:
+            # Scroll up: previous section
+            selected_section = (selected_section - 1) % num_sections
+        elif event.y < 0:
+            # Scroll down: next section
+            selected_section = (selected_section + 1) % num_sections
+    return selected_section
