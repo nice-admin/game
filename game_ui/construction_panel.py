@@ -12,6 +12,7 @@ TEXT_COLOR = (255, 255, 255)
 SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management", "Decoration"]
 BUTTON_SPACING = 8  # Spacing between entity buttons
 BUTTONS_TOP_MARGIN = 10  # Top margin for section buttons
+PANEL_Y_OFFSET = 10  # Offset to move the construction panel downwards
 
 def get_computer_entities():
     classes = set()
@@ -75,13 +76,15 @@ class EntityButton:
     DEFAULT_ICON_TOP_MARGIN = 13
     DEFAULT_LABEL_BOTTOM_MARGIN = 33
     ROUNDING = 10  # Default corner radius for button rounding
-    BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.9, exposure=1)  # Use adjust_color for gradient start
-    BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.8, exposure=1)    # Gradient end color
+    BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.8, exposure=1)  # Use adjust_color for gradient start
+    BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.7, exposure=1)    # Gradient end color
     BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0.9, exposure=1)
     TEXT_COL = (46, 62, 79)  # Default text color for entity button
     INNER_SHADOW_COLOR = (0, 0, 0, 60)  # RGBA for subtle shadow
     INNER_SHADOW_OFFSET = -7  # How far the shadow is offset (for 45°)
     INNER_SHADOW_BLUR = 7  # Blur radius (not true blur, but feathering)
+    LABEL_TEXT_SIZE = 25  # Font size for purchase cost/label text
+    LABEL_BOTTOM_MARGIN = 36  # Margin for label/cost text from bottom
     def __init__(self, rect, entity_class=None, selected=False, height=None, width=None, icon_width=None, icon_height=None, icon_top_margin=None):
         self.rect = rect
         self.entity_class = entity_class
@@ -91,7 +94,6 @@ class EntityButton:
         self.icon_width = icon_width or self.DEFAULT_ICON_WIDTH
         self.icon_height = icon_height or self.DEFAULT_ICON_HEIGHT
         self.icon_top_margin = icon_top_margin or self.DEFAULT_ICON_TOP_MARGIN
-        self.label_bottom_margin = self.DEFAULT_LABEL_BOTTOM_MARGIN
         # Extract icon and price from entity_class (label is ignored)
         if entity_class is not None:
             self.icon_path = getattr(entity_class, '_icon', None)
@@ -156,25 +158,23 @@ class EntityButton:
                 surface.blit(icon_surf, icon_rect)
             except Exception as e:
                 print(f"Error loading icon {self.icon_path}: {e}")
-        # Label is not drawn
-        # Draw price/rental with smaller font
+        # Draw price/rental with fixed font size
         if font:
-            small_font_size = max(20, font.get_height() - 4)
-            small_font = pygame.font.Font(None, small_font_size)
+            small_font = pygame.font.Font(None, self.LABEL_TEXT_SIZE)
             col = text_color if text_color is not None else self.TEXT_COL
             if self.purchase_cost == 0:
-                cost_surf = small_font.render("(subscription)", True, col)
-                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.label_bottom_margin))
+                cost_surf = small_font.render("(monthly)", True, col)
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
                 surface.blit(cost_surf, cost_rect)
             elif self.purchase_cost not in (None, 0):
                 cost_surf = small_font.render(f"${self.purchase_cost}", True, col)
-                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.label_bottom_margin))
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
                 surface.blit(cost_surf, cost_rect)
 
 class Background:
     DEFAULT_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
     DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 8 * BUTTON_SPACING + 40  # Default for 8 entity buttons
-    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 20
+    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 30
     ROUNDING = 12  # Default corner radius for background rounding
     BORDER_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=2)  # Default border color (matches UI_BORDER1_COL)
     BORDER_WIDTH = 5
@@ -276,7 +276,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     width = background.width
     panel_height = background.height
     x = (surface.get_width() - width) // 2
-    y = surface.get_height() - panel_height + extend_below
+    y = surface.get_height() - panel_height + extend_below + PANEL_Y_OFFSET
     panel_rect = pygame.Rect(x, y, width, panel_height)
 
     # Create a hash of the current panel state for cache invalidation

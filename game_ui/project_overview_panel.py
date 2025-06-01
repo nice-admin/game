@@ -48,7 +48,7 @@ def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
 
 
 class BaseItem:
-    def __init__(self, name, progress=0.0, grad_start_col=(69, 79, 95), grad_end_col=(0, 187, 133), partitions=100):
+    def __init__(self, name, progress=0.0, grad_start_col=(69, 79, 95), grad_end_col=(0, 187, 133), partitions=0):
         self.name = name
         self.progress = progress  # 0.0 to 1.0
         self.grad_start_col = grad_start_col
@@ -111,17 +111,18 @@ def bake_render_queue_items(job_id, shot_rows):
 
 def get_progress_items(job_id, shot_rows, render_progress):
     """Return a list of RenderQueueItem with progress distributed according to render_progress.
-    Each bar represents 0-100 units. Only one bar fills at a time.
+    Each bar represents 0-render_progress_required_per_shot units. Only one bar fills at a time.
     When a bar fills, increment GameState().total_shots_finished if not already counted."""
     gs = GameState()
+    units_per_bar = gs.render_progress_required_per_shot
     items = [BaseItem(f"Shot {i+1}") for i in range(shot_rows)]
     finished_count = 0
     for i in range(shot_rows):
-        if render_progress >= (i + 1) * 100:
+        if render_progress >= (i + 1) * units_per_bar:
             items[i].progress = 1.0
             finished_count += 1
-        elif render_progress >= i * 100:
-            items[i].progress = (render_progress - i * 100) / 100.0
+        elif render_progress >= i * units_per_bar:
+            items[i].progress = (render_progress - i * units_per_bar) / float(units_per_bar)
         else:
             break  # All subsequent bars remain at 0.0
     # Update global finished shots if needed
@@ -196,12 +197,13 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     # Get artist progress for each shot (clearer version)
     artist_items = []
     for idx in range(len(items)):
-        start = idx * 10
-        end = (idx + 1) * 10
+        artist_units = gs.artist_progress_required_per_shot
+        start = idx * artist_units
+        end = (idx + 1) * artist_units
         if artist_progress_current >= end:
             progress = 1.0
         elif artist_progress_current > start:
-            progress = (artist_progress_current - start) / 10.0
+            progress = (artist_progress_current - start) / artist_units
         else:
             progress = 0.0
         artist_items.append(BaseItem(
@@ -209,7 +211,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
             progress=progress,
             grad_start_col=(86, 60, 52),
             grad_end_col=(203, 186, 72),
-            partitions=10
+            partitions=artist_units
         ))
     for idx in range(len(items)):
         # Left column: artist progress
@@ -217,11 +219,11 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
         x_left = 0
         y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
         left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, font)
-        # Right column: render progress (use previous gradient colors, partitions=100)
+        # Right column: render progress (use previous gradient colors, partitions=render_progress_required_per_shot)
         right_item = items[idx]
         right_item.grad_start_col = (69, 79, 95)  # Previous left color
         right_item.grad_end_col = (0, 187, 133)   # Previous right color
-        right_item.partitions = 100
+        right_item.partitions = gs.render_progress_required_per_shot
         x_right = col_width
         right_item.draw(panel_surface, x_right, y, col_width, RQI_HEIGHT, font)
     # Cache

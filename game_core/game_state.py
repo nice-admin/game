@@ -16,6 +16,8 @@ class GameState:
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
+            cls._instance.artist_progress_required_per_shot = 15
+            cls._instance.render_progress_required_per_shot = 50
             cls._instance.artist_progress_current = 0
             cls._instance.artist_progress_goal = 0
             cls._instance.render_progress_current = 0
@@ -26,6 +28,7 @@ class GameState:
             cls._instance.current_job_finished = 1
             cls._instance.jobs_finished = 0
             cls._instance.job_id = 0
+            cls._instance.job_budget = 0
             cls._instance.current_construction_class = None  # Track what the user is currently constructing
         return cls._instance
 
@@ -106,8 +109,8 @@ class GameState:
             self.total_shots_finished = 0
 
     def cap_render_progress_allowed(self):
-        if self.artist_progress_current > 0 and self.artist_progress_current % 10 == 0:
-            self.render_progress_allowed = self.artist_progress_current * 10
+        if self.artist_progress_current > 0 and self.artist_progress_current % self.artist_progress_required_per_shot == 0:
+            self.render_progress_allowed = self.artist_progress_current * self.render_progress_required_per_shot // self.artist_progress_required_per_shot
 
     def cap_artist_progress_current(self):
         if self.artist_progress_current < self.artist_progress_goal:

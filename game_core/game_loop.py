@@ -115,9 +115,15 @@ def run_game():
         dt = clock.tick(FPS)
         # 1 in-game day = 10 seconds, so 30 days = 300 seconds
         seconds_per_month = 30 * 10
-        # Subtract upkeep as integer value per tick
+        # Update total_money
+        if not hasattr(gs, '_upkeep_accumulator'):
+            gs._upkeep_accumulator = 0.0
         deduction = gs.total_upkeep * (dt / 1000.0) / seconds_per_month
-        gs.total_money -= round(deduction)
+        gs._upkeep_accumulator += deduction
+        int_deduction = int(gs._upkeep_accumulator)
+        if int_deduction > 0:
+            gs.total_money -= int_deduction
+            gs._upkeep_accumulator -= int_deduction
         prev_camera_offset = state['camera_offset']
         # Render
         frame_end = pygame.time.get_ticks()

@@ -69,6 +69,10 @@ class JobFinished:
             if not self._last_project_finished:
                 game_other.audio.play_project_finished_sound()
                 state.current_job_finished = 1
+                # Add job_budget to total_money when job is finished
+                state.total_money += state.job_budget
+                # Reset render_progress_allowed to 0 when job is finished
+                state.render_progress_allowed = 0
                 self._last_project_finished = True
         else:
             self._last_project_finished = False
@@ -90,9 +94,9 @@ class JobArrived(GamePlayEvent):
         state.total_shots_goal = n
         state.job_id += 1
         state.artist_progress_current = 0
-        state.artist_progress_goal = 10 * n
+        state.artist_progress_goal = n * state.artist_progress_required_per_shot
         state.render_progress_current = 0
-        state.render_progress_goal = n * 100
+        state.render_progress_goal = n * state.render_progress_required_per_shot
         state.job_budget = 10000 * n
         state.current_job_finished = 0  # Reset for next job
         game_other.audio.play_job_arrived_sound()
