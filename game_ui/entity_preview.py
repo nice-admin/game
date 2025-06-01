@@ -1,10 +1,10 @@
 import pygame
 from game_core.game_state import GameState
 from game_core.config import FONT1
-
+    
 class EntityInfo:
-    BG_COL = (0, 0, 0, 50)  # Semi-transparent black
-    BG_ROUNDING = 4         # Border radius for background rectangle
+    BG_COL = (0, 0, 0, 30)  # Semi-transparent black
+    BG_ROUNDING = 2         # Border radius for background rectangle
     FONT_SIZE = 15          # Default font size (can be scaled)
 
     def __init__(self, entity, cell_size):

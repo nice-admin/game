@@ -34,6 +34,12 @@ class AdvancedMonitor(MonitorEntity):
     upkeep = 40
     power_drain = 40
 
+class TV(BaseEntity):
+    _icon = "data/graphics/entities/tv.png"
+    tier = 1
+    upkeep = 10
+    power_drain = 40
+
 # region Humans
 class Artist(PersonEntity):
     _icon = "data/graphics/artist.png"

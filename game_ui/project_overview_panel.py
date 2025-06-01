@@ -2,7 +2,7 @@ import pygame
 import time
 from game_core.entity_definitions import *
 from game_core.config import *
-from game_core.config import exposure_color
+from game_core.config import exposure_color, FONT1
 from game_core.game_state import GameState
 
 RQ_WIDTH = 1000
@@ -186,7 +186,8 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     pygame.draw.rect(panel_surface, UI_BG1_COL, (0, 0, panel_width, panel_height))
     pygame.draw.rect(panel_surface, UI_BORDER1_COL, (0, 0, panel_width, panel_height), 2)
     # Header
-    header = Header(panel_width, font)
+    header_font = pygame.font.Font(FONT1, font.get_height() if font else 24)
+    header = Header(panel_width, header_font)
     header.draw(panel_surface, y=0)
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress_current)
@@ -218,14 +219,14 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
         left_item = artist_items[idx]
         x_left = 0
         y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
-        left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, font)
+        left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, header_font)
         # Right column: render progress (use previous gradient colors, partitions=render_progress_required_per_shot)
         right_item = items[idx]
         right_item.grad_start_col = (69, 79, 95)  # Previous left color
         right_item.grad_end_col = (0, 187, 133)   # Previous right color
         right_item.partitions = gs.render_progress_required_per_shot
         x_right = col_width
-        right_item.draw(panel_surface, x_right, y, col_width, RQI_HEIGHT, font)
+        right_item.draw(panel_surface, x_right, y, col_width, RQI_HEIGHT, header_font)
     # Cache
     _last_baked_panel = panel_surface
     _last_baked_panel_job_id = job_id

@@ -22,10 +22,17 @@ def get_computer_entities():
                 classes.add(obj)
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
-def get_monitor_entities():
+def monitors_section(extra_classes=TV):
     classes = [obj for name, obj in inspect.getmembers(entity_definitions)
-            if inspect.isclass(obj) and issubclass(obj, SatisfiableEntity) and obj.__name__.lower().endswith('monitor')]
-    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
+            if inspect.isclass(obj) and issubclass(obj, SatisfiableEntity) and (obj.__name__.lower().endswith('monitor') or obj.__name__ == 'TV')]
+    classes = sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
+    if extra_classes:
+        # Accepts a list or single class
+        if isinstance(extra_classes, (list, tuple, set)):
+            classes.extend(extra_classes)
+        else:
+            classes.append(extra_classes)
+    return classes
 
 def get_utility_entities():
     classes = []
@@ -60,6 +67,7 @@ def get_production_entities():
 class SectionButton:
     DEFAULT_HEIGHT = 40
     DEFAULT_WIDTH = 150
+    FONT_SIZE = 18
     BG_COL = adjust_color(BASE_COL, white_factor=0.15, exposure=1)
     BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0.35, exposure=1)  # Added for selected state
     def __init__(self, rect, label, selected=False, height=None, width=None):
@@ -76,6 +84,7 @@ class EntityButton:
     DEFAULT_ICON_HEIGHT = DEFAULT_ICON_WIDTH
     DEFAULT_ICON_TOP_MARGIN = 13
     DEFAULT_LABEL_BOTTOM_MARGIN = 33
+    FONT_SIZE = 20
     ROUNDING = 10  # Default corner radius for button rounding
     BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.8, exposure=1)  # Use adjust_color for gradient start
     BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.7, exposure=1)    # Gradient end color
@@ -160,17 +169,16 @@ class EntityButton:
             except Exception as e:
                 print(f"Error loading icon {self.icon_path}: {e}")
         # Draw price/rental with fixed font size
-        if font:
-            small_font = pygame.font.Font(FONT1, self.LABEL_TEXT_SIZE)
-            col = text_color if text_color is not None else self.TEXT_COL
-            if self.purchase_cost == 0:
-                cost_surf = small_font.render("(monthly)", True, col)
-                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
-                surface.blit(cost_surf, cost_rect)
-            elif self.purchase_cost not in (None, 0):
-                cost_surf = small_font.render(f"${self.purchase_cost}", True, col)
-                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
-                surface.blit(cost_surf, cost_rect)
+        entity_font = pygame.font.Font(FONT1, self.FONT_SIZE)
+        col = text_color if text_color is not None else self.TEXT_COL
+        if self.purchase_cost == 0:
+            cost_surf = entity_font.render("(monthly)", True, col)
+            cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
+            surface.blit(cost_surf, cost_rect)
+        elif self.purchase_cost not in (None, 0):
+            cost_surf = entity_font.render(f"${self.purchase_cost}", True, col)
+            cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
+            surface.blit(cost_surf, cost_rect)
 
 class Background:
     DEFAULT_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
@@ -226,7 +234,7 @@ def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COL
 def get_section_entity_defs():
     return [
         lambda: get_computer_entities(),
-        lambda: get_monitor_entities(),
+        lambda: monitors_section(),
         lambda: get_utility_entities(),
         lambda: get_production_entities(),  # Use custom production entities
         lambda: get_management_entities(),
@@ -310,7 +318,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
         btn_rect = pygame.Rect(section_btns_x_offset + i * section_btn_w + 2, BUTTONS_TOP_MARGIN, section_btn_w - 4, section_btn_h - 4)
         selected = (i == selected_section)
         color = SectionButton.BG_COL_SELECTED if selected else SectionButton.BG_COL
-        section_font = pygame.font.Font(FONT1, 24)  # Use FONT1 as a path, not the font object
+        section_font = pygame.font.Font(FONT1, SectionButton.FONT_SIZE)
         draw_button(panel_surf, btn_rect, color, label, section_font)
         section_buttons.append(SectionButton(btn_rect.move(x, y), label, selected, height=section_btn_h - 4, width=btn_rect.width))
 
@@ -342,7 +350,8 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
             icon_height=EntityButton.DEFAULT_ICON_HEIGHT,
             icon_top_margin=EntityButton.DEFAULT_ICON_TOP_MARGIN,
         )
-        entity_button.draw(panel_surf, font)
+        entity_font = pygame.font.Font(FONT1, EntityButton.FONT_SIZE)
+        entity_button.draw(panel_surf, entity_font)
         # For event handling, store the button rect relative to the main surface
         entity_buttons.append(EntityButton(
             btn_rect.move(x, y),
