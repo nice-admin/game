@@ -4,12 +4,12 @@ import hashlib
 from game_core import entity_definitions
 from game_core.entity_base import *
 from game_core.entity_definitions import *
-from game_core.config import BASE_COL, UI_BG1_COL, exposure_color, adjust_color
+from game_core.config import BASE_COL, UI_BG1_COL, exposure_color, adjust_color, FONT1
 
 # --- Constants ---
 BG_COLOR = UI_BG1_COL
 TEXT_COLOR = (255, 255, 255)
-SECTION_LABELS = ["Computers", "Monitors", "Utility", "Artists", "Management", "Decoration"]
+SECTION_LABELS = ["Computers", "Monitors", "Utility", "Production", "Management", "Decoration"]
 BUTTON_SPACING = 8  # Spacing between entity buttons
 BUTTONS_TOP_MARGIN = 10  # Top margin for section buttons
 PANEL_Y_OFFSET = 10  # Offset to move the construction panel downwards
@@ -37,13 +37,6 @@ def get_utility_entities():
                 classes.append(obj)
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
-def get_artist_entities():
-    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
-            if inspect.isclass(obj)
-            and issubclass(obj, SatisfiableEntity)
-            and 'artist' in obj.__name__.lower()]
-    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
-
 def get_management_entities():
     classes = [obj for name, obj in inspect.getmembers(entity_definitions)
             if inspect.isclass(obj)
@@ -55,6 +48,14 @@ def get_decoration_entities():
     classes = [obj for name, obj in inspect.getmembers(entity_definitions)
                if inspect.isclass(obj) and issubclass(obj, DecorationEntity) and obj is not DecorationEntity]
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
+
+def get_production_entities():
+    # List your desired production classes here
+    production_classes = [
+        entity_definitions.Artist,
+        entity_definitions.TechnicalDirector,
+    ]
+    return [cls for cls in production_classes if cls is not None]
 
 class SectionButton:
     DEFAULT_HEIGHT = 40
@@ -94,7 +95,7 @@ class EntityButton:
         self.icon_width = icon_width or self.DEFAULT_ICON_WIDTH
         self.icon_height = icon_height or self.DEFAULT_ICON_HEIGHT
         self.icon_top_margin = icon_top_margin or self.DEFAULT_ICON_TOP_MARGIN
-        # Extract icon and price from entity_class (label is ignored)
+        # Extract icon and price from entity_class (label is not used)
         if entity_class is not None:
             self.icon_path = getattr(entity_class, '_icon', None)
             self.purchase_cost = getattr(entity_class, 'purchase_cost', None)
@@ -160,7 +161,7 @@ class EntityButton:
                 print(f"Error loading icon {self.icon_path}: {e}")
         # Draw price/rental with fixed font size
         if font:
-            small_font = pygame.font.Font(None, self.LABEL_TEXT_SIZE)
+            small_font = pygame.font.Font(FONT1, self.LABEL_TEXT_SIZE)
             col = text_color if text_color is not None else self.TEXT_COL
             if self.purchase_cost == 0:
                 cost_surf = small_font.render("(monthly)", True, col)
@@ -227,7 +228,7 @@ def get_section_entity_defs():
         lambda: get_computer_entities(),
         lambda: get_monitor_entities(),
         lambda: get_utility_entities(),
-        lambda: get_artist_entities(),
+        lambda: get_production_entities(),  # Use custom production entities
         lambda: get_management_entities(),
         lambda: get_decoration_entities(),
     ]
@@ -309,7 +310,8 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
         btn_rect = pygame.Rect(section_btns_x_offset + i * section_btn_w + 2, BUTTONS_TOP_MARGIN, section_btn_w - 4, section_btn_h - 4)
         selected = (i == selected_section)
         color = SectionButton.BG_COL_SELECTED if selected else SectionButton.BG_COL
-        draw_button(panel_surf, btn_rect, color, label, font)
+        section_font = pygame.font.Font(FONT1, 24)  # Use FONT1 as a path, not the font object
+        draw_button(panel_surf, btn_rect, color, label, section_font)
         section_buttons.append(SectionButton(btn_rect.move(x, y), label, selected, height=section_btn_h - 4, width=btn_rect.width))
 
     # Second row: Entity buttons

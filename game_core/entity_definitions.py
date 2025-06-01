@@ -55,12 +55,28 @@ class Artist(PersonEntity):
                 gs.cap_artist_progress_current()
                 gs.cap_render_progress_allowed()
 
+
+class TechnicalDirector(PersonEntity):
+    _icon = "data/graphics/entities/technical-director.png"
+    satisfaction_check_type = 'router'
+    satisfaction_check_radius = 30
+    satisfaction_check_threshold = 1
+    upkeep = 3000
+
 class ProjectManager(SatisfiableEntity):
     _icon = "data/graphics/project-manager.png"
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
     upkeep = 3000
+
+class AccountManager(SatisfiableEntity):
+    _icon = "data/graphics/account-manager.png"
+    satisfaction_check_type = 'router'
+    satisfaction_check_radius = 30
+    satisfaction_check_threshold = 1
+    upkeep = 3000
+
 
 # region Utility
 class EspressoMachine(UtilityEntity):

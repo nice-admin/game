@@ -47,10 +47,10 @@ STATUS_BAD_COL = (255, 0, 0)
 STATUS_MID_COL = (255, 220, 0)
 STATUS_GOOD_COL = (0, 255, 0)
 
-FONT1_PATH = "data/fonts/font1.ttf"
+FONT1 = "data/fonts/font1.ttf"
 
 def get_font1(size=18):
-    return pygame.font.Font(FONT1_PATH, size)
+    return pygame.font.Font(FONT1, size)
 
 MIXER_NUM_CHANNELS = 32
 

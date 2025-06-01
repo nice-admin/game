@@ -13,6 +13,7 @@ from game_ui.details_panel import draw_details_panel, DETAILS_PANEL_WIDTH, DETAI
 from game_ui.overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
 from game_core.game_state import GameState
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL
+from game_ui.entity_preview import draw_entity_preview
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -70,35 +71,3 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_RENDER_QUEUE_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height)
     power_outage.draw_overlay(surface)
-
-
-def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
-    # Always use the global singleton for construction class
-    entity_type = GameState().current_construction_class
-    if not callable(entity_type):
-        return
-    from game_core.entity_definitions import get_icon_surface
-    mx, my = pygame.mouse.get_pos()
-    grid_x = int((mx - camera_offset[0]) // cell_size)
-    grid_y = int((my - camera_offset[1]) // cell_size)
-    if not (0 <= grid_x < GRID_WIDTH and 0 <= grid_y < GRID_HEIGHT):
-        return
-    # Remove the check for existing entity so preview always shows
-    preview_entity = entity_type(grid_x, grid_y)
-    icon_path = getattr(preview_entity, '_icon', None)
-    icon_surf = get_icon_surface(icon_path) if icon_path else None
-    if icon_surf:
-        icon_surf = pygame.transform.smoothscale(icon_surf, (cell_size, cell_size)).copy()
-        icon_surf.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT)
-        icon_x = grid_x * cell_size + camera_offset[0]
-        icon_y = grid_y * cell_size + camera_offset[1]
-        surface.blit(icon_surf, (icon_x, icon_y))
-        # Draw purchase_cost label to the right of the icon, only if purchase_cost is a number > 0
-        purchase_cost = getattr(preview_entity, 'purchase_cost', None)
-        if isinstance(purchase_cost, (int, float)) and purchase_cost > 0:
-            font = pygame.font.Font(None, max(28, cell_size // 2))
-            cost_text = f"-${purchase_cost}"
-            text_surf = font.render(cost_text, True, (255, 0, 0))
-            # Draw label to the right, vertically centered with the icon
-            text_rect = text_surf.get_rect(midleft=(icon_x - 10 + cell_size + 10, icon_y + 30 + cell_size // 2))
-            surface.blit(text_surf, text_rect)
