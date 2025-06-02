@@ -1,5 +1,5 @@
 from game_ui.profiler_panel import draw_profiler_panel
-from game_ui.hidden_info_panel import draw_entity_state_panel
+from game_ui.hidden_info_panel import draw_hidden_info_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
 from game_ui.info_panel import draw_info_panel, get_info_panel_width
 from game_other.feature_toggle import *
@@ -65,8 +65,8 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_alert_panel(surface, font, surface.get_width(), surface.get_height())
     if ALLOW_INFO_PANEL:
         draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid)
-    if ENTITY_STATE_PANEL:
-        draw_entity_state_panel(surface, font, hovered_entity=hovered_entity)
+    if ALLOW_HIDDEN_INFO_PANEL:
+        draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
     draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     if ALLOW_RENDER_QUEUE_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height)

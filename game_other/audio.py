@@ -7,9 +7,9 @@ from game_core.config import resource_path
 def play_random_music_wav(music_dir=None):
     if music_dir is None:
         music_dir = resource_path(os.path.join('data', 'audio', 'music'))
-    wav_files = [f for f in os.listdir(music_dir) if f.lower().endswith('.wav')]
+    wav_files = [f for f in os.listdir(music_dir) if f.lower().endswith(('.wav', '.mp3'))]
     if not wav_files:
-        print("No .wav files found in", music_dir)
+        print("No .wav or .mp3 files found in", music_dir)
         return
     chosen = random.choice(wav_files)
     path = os.path.join(music_dir, chosen)

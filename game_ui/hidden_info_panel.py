@@ -4,13 +4,13 @@ import math
 # hidden_info_panel.py (renamed from entity_state_panel.py)
 # Helper function to display the contents of entity_states in the top right corner for debugging.
 
-ENTITY_PANEL_VISIBLE = True
+ENTITY_PANEL_VISIBLE = False
 
 def toggle_entity_panel():
     global ENTITY_PANEL_VISIBLE
     ENTITY_PANEL_VISIBLE = not ENTITY_PANEL_VISIBLE
 
-def draw_entity_state_panel(surface, font=None, hovered_entity=None, x_offset=5, y_offset=170, font_size=15, col_spacing=150):
+def draw_hidden_info_panel(surface, font=None, hovered_entity=None, x_offset=5, y_offset=170, font_size=15, col_spacing=150):
     """
     Draws a debug panel in the bottom left corner showing the contents of the hovered entity
     and the current game_state global variables.

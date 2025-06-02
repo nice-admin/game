@@ -1,5 +1,5 @@
 import pygame
-from game_core.config import UI_BG1_COL, UI_BORDER1_COL, TEXT1_COL
+from game_core.config import UI_BG1_COL, UI_BORDER1_COL, TEXT1_COL, resource_path
 from game_core.game_state import GameState
 from typing import Optional, Tuple
 
@@ -46,12 +46,17 @@ class SystemCell:
             target_surface.blit(self.dynamic_text_surface, pos)
 
 def get_system_panel_cells(font=None):
-    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
+    icon_files = [
+        resource_path("data/graphics/internet.png"),
+        resource_path("data/graphics/nas.png"),
+        resource_path("data/graphics/wifi.png"),
+        resource_path("data/graphics/storage.png"),
+    ]
     system_labels = [
         "Connected", "Running",
         "WiFi OK", "15 / 25 TB"
     ]
-    system_icons = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
+    system_icons = [pygame.image.load(fname).convert_alpha() for fname in icon_files]
     def get_internet_label():
         gs = GameState()
         return "Online" if getattr(gs, 'is_internet_online', True) else "Offline"
@@ -73,10 +78,15 @@ def update_icon_surfaces(is_internet_online, is_nas_online, font: Optional[pygam
     Tint and cache the icon surfaces for the current is_internet_online and is_nas_online state.
     This should be called only at game start and when either state changes.
     """
-    icon_files = ["internet.png", "nas.png", "wifi.png", "storage.png"]
+    icon_files = [
+        resource_path("data/graphics/internet.png"),
+        resource_path("data/graphics/nas.png"),
+        resource_path("data/graphics/wifi.png"),
+        resource_path("data/graphics/storage.png"),
+    ]
     icon_size = 40
     if not hasattr(update_icon_surfaces, "_icon_cache"):
-        update_icon_surfaces._icon_cache = [pygame.image.load(f"data/graphics/{fname}").convert_alpha() for fname in icon_files]
+        update_icon_surfaces._icon_cache = [pygame.image.load(fname).convert_alpha() for fname in icon_files]
     system_icons = update_icon_surfaces._icon_cache
     def tint_icon(icon, color):
         icon = pygame.transform.smoothscale(icon, (icon_size, icon_size))

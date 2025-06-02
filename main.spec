@@ -1,10 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-import os
-
-build_dir = os.path.join('_build', 'build')
-dist_dir = os.path.join('_build', 'dist')
-
 
 a = Analysis(
     ['main.py'],
@@ -40,17 +35,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles if hasattr(a, 'zipfiles') else [],
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='main',
-    distpath=dist_dir,
-    workpath=build_dir,
 )

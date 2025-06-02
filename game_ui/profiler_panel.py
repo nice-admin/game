@@ -13,7 +13,7 @@ DP_PAD_X = 16
 DP_PAD_Y = 16
 DP_WIDTH = 250
 
-_profiler_panel_visible = True
+_profiler_panel_visible = False
 
 def handle_profiler_panel_toggle():
     global _profiler_panel_visible
