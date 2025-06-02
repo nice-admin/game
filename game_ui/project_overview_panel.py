@@ -13,15 +13,19 @@ _render_queue_panel_current_height = RQ_FOLDED_HEIGHT
 _render_queue_panel_target_height = RQ_FOLDED_HEIGHT
 _render_queue_panel_anim_start_time = None
 
-RQI_HEIGHT = 40
-RQI_SPACING = 8
-RQI_TOP_MARGIN = 50
+# Progress bar visual constants (shared for all progress bars in this panel)
+BAR_HEIGHT = 30
+BAR_ROUNDING = BAR_HEIGHT // 4
+
+RQI_HEIGHT = BAR_HEIGHT
+RQI_SPACING = 30  # You may want to make this a function of BAR_HEIGHT, e.g., int(BAR_HEIGHT * 0.2)
+RQI_TOP_MARGIN = 50  # Optionally, also make this a function of BAR_HEIGHT
 
 
 def get_expanded_extra_height():
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_goal', 10)
-    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN + 30
+    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN + 40
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
@@ -47,6 +51,8 @@ def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
 
 
 class BaseItem:
+    BAR_HEIGHT = BAR_HEIGHT
+    BAR_ROUNDING = BAR_ROUNDING
     def __init__(self, name, progress=0.0, grad_start_col=(69, 79, 95), grad_end_col=(0, 187, 133), partitions=0):
         self.name = name
         self.progress = progress  # 0.0 to 1.0
@@ -56,11 +62,11 @@ class BaseItem:
 
     def draw(self, surface, x, y, width, height, font):
         bar_width = int(width * 0.9)
-        bar_height = 20
+        bar_height = self.BAR_HEIGHT
         bar_x = x + (width - bar_width) // 2
         bar_y = y
         bg_col = exposure_color(UI_BG1_COL, 0.5)
-        border_radius = bar_height // 3
+        border_radius = self.BAR_ROUNDING
         # Draw background with rounded corners
         pygame.draw.rect(surface, bg_col, (bar_x, bar_y, bar_width, bar_height), border_radius=border_radius)
         # Gradient progress bar with rounded corners
