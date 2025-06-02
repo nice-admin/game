@@ -177,20 +177,6 @@ class GameControls:
         self.line_starting_position = None  # Always track last clicked cell
         self.just_changed_section = False  # Track if section was just changed
 
-    def handle_section_scroll(self, event, num_sections):
-        """Handle mouse wheel events to change the selected section index."""
-        if event.type == pygame.MOUSEWHEEL:
-            if self.selected_section is None:
-                self.selected_section = 0
-            if event.y > 0:
-                # Scroll up: previous section
-                self.selected_section = (self.selected_section - 1) % num_sections
-            elif event.y < 0:
-                # Scroll down: next section
-                self.selected_section = (self.selected_section + 1) % num_sections
-            self.just_changed_section = True  # Mark that section just changed
-            return True
-        return False
 
     def pipette(self, state):
         """Set the current construction class to the entity under the mouse cursor."""

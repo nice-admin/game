@@ -1,16 +1,17 @@
 from .entity_base import *
 import random
 from game_other.audio import play_breaker_break_sound
+from game_core.config import resource_path
 
 # region Tech
 class ComputerT1(ComputerEntity):
-    _icon = "data/graphics/computer-basic.png"
+    _icon = resource_path("data/graphics/computer-basic.png")
     power_drain = 200
     upkeep = 50
 
 
 class ComputerT2(ComputerEntity):
-    _icon = "data/graphics/computer-advanced.png"
+    _icon = resource_path("data/graphics/computer-advanced.png")
     tier = 2
     power_drain = 400
     upkeep = 100
@@ -18,31 +19,31 @@ class ComputerT2(ComputerEntity):
     satisfaction_check_gamestate = 'is_nas_online'
 
 class Macbook(LaptopEntity):
-    _icon = "data/graphics/macbook.png"
+    _icon = resource_path("data/graphics/macbook.png")
     tier = 3
     upkeep = 100
     power_drain = 50
 
 class BasicMonitor(MonitorEntity):
-    _icon = "data/graphics/basic-monitor.png"
+    _icon = resource_path("data/graphics/basic-monitor.png")
     upkeep = 20
     power_drain = 20
 
 class AdvancedMonitor(MonitorEntity):
-    _icon = "data/graphics/advanced-monitor.png"
+    _icon = resource_path("data/graphics/advanced-monitor.png")
     tier = 2
     upkeep = 40
     power_drain = 40
 
 class TV(BaseEntity):
-    _icon = "data/graphics/entities/tv.png"
+    _icon = resource_path("data/graphics/entities/tv.png")
     tier = 1
     upkeep = 10
     power_drain = 40
 
 # region Humans
 class Artist(PersonEntity):
-    _icon = "data/graphics/artist.png"
+    _icon = resource_path("data/graphics/artist.png")
     has_special = 1
     satisfaction_check_type = MonitorEntity
     satisfaction_check_radius = 1
@@ -63,21 +64,21 @@ class Artist(PersonEntity):
 
 
 class TechnicalDirector(PersonEntity):
-    _icon = "data/graphics/entities/technical-director.png"
+    _icon = resource_path("data/graphics/entities/technical-director.png")
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
     upkeep = 3000
 
 class ProjectManager(SatisfiableEntity):
-    _icon = "data/graphics/project-manager.png"
+    _icon = resource_path("data/graphics/project-manager.png")
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
     upkeep = 3000
 
 class AccountManager(SatisfiableEntity):
-    _icon = "data/graphics/account-manager.png"
+    _icon = resource_path("data/graphics/account-manager.png")
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
@@ -86,27 +87,27 @@ class AccountManager(SatisfiableEntity):
 
 # region Utility
 class EspressoMachine(UtilityEntity):
-    _icon = "data/graphics/coffee-machine.png"
+    _icon = resource_path("data/graphics/coffee-machine.png")
 
 class Outlet(UtilityEntity):
-    _icon = "data/graphics/outlet.png"
+    _icon = resource_path("data/graphics/outlet.png")
     has_satisfaction_check = 0
     purchase_cost = 50
 
 class Snacks(UtilityEntity):
-    _icon = "data/graphics/snacks.png"
+    _icon = resource_path("data/graphics/snacks.png")
 
 class Router(UtilityEntity):
-    _icon = "data/graphics/router.png"
+    _icon = resource_path("data/graphics/router.png")
     purchase_cost = 100
 
 class Ac(UtilityEntity):
-    _icon = "data/graphics/ac.png"
+    _icon = resource_path("data/graphics/ac.png")
     purchase_cost = 5000
 
 class Breaker(SatisfiableEntity):
-    _icon = "data/graphics/breaker.png"
-    _icon_broken = "data/graphics/breaker-broken.png"
+    _icon = resource_path("data/graphics/breaker.png")
+    _icon_broken = resource_path("data/graphics/breaker-broken.png")
     satisfaction_check_type = 'breaker'
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 4
@@ -143,8 +144,8 @@ class Breaker(SatisfiableEntity):
 # region Decoration
 
 class FlowerPot(DecorationEntity):
-    _icon = "data/graphics/flower-pot.png"
+    _icon = resource_path("data/graphics/flower-pot.png")
 
 
 class Cactus(DecorationEntity):
-    _icon = "data/graphics/cactus.png"
+    _icon = resource_path("data/graphics/cactus.png")

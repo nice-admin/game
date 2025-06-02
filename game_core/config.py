@@ -1,4 +1,6 @@
 import pygame
+import sys
+import os
 
 BASE_COL = (40, 45, 50, 255)
 
@@ -47,7 +49,15 @@ STATUS_BAD_COL = (255, 0, 0)
 STATUS_MID_COL = (255, 220, 0)
 STATUS_GOOD_COL = (0, 255, 0)
 
-FONT1 = "data/fonts/font1.ttf"
+# Audio/Font/Data resource path helper
+
+def resource_path(relative_path):
+    # Get absolute path to resource, works for dev and for PyInstaller .exe
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.abspath('.'), relative_path)
+
+FONT1 = resource_path("data/fonts/font1.ttf")
 
 def get_font1(size=18):
     return pygame.font.Font(FONT1, size)
