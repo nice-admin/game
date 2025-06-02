@@ -2,7 +2,6 @@ import pygame
 import time
 from game_core.entity_definitions import *
 from game_core.config import *
-from game_core.config import exposure_color, FONT1
 from game_core.game_state import GameState
 
 RQ_WIDTH = 1000
@@ -22,7 +21,7 @@ RQI_TOP_MARGIN = 50
 def get_expanded_extra_height():
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_goal', 10)
-    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN
+    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN + 30
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
@@ -154,6 +153,21 @@ class Header:
         render_rect = render_text.get_rect(midright=(self.width - 20, title_rect.centery))
         surface.blit(render_text, render_rect)
 
+class Headline:
+    FONT_SIZE = 30  # You can adjust this value as needed
+    def __init__(self, width, font=None):
+        self.width = width
+        # Always use FONT_SIZE for the headline, ignore passed font size
+        self.font = pygame.font.Font(FONT1, self.FONT_SIZE)
+
+    def draw(self, surface, y=0):
+        gs = GameState()
+        budget = getattr(gs, 'job_budget', 0)
+        budget_str = f"Project budget: {CURRENCY_SYMBOL}{budget}"
+        text = self.font.render(budget_str, True, TEXT1_COL)
+        rect = text.get_rect(midtop=(self.width // 2, y))
+        surface.blit(text, rect)
+
 def bake_project_overview_panel(font, screen_width, resource_panel_height):
     """Bake the static render queue panel (background, border, title, and RenderQueueItems) into a surface."""
     global _last_baked_panel, _last_baked_panel_job_id, _last_baked_panel_shot_rows, _last_baked_panel_width, _last_baked_panel_height
@@ -189,6 +203,9 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     header_font = pygame.font.Font(FONT1, font.get_height() if font else 24)
     header = Header(panel_width, header_font)
     header.draw(panel_surface, y=0)
+    # Draw ProjectHeadline below the header
+    headline = Headline(panel_width, header_font)
+    headline.draw(panel_surface, y=35)
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress_current)
     _last_progress_items = items
@@ -218,7 +235,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
         # Left column: artist progress
         left_item = artist_items[idx]
         x_left = 0
-        y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING)
+        y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING) + 50
         left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, header_font)
         # Right column: render progress (use previous gradient colors, partitions=render_progress_required_per_shot)
         right_item = items[idx]

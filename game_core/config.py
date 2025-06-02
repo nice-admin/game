@@ -70,3 +70,4 @@ def get_display_mode():
     else:
         return (GRID_WIDTH * CELL_SIZE, GRID_HEIGHT * CELL_SIZE), 0
 
+CURRENCY_SYMBOL = "§"  # You can change this to any symbol, e.g., 'S', '₴', etc.

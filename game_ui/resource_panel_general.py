@@ -44,7 +44,7 @@ RESOURCE_PANEL_CELLS = {
     (0, 4): {
         "key": "breaker_strength",
         "label": "Breaker\nlimit",
-        "icon": resource_path("data/graphics/resource_panel/breakers.png"),
+        "icon": resource_path("data/graphics/resource_panel/breaker.png"),
         "value_getter": lambda gs: gs.total_breaker_strength*0.001,
         "format": lambda v, gs: f"{int(v)} KW",
     },
@@ -67,14 +67,14 @@ RESOURCE_PANEL_CELLS = {
         "label": "Money",
         "icon": resource_path("data/graphics/resource_panel/money.png"),
         "value_getter": lambda gs: gs.total_money,
-        "format": lambda v, gs: f"${v}",
+        "format": lambda v, gs: f"{CURRENCY_SYMBOL}{v}",
     },
     (1, 1): {
         "key": "expenses",
         "label": "Monthly\nexpenses",
         "icon": resource_path("data/graphics/resource_panel/expenses.png"),
         "value_getter": lambda gs: gs.total_upkeep,
-        "format": lambda v, gs: f"-${v}",
+        "format": lambda v, gs: f"-{CURRENCY_SYMBOL}{v}",
     },
     # Add more as needed
 }

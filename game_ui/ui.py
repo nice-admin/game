@@ -10,7 +10,7 @@ from game_ui.project_overview_panel import draw_project_overview_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
 from game_ui.details_panel import draw_details_panel, DETAILS_PANEL_WIDTH, DETAILS_PANEL_HEIGHT
-from game_ui.overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
+from game_ui.grid_overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
 from game_core.game_state import GameState
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL
 from game_ui.entity_preview import draw_entity_preview
