@@ -84,7 +84,7 @@ class EntityButton:
     DEFAULT_ICON_HEIGHT = DEFAULT_ICON_WIDTH
     DEFAULT_ICON_TOP_MARGIN = 13
     DEFAULT_LABEL_BOTTOM_MARGIN = 33
-    FONT_SIZE = 20
+    FONT_SIZE = 18
     ROUNDING = 10  # Default corner radius for button rounding
     BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.8, exposure=1)  # Use adjust_color for gradient start
     BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.7, exposure=1)    # Gradient end color
@@ -172,9 +172,15 @@ class EntityButton:
         entity_font = pygame.font.Font(FONT1, self.FONT_SIZE)
         col = text_color if text_color is not None else self.TEXT_COL
         if self.purchase_cost == 0:
-            cost_surf = entity_font.render("(monthly)", True, col)
-            cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
-            surface.blit(cost_surf, cost_rect)
+            upkeep = getattr(self.entity_class, 'upkeep', None)
+            if upkeep is not None:
+                upkeep_surf = entity_font.render(f"-${upkeep} / mo", True, col)
+                upkeep_rect = upkeep_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
+                surface.blit(upkeep_surf, upkeep_rect)
+            else:
+                cost_surf = entity_font.render("(monthly)", True, col)
+                cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
+                surface.blit(cost_surf, cost_rect)
         elif self.purchase_cost not in (None, 0):
             cost_surf = entity_font.render(f"${self.purchase_cost}", True, col)
             cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))

@@ -68,26 +68,27 @@ class TechnicalDirector(PersonEntity):
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
-    upkeep = 3000
+    upkeep = 2000
 
 class ProjectManager(SatisfiableEntity):
     _icon = resource_path("data/graphics/project-manager.png")
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
-    upkeep = 3000
+    upkeep = 2000
 
 class AccountManager(SatisfiableEntity):
     _icon = resource_path("data/graphics/account-manager.png")
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
-    upkeep = 3000
+    upkeep = 2000
 
 
 # region Utility
 class EspressoMachine(UtilityEntity):
     _icon = resource_path("data/graphics/coffee-machine.png")
+    purchase_cost = 500
 
 class Outlet(UtilityEntity):
     _icon = resource_path("data/graphics/outlet.png")
