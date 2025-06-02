@@ -275,12 +275,23 @@ class GameControls:
                     return None, True
             else:
                 if state['grid'][gy][gx] is None and entity is not None:
-                    place_entity(state['grid'], state['entity_states'], entity)
-                    if hasattr(entity, 'on_built'):
-                        entity.on_built()
-                    if hasattr(entity, 'update'):
-                        entity.update(state['grid'])
-                    return None, True
+                    # Only clear current_construction_class if it was set by pickup feature
+                    if getattr(self, '_pickup_mode', False):
+                        place_entity(state['grid'], state['entity_states'], entity)
+                        if hasattr(entity, 'on_built'):
+                            entity.on_built()
+                        if hasattr(entity, 'update'):
+                            entity.update(state['grid'])
+                        GameState().current_construction_class = None
+                        self._pickup_mode = False
+                        return None, True
+                    else:
+                        place_entity(state['grid'], state['entity_states'], entity)
+                        if hasattr(entity, 'on_built'):
+                            entity.on_built()
+                        if hasattr(entity, 'update'):
+                            entity.update(state['grid'])
+                        return None, True
         # Section and item button clicks
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = pygame.mouse.get_pos()
@@ -309,6 +320,21 @@ class GameControls:
             # Handle left-click construction
             if self.left_click_construction(event, state, place_entity):
                 return None, True
+            # --- NEW: Left click on entity to pick up and move ---
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
+                grid = state['grid']
+                entity_states = state['entity_states']
+                if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
+                    # Only if not holding any entity
+                    if GameState().current_construction_class is None and grid[gy][gx] is not None:
+                        entity = grid[gy][gx]
+                        remove_entity(grid, entity_states, gx, gy)
+                        GameState().current_construction_class = type(entity)
+                        self.selected_item = None
+                        state['selected_item'] = None
+                        self._pickup_mode = True  # Mark that next placement should clear
+                        return None, True
         # Handle right-click deselect
         if self.right_click_deselect(event, state):
             GameState().current_construction_class = None
