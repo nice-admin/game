@@ -11,14 +11,24 @@ def play_random_music_wav(music_dir=None):
     if not wav_files:
         print("No .wav or .mp3 files found in", music_dir)
         return
-    chosen = random.choice(wav_files)
-    path = os.path.join(music_dir, chosen)
-    try:
-        pygame.mixer.music.load(path)
-        pygame.mixer.music.play()
-        print(f"Playing: {chosen}")
-    except Exception as e:
-        print(f"Failed to play {chosen}: {e}")
+    def play_next():
+        chosen = random.choice(wav_files)
+        path = os.path.join(music_dir, chosen)
+        try:
+            pygame.mixer.music.load(path)
+            pygame.mixer.music.play()
+            print(f"Playing: {chosen}")
+        except Exception as e:
+            print(f"Failed to play {chosen}: {e}")
+    def music_end_event():
+        play_next()
+    # Set up event for when music ends
+    pygame.mixer.music.set_endevent(pygame.USEREVENT + 1)
+    play_next()
+    # In your main loop, you must handle the event:
+    # for event in pygame.event.get():
+    #     if event.type == pygame.USEREVENT + 1:
+    #         play_next()
 
 def play_sound_effect(default_path, sound_path=None):
     path = resource_path(sound_path or default_path)

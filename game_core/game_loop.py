@@ -151,6 +151,10 @@ def handle_events(state, game_controls, remove_entity, place_entity):
     num_sections = 6  # Number of construction panel sections (update if dynamic)
 
     for event in pygame.event.get():
+        # Handle music end event for random music playback
+        if event.type == pygame.USEREVENT + 1:
+            from game_other.audio import play_random_music_wav
+            play_random_music_wav()
         # Handle render queue panel click/expand
         handle_render_queue_panel_event(event, screen_width, resource_panel_height)
         # Wire up testing layout async grid change callback
