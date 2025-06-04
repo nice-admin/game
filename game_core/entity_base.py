@@ -389,10 +389,13 @@ class ComputerEntity(SatisfiableEntity):
         # First, run the base logic (checks for outlet, etc.)
         satisfied = super().execute_on_satisfaction_check(grid)
         # Only increase temperature if actually satisfied
+        gs = GameState()
         if satisfied:
-            gs = GameState()
             if hasattr(gs, 'temperature'):
                 gs.temperature += 0.03
+            self.power_drain = self._intended_power_drain
+        else:
+            self.power_drain = 0
         return satisfied
 
     def _update_special(self, grid):

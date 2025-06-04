@@ -14,3 +14,5 @@ build/main/warn-main.txt
 dist/main.exe
 _dist/
 _build/
+build/
+dist/

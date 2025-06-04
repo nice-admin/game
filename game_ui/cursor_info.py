@@ -35,7 +35,7 @@ class DetailLabel:
         surface.blit(self.surf, (x + self.pad_x, y + self.pad_y))
 
 class EntityInfo:
-    BG_COL = (0, 0, 0, 30)  # Semi-transparent black
+    BG_COL = (0, 0, 0, 60)  # Semi-transparent black
     BG_ROUNDING = 5         # Border radius for background rectangle
     FONT_SIZE = 15          # Default font size (can be scaled)
     margin_from_top = 0     # Margin from top of background to NameLabel
