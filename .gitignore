@@ -12,3 +12,5 @@ build/main/PKG-00.toc
 build/main/PYZ-00.pyz
 build/main/warn-main.txt
 dist/main.exe
+_dist/
+_build/

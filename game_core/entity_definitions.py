@@ -102,7 +102,7 @@ class Router(UtilityEntity):
     _icon = resource_path("data/graphics/router.png")
     purchase_cost = 100
 
-class Ac(UtilityEntity):
+class AirConditioner(UtilityEntity):
     _icon = resource_path("data/graphics/ac.png")
     purchase_cost = 5000
 
