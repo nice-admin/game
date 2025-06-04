@@ -126,49 +126,49 @@ def get_system_panel_bg():
         get_system_panel_bg._bg_surface = bg
     return get_system_panel_bg._bg_surface
 
-def draw_resource_panel_system(surface: pygame.Surface, font: Optional[pygame.font.Font] = None, x: int = 0, y: int = 0):
-    """
-    Draws the system icons (internet, NAS, wifi, storage) in the resource panel, using the correct tint for online/offline states.
-    Optimized for clarity and maintainability.
-    Now supports drawing at an (x, y) offset.
-    """
-    font = font or get_cached_font(18)
+def get_system_panel_state():
     gs = GameState()
-    is_internet_online = gs.is_internet_online
-    is_nas_online = getattr(gs, 'is_nas_online', True)
+    return (
+        gs.is_internet_online,
+        getattr(gs, 'is_nas_online', True),
+        # Add more state here if needed
+    )
 
-    # Blit the prebaked background first
+def bake_system_panel_surface(font, state):
     bg = get_system_panel_bg()
-    surface.blit(bg, (x, y))
-
-    # Draw header
+    panel_surface = bg.copy()
     header = Header(320, text="SYSTEM HEALTH", font=font)
-    surface.blit(header.get_surface(), (x, y))
+    panel_surface.blit(header.get_surface(), (0, 0))
     header_height = header.header_height
-
-    # Only update icon surfaces if state changed or never initialized
-    if (not hasattr(update_icon_surfaces, "_icon_state") or
-        update_icon_surfaces._icon_state != (is_internet_online, is_nas_online)):
-        update_icon_surfaces(is_internet_online, is_nas_online, font)
+    is_internet_online, is_nas_online = state
+    update_icon_surfaces(is_internet_online, is_nas_online, font)
     icon_surfaces = update_icon_surfaces._icon_surfaces
-
-    # Get system cell positions (assume 2x2 grid, 160x50 per cell)
     icon_size = 40
     system_grid = get_system_panel_cells(font)
-    system_x = x
-    system_y = y + header_height
+    system_x = 0
+    system_y = header_height
     for row_idx, row in enumerate(system_grid):
         for col_idx, cell in enumerate(row):
             icon_x = system_x + col_idx * cell.cell_width + 10
             icon_y = system_y + row_idx * cell.cell_height + (cell.cell_height - icon_size) // 2
             icon_idx = row_idx * 2 + col_idx
             cell_rect = pygame.Rect(system_x + col_idx * cell.cell_width, system_y + row_idx * cell.cell_height, cell.cell_width, cell.cell_height)
-            # Draw cell border for grid effect
-            pygame.draw.rect(surface, UI_BORDER1_COL, cell_rect, 1)
+            pygame.draw.rect(panel_surface, UI_BORDER1_COL, cell_rect, 1)
             if icon_idx < len(icon_surfaces):
-                surface.blit(icon_surfaces[icon_idx], (icon_x, icon_y))
-            # Draw dynamic label
-            cell.blit_dynamic_text(surface, (system_x + col_idx * cell.cell_width, system_y + row_idx * cell.cell_height), font)
+                panel_surface.blit(icon_surfaces[icon_idx], (icon_x, icon_y))
+            cell.blit_dynamic_text(panel_surface, (system_x + col_idx * cell.cell_width, system_y + row_idx * cell.cell_height), font)
+    return panel_surface
+
+def draw_resource_panel_system(surface: pygame.Surface, font: Optional[pygame.font.Font] = None, x: int = 0, y: int = 0):
+    font = font or get_cached_font(18)
+    state = get_system_panel_state()
+    cache = draw_resource_panel_system
+    if (not hasattr(cache, "_last_state") or
+        not hasattr(cache, "_last_surface") or
+        cache._last_state != state):
+        cache._last_surface = bake_system_panel_surface(font, state)
+        cache._last_state = state
+    surface.blit(cache._last_surface, (x, y))
 
 class Header:
     header_height = 30
