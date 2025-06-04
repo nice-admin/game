@@ -207,7 +207,7 @@ START_DELAY = 10  # seconds before situation manager starts
 
 def start_random_gameplay_events():
     def random_event_loop():
-        time.sleep(START_DELAY)
+        time.sleep(random.uniform(10, 30))  # Wait a random time before first event
         while True:
             situation = random.choice(RANDOM_GAMEPLAY_EVENTS)
             situation.trigger()

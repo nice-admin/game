@@ -1,6 +1,6 @@
 import pygame
 from game_core.game_state import GameState
-from game_core.config import FONT1
+from game_core.config import FONT1, CURRENCY_SYMBOL
     
 class NameLabel:
     def __init__(self, display_name, font, pad_x=10, pad_y=6):
@@ -49,10 +49,10 @@ class EntityInfo:
         self.name = NameLabel(self.display_name, self.font)
         # Only show cost and money if purchase_cost > 0
         if isinstance(self.purchase_cost, (int, float)) and self.purchase_cost > 0:
-            # Make purchase cost label larger (font size 18)
-            self.detail_cost = DetailLabel("-$", self.purchase_cost, self.font, color=(255,0,0), font_size=20)
+            # Use CURRENCY_SYMBOL from config.py
+            self.detail_cost = DetailLabel(f"-{CURRENCY_SYMBOL}", self.purchase_cost, self.font, color=(255,0,0), font_size=20)
             total_money = getattr(GameState(), 'total_money', None)
-            self.detail_money = DetailLabel("$", total_money, self.font, color=(0,255,0)) if isinstance(total_money, (int, float)) else None
+            self.detail_money = DetailLabel(f"{CURRENCY_SYMBOL}", total_money, self.font, color=(0,255,0)) if isinstance(total_money, (int, float)) else None
         else:
             self.detail_cost = None
             self.detail_money = None

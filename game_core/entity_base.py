@@ -235,11 +235,11 @@ class SatisfiableEntity(BaseEntity):
                     else:
                         self.special = None
                         self.special_timer = None
-                self.is_satisfied = self.do_on_satisfaction_check(grid)
+                self.is_satisfied = self.execute_on_satisfaction_check(grid)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
-                    self.satisfaction_check(grid)
+                    self.execute_on_satisfaction_check(grid)
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -331,10 +331,10 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-    def do_on_satisfaction_check(self, grid):
+    def execute_on_satisfaction_check(self, grid):
         return 0
 
-    def satisfaction_check(self, grid):
+    def execute_on_satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
         entity_type = getattr(self, 'satisfaction_check_type', None)
@@ -384,7 +384,7 @@ class ComputerEntity(SatisfiableEntity):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
-    def do_on_satisfaction_check(self, grid):
+    def execute_on_satisfaction_check(self, grid):
         # Increase temperature by 0.05 each time satisfaction check completes
         gs = GameState()
         if hasattr(gs, 'temperature'):
@@ -425,7 +425,7 @@ class MonitorEntity(SatisfiableEntity):
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
 
-    def satisfaction_check(self, grid):
+    def execute_on_satisfaction_check(self, grid):
         # Standard proximity check for ComputerEntity in radius 1
         count = self.count_entities_in_proximity(
             grid, ComputerEntity, self.satisfaction_check_radius

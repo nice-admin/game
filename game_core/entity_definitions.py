@@ -6,12 +6,14 @@ from game_core.config import resource_path
 # region Tech
 class ComputerT1(ComputerEntity):
     _icon = resource_path("data/graphics/computer-basic.png")
+    display_name = 'Basic Computer'
     power_drain = 200
     upkeep = 50
 
 
 class ComputerT2(ComputerEntity):
     _icon = resource_path("data/graphics/computer-advanced.png")
+    display_name = 'Gaming Computer'
     tier = 2
     power_drain = 400
     upkeep = 100
@@ -23,6 +25,13 @@ class Macbook(LaptopEntity):
     tier = 3
     upkeep = 100
     power_drain = 50
+
+    def execute_on_satisfaction_check(self, grid):
+        from game_core.game_state import GameState
+        gs = GameState()
+        value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0
+        self.is_satisfied = value
+        return value
 
 class BasicMonitor(MonitorEntity):
     _icon = resource_path("data/graphics/basic-monitor.png")
@@ -49,6 +58,7 @@ class Artist(PersonEntity):
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
     is_person = 1
+    has_project_manager = 0
     upkeep = 2000
 
     def _update_special(self, grid):
@@ -59,8 +69,26 @@ class Artist(PersonEntity):
         if prev_special is not None and prev_special >= 0.99:
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
                 gs = GameState()
-                gs.cap_artist_progress_current()
+                multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
+                gs.increment_current_artist_progress(multiplier=multiplier)
                 gs.cap_render_progress_allowed()
+
+    def check_project_manager_proximity(self, grid):
+        # Check for ProjectManager within 4x4 area centered on artist
+        found = 0
+        for row in grid:
+            for entity in row:
+                if entity is not None and entity.__class__.__name__ == 'ProjectManager':
+                    if abs(entity.x - self.x) <= 4 and abs(entity.y - self.y) <= 4:
+                        found = 1
+                        break
+            if found:
+                break
+        self.has_project_manager = found
+
+    def update(self, grid):
+        super().update(grid)
+        self.check_project_manager_proximity(grid)
 
 
 class TechnicalDirector(PersonEntity):
@@ -109,7 +137,7 @@ class AirConditioner(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
-    def do_on_satisfaction_check(self, grid):
+    def execute_on_satisfaction_check(self, grid):
         self.state = 'Good'
         self.power_drain = self._intended_power_drain
         # DEBUG: Print before and after temperature
@@ -120,6 +148,17 @@ class AirConditioner(SatisfiableEntity):
             if gs.temperature > 23:
                 gs.temperature = max(23, gs.temperature - 0.25)
         print(f"[AC] After: gs.temperature={getattr(gs, 'temperature', None)}")
+        return 1
+
+
+class Humidifier(SatisfiableEntity):
+    _icon = resource_path("data/graphics/entities/humidifier.png")
+    has_special = 0
+    power_drain = 20
+    has_sat_check_bar_hidden = 1
+    purchase_cost = 500
+
+    def execute_on_satisfaction_check(self, grid):
         return 1
 
 
@@ -135,7 +174,7 @@ class Breaker(SatisfiableEntity):
     breaker_strength = 1000
     purchase_cost = 500
 
-    def satisfaction_check(self, grid):
+    def execute_on_satisfaction_check(self, grid):
         # Use DRY proximity check for unbroken breakers in radius 1 (including self)
         count = self.count_entities_in_proximity(
             grid, Breaker, 1, predicate=lambda e: getattr(e, 'is_broken', 0) == 0

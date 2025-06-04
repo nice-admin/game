@@ -39,6 +39,7 @@ def get_utility_entities():
     # Add Breaker and AirConditioner first
     classes.append(entity_definitions.Breaker)
     classes.append(entity_definitions.AirConditioner)
+    classes.append(entity_definitions.Humidifier)
     for base in (UtilityEntity,):
         for name, obj in inspect.getmembers(entity_definitions):
             if inspect.isclass(obj) and issubclass(obj, base) and obj is not base and obj is not entity_definitions.Breaker and obj is not entity_definitions.AirConditioner:

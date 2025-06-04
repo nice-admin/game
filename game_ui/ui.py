@@ -14,6 +14,7 @@ from game_ui.grid_overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDT
 from game_core.game_state import GameState
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL
 from game_ui.cursor_info import draw_entity_preview
+from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -71,3 +72,5 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_PROJECT_OVERVIEW_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height = 130)
     power_outage.draw_overlay(surface)
+    show_arrow_pointer()  # Ensure the pointer is scheduled to appear (will only trigger once)
+    draw_arrow_pointer(surface, 1440, 85)

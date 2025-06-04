@@ -92,7 +92,7 @@ class GameState:
         self.total_breaker_strength = self.count_breaker_strength(grid)
         self.total_risky_entities = self.count_risky_entities(grid)
         self.total_broken_entities = self.count_broken_entities(grid)
-        self.total_upkeep = self.count_upkeep(grid)
+        self.total_upkeep = self.count_upkeep(grid) + 100
         from game_core.gameplay_events import power_outage
         power_outage.trigger()
 
@@ -113,9 +113,9 @@ class GameState:
         if self.artist_progress_current > 0 and self.artist_progress_current % self.artist_progress_required_per_shot == 0:
             self.render_progress_allowed = self.artist_progress_current * self.render_progress_required_per_shot // self.artist_progress_required_per_shot
 
-    def cap_artist_progress_current(self):
+    def increment_current_artist_progress(self, multiplier=1):
         if self.artist_progress_current < self.artist_progress_goal:
-            self.artist_progress_current += 1
+            self.artist_progress_current = min(self.artist_progress_current + multiplier, self.artist_progress_goal)
         else:
             self.artist_progress_current = self.artist_progress_goal
 
