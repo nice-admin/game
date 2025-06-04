@@ -130,6 +130,60 @@ class PowerOutage:
             overlay.fill((0, 0, 0, 160))  # 50% black
             surface.blit(overlay, (0, 0))
 
+class ClimateControl:
+    def __init__(self, interval=10, start_temp=22):
+        self.interval = interval  # seconds
+        self._running = False
+        self._thread = None
+        self._direction = 1  # 1 for up, -1 for down
+        self._target = None
+        self._min_up = 23
+        self._max_up = 25
+        self._min_down = 18
+        self._max_down = 20
+        self._start_temp = start_temp
+
+    def start(self):
+        if not self._running:
+            self._running = True
+            import threading
+            self._thread = threading.Thread(target=self._run, daemon=True)
+            self._thread.start()
+
+    def stop(self):
+        self._running = False
+
+    def _pick_new_target(self, current_temp):
+        import random
+        if self._direction == 1:
+            # Going up, pick a target in the upper range
+            self._target = random.randint(self._min_up, self._max_up)
+        else:
+            # Going down, pick a target in the lower range
+            self._target = random.randint(self._min_down, self._max_down)
+
+    def _run(self):
+        import time
+        from game_core.game_state import GameState
+        state = GameState()
+        state.temperature = self._start_temp
+        self._pick_new_target(state.temperature)
+        while self._running:
+            time.sleep(self.interval)
+            state = GameState()
+            if self._direction == 1:
+                if state.temperature < self._target:
+                    state.temperature += 1
+                else:
+                    self._direction = -1
+                    self._pick_new_target(state.temperature)
+            else:
+                if state.temperature > self._target:
+                    state.temperature -= 1
+                else:
+                    self._direction = 1
+                    self._pick_new_target(state.temperature)
+
 RANDOM_GAMEPLAY_EVENTS = [
     InternetOutage(),
     # NasCrashed(),
@@ -171,3 +225,5 @@ def start_deterministic_gameplay_events():
     thread.start()
 
 power_outage = PowerOutage()
+climate_control = ClimateControl()
+climate_control.start()

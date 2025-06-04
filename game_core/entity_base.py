@@ -29,6 +29,8 @@ def to_type_from_classname(name):
 def to_display_name_from_classname(name):
     return re.sub(r'([a-z])([A-Z])', r'\1 \2', name).capitalize()
 
+# region BaseEntity
+
 class BaseEntity:
     _icon = None
     _id_counter = 0
@@ -137,8 +139,11 @@ class BaseEntity:
             play_build_sound()
 
     def on_initialized(self):
+
         """Call this when the entity becomes initialized to set power_drain to intended value."""
         self.power_drain = self._intended_power_drain
+
+# region SatisfiableEntity
 
 class SatisfiableEntity(BaseEntity):
     _icon = None
@@ -330,10 +335,13 @@ class SatisfiableEntity(BaseEntity):
         return 0
 
     def satisfaction_check(self, grid):
+        # Add +0.1 to global temperature on each satisfaction check
+        gs = GameState()
+        gs.temperature += 0.01
+        # Existing logic
         entity_type = getattr(self, 'satisfaction_check_type', None)
         radius = getattr(self, 'satisfaction_check_radius', 2)
         threshold = getattr(self, 'satisfaction_check_threshold', 1)
-        gs = GameState()
         gs_var = getattr(self, 'satisfaction_check_gamestate', None)
         predicate = getattr(self, 'satisfaction_check_predicate', None)
         # All conditions must be satisfied
@@ -359,6 +367,8 @@ class SatisfiableEntity(BaseEntity):
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
         self.power_drain = self._intended_power_drain
+
+# region Custom classes
 
 class DecorationEntity(BaseEntity):
     pass
