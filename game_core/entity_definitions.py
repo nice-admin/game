@@ -105,6 +105,7 @@ class Router(UtilityEntity):
 class AirConditioner(SatisfiableEntity):
     _icon = resource_path("data/graphics/ac.png")
     has_special = 0
+    power_drain = 100
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
@@ -117,7 +118,7 @@ class AirConditioner(SatisfiableEntity):
         print(f"[AC] Before: gs.temperature={getattr(gs, 'temperature', None)}")
         if hasattr(gs, 'temperature'):
             if gs.temperature > 23:
-                gs.temperature = max(23, gs.temperature - 10)
+                gs.temperature = max(23, gs.temperature - 0.2)
         print(f"[AC] After: gs.temperature={getattr(gs, 'temperature', None)}")
         return 1
 

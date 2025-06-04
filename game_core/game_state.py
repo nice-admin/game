@@ -16,7 +16,7 @@ class GameState:
             cls._instance.is_internet_online = 1
             cls._instance.is_wifi_online = 1
             cls._instance.is_nas_online = 1
-            cls._instance.temperature = 50
+            cls._instance.temperature = 23
             cls._instance.artist_progress_required_per_shot = 15
             cls._instance.render_progress_required_per_shot = 50
             cls._instance.artist_progress_current = 0

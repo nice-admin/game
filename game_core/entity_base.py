@@ -384,6 +384,13 @@ class ComputerEntity(SatisfiableEntity):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
+    def do_on_satisfaction_check(self, grid):
+        # Increase temperature by 0.05 each time satisfaction check completes
+        gs = GameState()
+        if hasattr(gs, 'temperature'):
+            gs.temperature += 0.03
+        return 1
+
     def _update_special(self, grid):
         gs = GameState()
         prev_special = self.special if hasattr(self, 'special') else None
