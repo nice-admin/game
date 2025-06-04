@@ -102,9 +102,25 @@ class Router(UtilityEntity):
     _icon = resource_path("data/graphics/router.png")
     purchase_cost = 100
 
-class AirConditioner(UtilityEntity):
+class AirConditioner(SatisfiableEntity):
     _icon = resource_path("data/graphics/ac.png")
+    has_special = 0
+    has_sat_check_bar_hidden = 1
     purchase_cost = 5000
+
+    def do_on_satisfaction_check(self, grid):
+        self.state = 'Good'
+        self.power_drain = self._intended_power_drain
+        # DEBUG: Print before and after temperature
+        from game_core.game_state import GameState
+        gs = GameState()
+        print(f"[AC] Before: gs.temperature={getattr(gs, 'temperature', None)}")
+        if hasattr(gs, 'temperature'):
+            if gs.temperature > 23:
+                gs.temperature = max(23, gs.temperature - 10)
+        print(f"[AC] After: gs.temperature={getattr(gs, 'temperature', None)}")
+        return 1
+
 
 class Breaker(SatisfiableEntity):
     _icon = resource_path("data/graphics/breaker.png")
@@ -112,7 +128,7 @@ class Breaker(SatisfiableEntity):
     satisfaction_check_type = 'breaker'
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 4
-    bar1_hidden = 1
+    has_sat_check_bar_hidden = 1
     is_satisfied = 1
     warning_hidden = 0
     breaker_strength = 1000

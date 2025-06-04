@@ -36,11 +36,12 @@ def monitors_section(extra_classes=TV):
 
 def get_utility_entities():
     classes = []
-    # Add Breaker first
+    # Add Breaker and AirConditioner first
     classes.append(entity_definitions.Breaker)
+    classes.append(entity_definitions.AirConditioner)
     for base in (UtilityEntity,):
         for name, obj in inspect.getmembers(entity_definitions):
-            if inspect.isclass(obj) and issubclass(obj, base) and obj is not base and obj is not entity_definitions.Breaker:
+            if inspect.isclass(obj) and issubclass(obj, base) and obj is not base and obj is not entity_definitions.Breaker and obj is not entity_definitions.AirConditioner:
                 classes.append(obj)
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 

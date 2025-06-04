@@ -131,7 +131,7 @@ class PowerOutage:
             surface.blit(overlay, (0, 0))
 
 class ClimateControl:
-    def __init__(self, interval=10, start_temp=22):
+    def __init__(self, interval=10, start_temp=None):
         self.interval = interval  # seconds
         self._running = False
         self._thread = None
@@ -141,14 +141,19 @@ class ClimateControl:
         self._max_up = 25
         self._min_down = 18
         self._max_down = 20
-        self._start_temp = start_temp
+        if start_temp is None:
+            self._start_temp = GameState().temperature
+        else:
+            self._start_temp = start_temp
 
     def start(self):
-        if not self._running:
-            self._running = True
-            import threading
-            self._thread = threading.Thread(target=self._run, daemon=True)
-            self._thread.start()
+        # Disabled for now: do not start the background thread
+        # if not self._running:
+        #     self._running = True
+        #     import threading
+        #     self._thread = threading.Thread(target=self._run, daemon=True)
+        #     self._thread.start()
+        pass
 
     def stop(self):
         self._running = False
@@ -156,10 +161,8 @@ class ClimateControl:
     def _pick_new_target(self, current_temp):
         import random
         if self._direction == 1:
-            # Going up, pick a target in the upper range
             self._target = random.randint(self._min_up, self._max_up)
         else:
-            # Going down, pick a target in the lower range
             self._target = random.randint(self._min_down, self._max_down)
 
     def _run(self):

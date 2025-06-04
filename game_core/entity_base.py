@@ -85,7 +85,7 @@ class BaseEntity:
             y = self.y * cell_size + offset[1]
             pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
         if not static_only:
-            if getattr(self, "has_bar1", 1) and not getattr(self, 'bar1_hidden', 0) and hasattr(self, 'draw_bar1'):
+            if getattr(self, "has_bar1", 1) and not getattr(self, 'has_sat_check_bar_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
             if getattr(self, "has_special", 0) and not getattr(self, 'special_hidden', 0) and hasattr(self, 'draw_special'):
                 self.draw_special(surface, offset[0], offset[1], cell_size)
@@ -157,10 +157,10 @@ class SatisfiableEntity(BaseEntity):
     _BAR_HEIGHT_RATIO = 0.15
     _BAR_DURATION_FRAMES = 300
     _BAR_REFRESH_RATE = 1
-    has_bar1 = 1
+    has_sat_check_bar = 1
+    has_sat_check_bar_hidden = 0
     has_special = 0
-    bar1_hidden = 0  # New: allows hiding bar1
-    special_hidden = 0  # New: allows hiding special bar
+    has_special_hidden = 0  # New: allows hiding special bar
     special_chance = 1
     warning_hidden = 0
     is_satisfied = 0
@@ -171,8 +171,8 @@ class SatisfiableEntity(BaseEntity):
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.bar1 = 0.0 if self.has_bar1 else None
-        self.bar1_timer = 0 if self.has_bar1 else None
+        self.bar1 = 0.0 if self.has_sat_check_bar else None
+        self.bar1_timer = 0 if self.has_sat_check_bar else None
         self.special = 0.0 if self.has_special else None
         self.special_timer = 0 if self.has_special else None
         self._progress_bar_frame_counter = 0
@@ -219,7 +219,7 @@ class SatisfiableEntity(BaseEntity):
         self._set_status()
 
     def _update_bar1(self, grid):
-        if self.has_bar1:
+        if self.has_sat_check_bar:
             prev_initialized = self.is_initialized
             self.bar1_timer += self._BAR_REFRESH_RATE
             if self.bar1_timer >= self._BAR_DURATION_FRAMES:
@@ -235,7 +235,7 @@ class SatisfiableEntity(BaseEntity):
                     else:
                         self.special = None
                         self.special_timer = None
-                self.is_satisfied = self.check_satisfaction(grid)
+                self.is_satisfied = self.do_on_satisfaction_check(grid)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
@@ -300,7 +300,7 @@ class SatisfiableEntity(BaseEntity):
             y = self.y * cell_size + offset[1]
             pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
         if not static_only:
-            if getattr(self, "has_bar1", 1) and not getattr(self, 'bar1_hidden', 0) and hasattr(self, 'draw_bar1'):
+            if getattr(self, "has_bar1", 1) and not getattr(self, 'has_sat_check_bar_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
             if getattr(self, "has_special", 0) and not getattr(self, 'special_hidden', 0) and hasattr(self, 'draw_special'):
                 self.draw_special(surface, offset[0], offset[1], cell_size)
@@ -331,13 +331,11 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-    def check_satisfaction(self, grid):
+    def do_on_satisfaction_check(self, grid):
         return 0
 
     def satisfaction_check(self, grid):
-        # Add +0.1 to global temperature on each satisfaction check
         gs = GameState()
-        gs.temperature += 0.01
         # Existing logic
         entity_type = getattr(self, 'satisfaction_check_type', None)
         radius = getattr(self, 'satisfaction_check_radius', 2)
@@ -387,6 +385,7 @@ class ComputerEntity(SatisfiableEntity):
         self.is_rendering = 1 if self.special is not None else 0
 
     def _update_special(self, grid):
+        gs = GameState()
         prev_special = self.special if hasattr(self, 'special') else None
         prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
         super()._update_special(grid)
