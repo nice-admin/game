@@ -68,6 +68,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_HIDDEN_INFO_PANEL:
         draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
     draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
-    if ALLOW_RENDER_QUEUE_PANEL:
-        draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height)
+    if ALLOW_PROJECT_OVERVIEW_PANEL:
+        draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height = 130)
     power_outage.draw_overlay(surface)

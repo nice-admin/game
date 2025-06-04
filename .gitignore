@@ -4,3 +4,11 @@ _output/
 __pycache__/
 *.py[cod]
 **/__pycache__/
+build/main/Analysis-00.toc
+build/main/base_library.zip
+build/main/EXE-00.toc
+build/main/main.pkg
+build/main/PKG-00.toc
+build/main/PYZ-00.pyz
+build/main/warn-main.txt
+dist/main.exe
