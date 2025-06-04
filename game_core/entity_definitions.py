@@ -17,8 +17,6 @@ class ComputerT2(ComputerEntity):
     tier = 2
     power_drain = 400
     upkeep = 100
-    satisfaction_check_type = 'outlet'
-    satisfaction_check_gamestate = 'is_nas_online'
 
 class Macbook(LaptopEntity):
     _icon = resource_path("data/graphics/macbook.png")

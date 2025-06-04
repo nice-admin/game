@@ -379,17 +379,21 @@ class ComputerEntity(SatisfiableEntity):
     has_special = 1
     special_chance = 0.5
     power_drain = 0
+    satisfaction_check_gamestate = 'is_nas_online'
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
     def execute_on_satisfaction_check(self, grid):
-        # Increase temperature by 0.05 each time satisfaction check completes
-        gs = GameState()
-        if hasattr(gs, 'temperature'):
-            gs.temperature += 0.03
-        return 1
+        # First, run the base logic (checks for outlet, etc.)
+        satisfied = super().execute_on_satisfaction_check(grid)
+        # Only increase temperature if actually satisfied
+        if satisfied:
+            gs = GameState()
+            if hasattr(gs, 'temperature'):
+                gs.temperature += 0.03
+        return satisfied
 
     def _update_special(self, grid):
         gs = GameState()

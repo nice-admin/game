@@ -3,6 +3,7 @@ import os
 import threading
 import time
 import random
+from game_core.config import resource_path
 
 # Cache for the baked arrow pointer surface
 _baked_arrow_pointer = None
@@ -13,7 +14,7 @@ ARROW_LABEL = "THIS IS YOUR PROJECT, FINISH IT FAST (click to unfold)"
 ARROW_LABEL_COLOR = (255, 255, 0)
 ARROW_LABEL_FONT_SIZE = 40
 
-ARROW_IMAGE_PATH = os.path.join("data", "graphics", "arrow.png")
+ARROW_IMAGE_PATH = resource_path("data/graphics/arrow.png")
 
 # Shake effect parameters
 SHAKE_AMPLITUDE = 2  # pixels
@@ -79,6 +80,7 @@ _arrow_pointer_timer = None
 _arrow_pointer_alpha = 0  # 0 = fully transparent, 255 = fully opaque
 _arrow_pointer_fading_in = False
 _arrow_pointer_fading_out = False
+_arrow_pointer_has_appeared = False  # Track if it has ever appeared
 
 FADE_DURATION = 0.2  # seconds
 FPS = 60  # assumed for fade timing
@@ -107,8 +109,9 @@ def _fade_out():
 
 
 def _arrow_pointer_thread(show_time=6):
-    global _arrow_pointer_visible, _arrow_pointer_timer
+    global _arrow_pointer_visible, _arrow_pointer_timer, _arrow_pointer_has_appeared
     _arrow_pointer_visible = True
+    _arrow_pointer_has_appeared = True
     threading.Thread(target=_fade_in, daemon=True).start()
     time.sleep(show_time)
     threading.Thread(target=_fade_out, daemon=True).start()
@@ -119,9 +122,9 @@ def _arrow_pointer_thread(show_time=6):
 
 
 def show_arrow_pointer(delay=2, show_time=6):
-    global _arrow_pointer_timer
-    if _arrow_pointer_timer is not None:
-        return  # Already scheduled
+    global _arrow_pointer_timer, _arrow_pointer_has_appeared
+    if _arrow_pointer_timer is not None or _arrow_pointer_has_appeared:
+        return  # Already scheduled or already shown once
     def delayed_show():
         time.sleep(delay)
         _arrow_pointer_thread(show_time)
