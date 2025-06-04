@@ -118,7 +118,7 @@ class AirConditioner(SatisfiableEntity):
         print(f"[AC] Before: gs.temperature={getattr(gs, 'temperature', None)}")
         if hasattr(gs, 'temperature'):
             if gs.temperature > 23:
-                gs.temperature = max(23, gs.temperature - 0.2)
+                gs.temperature = max(23, gs.temperature - 0.25)
         print(f"[AC] After: gs.temperature={getattr(gs, 'temperature', None)}")
         return 1
 

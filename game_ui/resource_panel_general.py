@@ -23,9 +23,9 @@ RESOURCE_PANEL_CELLS = {
     },
     (0, 3): {
         "key": "temperature",
-        "label": "Temperature",
+        "label": "Air temp",
         "icon": resource_path("data/graphics/resource_panel/temperature.png"),
-        "value_getter": lambda gs: int(gs.temperature),
+        "value_getter": lambda gs: round(gs.temperature, 1),
         "format": lambda v, gs: f"{v} °C",
     },
     (1, 4): {
