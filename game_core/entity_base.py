@@ -235,7 +235,7 @@ class SatisfiableEntity(BaseEntity):
                     else:
                         self.special = None
                         self.special_timer = None
-                self.is_satisfied = self.on_satisfaction_check(grid)
+                self.is_satisfied = self.do_on_satisfaction_check(grid)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
@@ -331,7 +331,7 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-    def on_satisfaction_check(self, grid):
+    def do_on_satisfaction_check(self, grid):
         return 0
 
     def satisfaction_check(self, grid):
