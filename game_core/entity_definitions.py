@@ -24,7 +24,7 @@ class Macbook(LaptopEntity):
     upkeep = 100
     power_drain = 50
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         from game_core.game_state import GameState
         gs = GameState()
         value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0
@@ -135,7 +135,7 @@ class AirConditioner(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         self.state = 'Good'
         self.power_drain = self._intended_power_drain
         # DEBUG: Print before and after temperature
@@ -156,7 +156,7 @@ class Humidifier(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 500
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         return 1
 
 
@@ -172,7 +172,7 @@ class Breaker(SatisfiableEntity):
     breaker_strength = 1000
     purchase_cost = 500
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         # Use DRY proximity check for unbroken breakers in radius 1 (including self)
         count = self.count_entities_in_proximity(
             grid, Breaker, 1, predicate=lambda e: getattr(e, 'is_broken', 0) == 0

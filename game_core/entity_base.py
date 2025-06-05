@@ -157,10 +157,10 @@ class SatisfiableEntity(BaseEntity):
     _BAR_HEIGHT_RATIO = 0.15
     _BAR_DURATION_FRAMES = 300
     _BAR_REFRESH_RATE = 1
-    has_sat_check_bar = 1
-    has_sat_check_bar_hidden = 0
-    has_special = 0
-    has_special_hidden = 0  # New: allows hiding special bar
+    has_basic_bar = 1
+    has_basic_bar_hidden = 0
+    has_special_bar = 0
+    has_special_bar_hidden = 0  # New: allows hiding special bar
     special_chance = 1
     warning_hidden = 0
     is_satisfied = 0
@@ -171,10 +171,10 @@ class SatisfiableEntity(BaseEntity):
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.bar1 = 0.0 if self.has_sat_check_bar else None
-        self.bar1_timer = 0 if self.has_sat_check_bar else None
-        self.special = 0.0 if self.has_special else None
-        self.special_timer = 0 if self.has_special else None
+        self.bar1 = 0.0 if self.has_basic_bar else None
+        self.bar1_timer = 0 if self.has_basic_bar else None
+        self.special = 0.0 if self.has_special_bar else None
+        self.special_timer = 0 if self.has_special_bar else None
         self._progress_bar_frame_counter = 0
 
     def count_entities_in_proximity(self, grid, entity_type, radius, predicate=None):
@@ -219,7 +219,7 @@ class SatisfiableEntity(BaseEntity):
         self._set_status()
 
     def _update_bar1(self, grid):
-        if self.has_sat_check_bar:
+        if self.has_basic_bar:
             prev_initialized = self.is_initialized
             self.bar1_timer += self._BAR_REFRESH_RATE
             if self.bar1_timer >= self._BAR_DURATION_FRAMES:
@@ -228,24 +228,24 @@ class SatisfiableEntity(BaseEntity):
                     self.is_initialized = 1
                     self.on_initialized()  # Set power_drain when initialized
                 # Always roll for special after bar1 completes, if has_special and not currently rendering
-                if self.has_special and (self.special is None and self.special_timer is None):
+                if self.has_special_bar and (self.special is None and self.special_timer is None):
                     if random.random() < getattr(self, 'special_chance', 0.1):
                         self.special = 0.0
                         self.special_timer = 0
                     else:
                         self.special = None
                         self.special_timer = None
-                self.is_satisfied = self.execute_on_satisfaction_check(grid)
+                self.is_satisfied = self.on_satisfaction_check(grid)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
-                    self.execute_on_satisfaction_check(grid)
+                    self.satisfaction_check(grid)
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
 
     def _update_special(self, grid):
-        if self.has_special and self.is_initialized and self.is_satisfied:
+        if self.has_special_bar and self.is_initialized and self.is_satisfied:
             if not hasattr(self, '_special_spawn_attempted'):
                 if self.special is None and self.special_timer is None:
                     if random.random() < getattr(self, 'special_chance', 0.1):
@@ -331,10 +331,10 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-    def execute_on_satisfaction_check(self, grid):
+    def on_satisfaction_check(self, grid):
         return 0
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
         entity_type = getattr(self, 'satisfaction_check_type', None)
@@ -379,24 +379,10 @@ class ComputerEntity(SatisfiableEntity):
     has_special = 1
     special_chance = 0.5
     power_drain = 0
-    satisfaction_check_gamestate = 'is_nas_online'
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
-
-    def execute_on_satisfaction_check(self, grid):
-        # First, run the base logic (checks for outlet, etc.)
-        satisfied = super().execute_on_satisfaction_check(grid)
-        # Only increase temperature if actually satisfied
-        gs = GameState()
-        if satisfied:
-            if hasattr(gs, 'temperature'):
-                gs.temperature += 0.03
-            self.power_drain = self._intended_power_drain
-        else:
-            self.power_drain = 0
-        return satisfied
 
     def _update_special(self, grid):
         gs = GameState()
@@ -432,7 +418,7 @@ class MonitorEntity(SatisfiableEntity):
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         # Standard proximity check for ComputerEntity in radius 1
         count = self.count_entities_in_proximity(
             grid, ComputerEntity, self.satisfaction_check_radius
