@@ -130,13 +130,14 @@ ENTITY_PROPERTY_CONFIG = [
     ("person_name", "ID"),
     ("hunger", "Hunger", lambda v: 'Very Full' if v >= 9 else 'Okay' if v >= 5 else 'Hungry', "data/graphics/details_panel/hunger.png"),
     ("happiness", "Happiness", lambda v: 'Very Happy' if v >= 9 else 'Happy' if v >= 5 else 'Unhappy'),
+    ("toilet_need", "Toilet need", lambda v: 'Desperate' if v >= 9 else 'Needs break' if v >= 5 else 'Fine', "data/graphics/details_panel/toilet.png"),
     # Add more as needed
 ]
 
 class EntityPropertyRow:
     """Renders a single property row (icon + label header, then value on next line) for an entity."""
     FIXED_ROW_HEIGHT = 44  # Increased for two lines
-    ICON_SIZE = 24
+    ICON_SIZE = 40
     def __init__(self, entity, prop_name, display_label, font, x, y, value_to_str=None, icon_path=None):
         self.entity = entity
         self.prop_name = prop_name
@@ -157,13 +158,27 @@ class EntityPropertyRow:
             try:
                 icon_surf = pygame.image.load(self.icon_path).convert_alpha()
                 icon_surf = pygame.transform.smoothscale(icon_surf, (self.ICON_SIZE, self.ICON_SIZE))
-                surface.blit(icon_surf, (self.x, header_y + (20 - self.ICON_SIZE) // 2))
+                from game_core.config import BASE_COL, adjust_color
+                tint_col = adjust_color(BASE_COL, white_factor=0.0, exposure=3)
+                # Use surfarray to apply color to RGB, keep alpha from icon
+                import numpy as np
+                arr_icon = pygame.surfarray.pixels3d(icon_surf)
+                arr_alpha = pygame.surfarray.pixels_alpha(icon_surf)
+                arr_icon[:, :, 0] = tint_col[0]
+                arr_icon[:, :, 1] = tint_col[1]
+                arr_icon[:, :, 2] = tint_col[2]
+                # No need to touch alpha, just blit
+                del arr_icon, arr_alpha
+                surface.blit(icon_surf, (self.x, header_y + (35 - self.ICON_SIZE) // 2))
                 icon_offset = self.ICON_SIZE + 6
             except Exception:
                 pass
+        # Use adjusted color for header
+        from game_core.config import BASE_COL, adjust_color
         header_label = f"{self.display_label}:"
         header_font = self.font
-        header_surf = header_font.render(header_label, True, TEXT_COL)
+        header_col = adjust_color(BASE_COL, white_factor=0.0, exposure=3)
+        header_surf = header_font.render(header_label, True, header_col)
         surface.blit(header_surf, (self.x + icon_offset, header_y))
         # Draw value on next line, using the same font size as header
         if hasattr(self.entity, self.prop_name):
@@ -212,7 +227,7 @@ def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DE
         header.render(surface)
         section_y = (header.name_rect.bottom if header.name_rect else y + MARGIN_FROM_TOP + ROWS_SPACING + 32) + 5
         draw_status_by_state(surface, font, entity, x + 96, section_y, 0)
-        row_y = section_y + 32
+        row_y = section_y + 50
         row_spacing = 15  # Add spacing between property rows
         for prop in ENTITY_PROPERTY_CONFIG:
             prop_name = prop[0]
@@ -221,7 +236,7 @@ def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DE
             display_label = prop[1]
             value_to_str = prop[2] if len(prop) > 2 else None
             icon_path = prop[3] if len(prop) > 3 else None
-            row = EntityPropertyRow(entity, prop_name, display_label, font, x + 96, row_y, value_to_str, icon_path)
+            row = EntityPropertyRow(entity, prop_name, display_label, font, x + 22, row_y, value_to_str, icon_path)
             row.render(surface)
             if row.rect:
                 row_y += EntityPropertyRow.FIXED_ROW_HEIGHT + row_spacing
