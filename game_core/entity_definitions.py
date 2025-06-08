@@ -26,7 +26,7 @@ class Macbook(LaptopEntity):
     upkeep = 100
     power_drain = 50
 
-    def satisfaction_check(self, grid):
+    def on_satisfaction_check(self):
         from game_core.game_state import GameState
         gs = GameState()
         value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0

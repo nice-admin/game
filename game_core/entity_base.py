@@ -216,8 +216,8 @@ class SatisfiableEntity(BaseEntity):
             self._progress_bar_frame_counter = 0
             self._update_sat_check_bar(grid)
             self._update_special_bar(grid)
-        self._set_status()
-        self.on_satisfaction_check()
+
+
 
     def _update_sat_check_bar(self, grid):
         if self.has_sat_check_bar:
@@ -239,7 +239,9 @@ class SatisfiableEntity(BaseEntity):
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
-                    self.satisfaction_check(grid)   
+                    self.satisfaction_check(grid)
+                self._set_status()
+                self.on_satisfaction_check()
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
