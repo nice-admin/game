@@ -221,107 +221,125 @@ class Header:
     def get_surface(self) -> pygame.Surface:
         return self.surface
 
-_baked_panel = None
+class ResourcePanel:
+    """
+    Encapsulates the resource panel logic for scalable and maintainable UI.
+    Handles baking, value updating, and drawing.
+    """
+    def __init__(self, font: Optional[pygame.font.Font] = None):
+        self.font = font or get_cached_font(18)
+        self._baked = None
+        self._bake_panel()
 
-def bake_resource_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, Any]:
-    """
-    Bake the static resource panel (cells, headers, icons) ONCE and return the structure.
-    """
-    font = font or get_cached_font(18)
-    gap = 10
-    # Build general grid from RESOURCE_PANEL_CELLS
-    general_grid = [[None for _ in range(5)] for _ in range(2)]
-    for (row, col), props in RESOURCE_PANEL_CELLS.items():
-        general_grid[row][col] = GeneralCell(label=props["label"], font=font, icon=props.get("icon"))
-    # Fill empty cells
-    for row in range(2):
-        for col in range(5):
-            if general_grid[row][col] is None:
-                general_grid[row][col] = GeneralCell(label="", font=font)
-    # Build problems grid from PROBLEM_PANEL_CELLS
-    problems_grid = [[None for _ in range(2)] for _ in range(2)]
-    for (row, col), props in PROBLEM_PANEL_CELLS.items():
-        problems_grid[row][col] = ProblemCell(label=props["label"], font=font, icon=props.get("icon"))
-    for row in range(2):
-        for col in range(2):
-            if problems_grid[row][col] is None:
-                problems_grid[row][col] = ProblemCell(label="", font=font)
-    # --- SYSTEM PANEL: Restore to 2 rows x 2 columns ---
-    # (System panel logic removed; now handled in resource_panel_systems.py)
-    general_width = 5 * GeneralCell.cell_width
-    problems_width = 2 * ProblemCell.cell_width
-    # system_width = 2 * SystemCell.cell_width  # No longer needed here
-    total_width = general_width + gap + problems_width  # Removed system panel width
-    total_height = 2 * GeneralCell.cell_height + Header.header_height
-    panel_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
-    start_x = 0
-    start_y = Header.header_height
-    def draw_grid(grid, start_x, start_y, cell_cls):
-        for row_idx, row in enumerate(grid):
-            for col_idx, cell in enumerate(row):
-                x = start_x + col_idx * cell_cls.cell_width
-                y = start_y + row_idx * cell_cls.cell_height
-                cell.x = x
-                cell.y = y
-                panel_surface.blit(cell.surface, (x, y))
-    for header_text, width, x, grid, cell_cls in [
-        ("GENERAL INFORMATION", general_width, start_x, general_grid, GeneralCell),
-        ("WARNING PANEL", problems_width, start_x + general_width + gap, problems_grid, ProblemCell)
-        # System panel removed
-    ]:
-        header = Header(width, text=header_text, font=font)
-        panel_surface.blit(header.get_surface(), (x, 0))
-        draw_grid(grid, x, start_y, cell_cls)
-    problems_x = start_x + general_width + gap
-    return {
-        'panel_surface': panel_surface,
-        'general_grid': general_grid,
-        'problems_grid': problems_grid,
-        # 'system_grid': system_grid,  # Removed
-        'start_x': start_x,
-        'start_y': start_y,
-        'surf_x': None,
-        'surf_y': None,
-        'total_width': total_width,
-        'total_height': total_height,
-    }
+    def _create_cell(self, cell_type: str, label: str = "", icon: Optional[pygame.Surface] = None) -> BasicCell:
+        if cell_type == "general":
+            return GeneralCell(label=label, font=self.font, icon=icon)
+        elif cell_type == "problem":
+            return ProblemCell(label=label, font=self.font, icon=icon)
+        else:
+            return BasicCell(label=label, font=self.font, icon=icon)
+
+    def _bake_panel(self):
+        """
+        Bake the static resource panel (cells, headers, icons) ONCE and store the structure.
+        """
+        gap = 10
+        # General grid
+        general_grid = [[None for _ in range(5)] for _ in range(2)]
+        for (row, col), props in RESOURCE_PANEL_CELLS.items():
+            general_grid[row][col] = self._create_cell("general", label=props["label"], icon=props.get("icon"))
+        for row in range(2):
+            for col in range(5):
+                if general_grid[row][col] is None:
+                    general_grid[row][col] = self._create_cell("general", label="")
+        # Problem grid
+        problems_grid = [[None for _ in range(2)] for _ in range(2)]
+        for (row, col), props in PROBLEM_PANEL_CELLS.items():
+            problems_grid[row][col] = self._create_cell("problem", label=props["label"], icon=props.get("icon"))
+        for row in range(2):
+            for col in range(2):
+                if problems_grid[row][col] is None:
+                    problems_grid[row][col] = self._create_cell("problem", label="")
+        general_width = 5 * GeneralCell.cell_width
+        problems_width = 2 * ProblemCell.cell_width
+        total_width = general_width + gap + problems_width
+        total_height = 2 * GeneralCell.cell_height + Header.header_height
+        panel_surface = pygame.Surface((total_width, total_height), pygame.SRCALPHA)
+        start_x = 0
+        start_y = Header.header_height
+        def draw_grid(grid, start_x, start_y, cell_cls):
+            for row_idx, row in enumerate(grid):
+                for col_idx, cell in enumerate(row):
+                    x = start_x + col_idx * cell_cls.cell_width
+                    y = start_y + row_idx * cell_cls.cell_height
+                    cell.x = x
+                    cell.y = y
+                    panel_surface.blit(cell.surface, (x, y))
+        for header_text, width, x, grid, cell_cls in [
+            ("GENERAL INFORMATION", general_width, start_x, general_grid, GeneralCell),
+            ("WARNING PANEL", problems_width, start_x + general_width + gap, problems_grid, ProblemCell)
+        ]:
+            header = Header(width, text=header_text, font=self.font)
+            panel_surface.blit(header.get_surface(), (x, 0))
+            draw_grid(grid, x, start_y, cell_cls)
+        self._baked = {
+            'panel_surface': panel_surface,
+            'general_grid': general_grid,
+            'problems_grid': problems_grid,
+            'start_x': start_x,
+            'start_y': start_y,
+            'surf_x': None,
+            'surf_y': None,
+            'total_width': total_width,
+            'total_height': total_height,
+        }
+
+    def draw(self, surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
+        """
+        Draws the resource panel by blitting the baked static panel, then updating and blitting only the value overlays.
+        """
+        if self._baked is None:
+            self._bake_panel()
+        baked = self._baked
+        panel_surface = baked['panel_surface'].copy()
+        surf_x = (surface.get_width() - baked['total_width']) // 2
+        surf_y = 0
+        baked['surf_x'] = surf_x
+        baked['surf_y'] = surf_y
+        gs = GameState()
+        # Draw all general cells
+        for (row, col), props in RESOURCE_PANEL_CELLS.items():
+            cell = baked['general_grid'][row][col]
+            value = props["value_getter"](gs) if "value_getter" in props else None
+            value_str = props["format"](value, gs) if "format" in props else str(value)
+            color = (props["color"](value, gs) if callable(props.get("color")) else props.get("color", (255,255,255))) if "color" in props else (255,255,255)
+            extra_key = props["extra_key"](gs) if "extra_key" in props else None
+            cell.draw_value(value_str, font or self.font, color=color, extra_key=extra_key)
+            cell.blit_to(panel_surface, (cell.x, cell.y))
+        # Draw all problem cells
+        for (row, col), props in PROBLEM_PANEL_CELLS.items():
+            cell = baked['problems_grid'][row][col]
+            value = props["value_getter"](gs) if "value_getter" in props else None
+            value_str = props["format"](value, gs) if "format" in props else str(value)
+            color = (props["color"](value, gs) if callable(props.get("color")) else props.get("color", (255,255,255))) if "color" in props else (255,255,255)
+            extra_key = props["extra_key"](gs) if "extra_key" in props else None
+            cell.draw_value(value_str, font or self.font, color=color, extra_key=extra_key)
+            cell.blit_to(panel_surface, (cell.x, cell.y))
+        surface.blit(panel_surface, (surf_x, surf_y))
+
+# For backward compatibility, keep the old functions but use the new class
+_resource_panel_instance: Optional[ResourcePanel] = None
 
 def get_baked_panel(font: Optional[pygame.font.Font] = None) -> Dict[str, Any]:
-    global _baked_panel
-    if _baked_panel is None:
-        _baked_panel = bake_resource_panel(font)
-    return _baked_panel
+    global _resource_panel_instance
+    if _resource_panel_instance is None:
+        _resource_panel_instance = ResourcePanel(font)
+    return _resource_panel_instance._baked
 
 def draw_resource_panel_general(surface: pygame.Surface, font: Optional[pygame.font.Font] = None):
-    """
-    Draws the resource panel by blitting the baked static panel, then updating and blitting only the value overlays.
-    """
-    baked = get_baked_panel(font)
-    panel_surface = baked['panel_surface'].copy()  # Copy so we can blit values on top
-    surf_x = (surface.get_width() - baked['total_width']) // 2
-    surf_y = 0
-    baked['surf_x'] = surf_x
-    baked['surf_y'] = surf_y
-    gs = GameState()
-    # Draw all general cells using RESOURCE_PANEL_CELLS definitions
-    for (row, col), props in RESOURCE_PANEL_CELLS.items():
-        cell = baked['general_grid'][row][col]
-        value = props["value_getter"](gs) if "value_getter" in props else None
-        value_str = props["format"](value, gs) if "format" in props else str(value)
-        color = (props["color"](value, gs) if callable(props.get("color")) else props.get("color", (255,255,255))) if "color" in props else (255,255,255)
-        extra_key = props["extra_key"](gs) if "extra_key" in props else None
-        cell.draw_value(value_str, font or get_font1(18), color=color, extra_key=extra_key)
-        cell.blit_to(panel_surface, (cell.x, cell.y))
-    # Draw all problem cells using PROBLEM_PANEL_CELLS definitions
-    for (row, col), props in PROBLEM_PANEL_CELLS.items():
-        cell = baked['problems_grid'][row][col]
-        value = props["value_getter"](gs) if "value_getter" in props else None
-        value_str = props["format"](value, gs) if "format" in props else str(value)
-        color = (props["color"](value, gs) if callable(props.get("color")) else props.get("color", (255,255,255))) if "color" in props else (255,255,255)
-        extra_key = props["extra_key"](gs) if "extra_key" in props else None
-        cell.draw_value(value_str, font or get_font1(18), color=color, extra_key=extra_key)
-        cell.blit_to(panel_surface, (cell.x, cell.y))
-    # System cells can be handled similarly if desired
-    surface.blit(panel_surface, (surf_x, surf_y))
+    global _resource_panel_instance
+    if _resource_panel_instance is None:
+        _resource_panel_instance = ResourcePanel(font)
+    _resource_panel_instance.draw(surface, font)
 
 
