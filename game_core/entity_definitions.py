@@ -59,20 +59,13 @@ class Artist(PersonEntity):
     has_project_manager = 0
     upkeep = 2000
 
-    def _update_special_bar(self, grid):
-        prev_special = self.special if hasattr(self, 'special') else None
-        prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
-        super()._update_special_bar(grid)
-        # Increment artist_progress_current if special just completed
-        if prev_special is not None and prev_special >= 0.99:
-            if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
-                gs = GameState()
-                multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
-                gs.increment_current_artist_progress(multiplier=multiplier)
-                gs.cap_render_progress_allowed()
+    def on_special(self):
+        gs = GameState()
+        multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
+        gs.increment_current_artist_progress(multiplier=multiplier)
+        gs.cap_render_progress_allowed()
 
     def check_project_manager_proximity(self, grid):
-        # Check for ProjectManager within 4x4 area centered on artist
         found = 0
         for row in grid:
             for entity in row:

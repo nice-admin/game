@@ -331,13 +331,6 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-
-    def on_satisfaction_check(self):
-        pass
-
-    def on_special(self):
-        pass
-
     def satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
@@ -367,6 +360,12 @@ class SatisfiableEntity(BaseEntity):
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
         self.power_drain = self._intended_power_drain
+
+    def on_satisfaction_check(self):
+        pass
+
+    def on_special(self):
+        pass
 
 # region Custom classes
 
