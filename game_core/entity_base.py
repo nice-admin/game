@@ -214,11 +214,11 @@ class SatisfiableEntity(BaseEntity):
         self._progress_bar_frame_counter += 1
         if self._progress_bar_frame_counter >= self._BAR_REFRESH_RATE:
             self._progress_bar_frame_counter = 0
-            self._update_bar1(grid)
+            self._update_sat_check_bar(grid)
             self._update_special(grid)
         self._set_status()
 
-    def _update_bar1(self, grid):
+    def _update_sat_check_bar(self, grid):
         if self.has_sat_check_bar:
             prev_initialized = self.is_initialized
             self.bar1_timer += self._BAR_REFRESH_RATE
@@ -235,11 +235,10 @@ class SatisfiableEntity(BaseEntity):
                     else:
                         self.special = None
                         self.special_timer = None
-                self.is_satisfied = self.execute_on_satisfaction_check(grid)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
-                    self.execute_on_satisfaction_check(grid)
+                    self.satisfaction_check(grid)   
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -331,10 +330,11 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-    def execute_on_satisfaction_check(self, grid):
-        return 0
 
-    def execute_on_satisfaction_check(self, grid):
+    def on_satisfaction_check(self):
+        pass
+
+    def satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
         entity_type = getattr(self, 'satisfaction_check_type', None)
@@ -355,9 +355,7 @@ class SatisfiableEntity(BaseEntity):
                 count = self.count_entities_in_proximity(grid, entity_type, radius, predicate=lambda e: predicate(self, e))
             else:
                 count = self.count_entities_in_proximity(grid, entity_type, radius)
-            if hasattr(self, 'on_satisfaction_check'):
-                self.on_satisfaction_check(count, threshold)
-                return
+            self.on_satisfaction_check()
             if count < threshold:
                 self.is_satisfied = 0
                 self.power_drain = 0
@@ -385,18 +383,12 @@ class ComputerEntity(SatisfiableEntity):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
-    def execute_on_satisfaction_check(self, grid):
-        # First, run the base logic (checks for outlet, etc.)
-        satisfied = super().execute_on_satisfaction_check(grid)
-        # Only increase temperature if actually satisfied
-        gs = GameState()
-        if satisfied:
+    def on_satisfaction_check(self):
+        """Called on every satisfaction check. Increases global temperature by 1, but only if satisfied."""
+        if self.is_satisfied == 1:
+            gs = GameState()
             if hasattr(gs, 'temperature'):
-                gs.temperature += 0.03
-            self.power_drain = self._intended_power_drain
-        else:
-            self.power_drain = 0
-        return satisfied
+                gs.temperature += 1
 
     def _update_special(self, grid):
         gs = GameState()
@@ -432,7 +424,7 @@ class MonitorEntity(SatisfiableEntity):
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
 
-    def execute_on_satisfaction_check(self, grid):
+    def satisfaction_check(self, grid):
         # Standard proximity check for ComputerEntity in radius 1
         count = self.count_entities_in_proximity(
             grid, ComputerEntity, self.satisfaction_check_radius

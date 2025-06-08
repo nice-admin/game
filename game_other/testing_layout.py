@@ -12,7 +12,7 @@ class LineSpawn:
         self.entity_cls = entity_cls
         self.y_position = LineSpawn.start_y + y_position  # Use class variable for offset
         self.vertical_spread = vertical_spread  # 0.0 = no spread, 1.0 = up to 1 row below
-        self.n = 40
+        self.n = 10
         self.on_entity_placed = on_entity_placed
         self.probability = probability  # Chance to spawn at each position (default 1.0 = 100%)
         # If entity_cls is a class and has subclasses, gather them
