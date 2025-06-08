@@ -1,36 +1,37 @@
 class GameState:
     _instance = None
-
+    temperature = 23
+    game_time_seconds = 0
+    game_time_days = 0
+    total_money = 20000
+    total_upkeep = 0
+    total_power_drain = 0
+    total_breaker_strength = 0
+    total_employees = 0
+    total_risky_entities = 0
+    total_broken_entities = 0
+    is_internet_online = 1
+    is_wifi_online = 1
+    is_nas_online = 1
+    temperature = 23
+    artist_progress_required_per_shot = 15
+    render_progress_required_per_shot = 50
+    artist_progress_current = 0
+    artist_progress_goal = 0
+    render_progress_current = 0
+    render_progress_allowed = 0
+    render_progress_goal = 0
+    total_shots_finished = 0
+    total_shots_goal = 0
+    current_job_finished = 1
+    jobs_finished = 0
+    job_id = 0
+    job_budget = 0
+    current_construction_class = None
+    
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(GameState, cls).__new__(cls)
-            cls._instance.game_time_seconds = 0
-            cls._instance.game_time_days = 0
-            cls._instance.total_money = 20000
-            cls._instance.total_upkeep = 0
-            cls._instance.total_power_drain = 0
-            cls._instance.total_breaker_strength = 0
-            cls._instance.total_employees = 0
-            cls._instance.total_risky_entities = 0
-            cls._instance.total_broken_entities = 0
-            cls._instance.is_internet_online = 1
-            cls._instance.is_wifi_online = 1
-            cls._instance.is_nas_online = 1
-            cls._instance.temperature = 23
-            cls._instance.artist_progress_required_per_shot = 15
-            cls._instance.render_progress_required_per_shot = 50
-            cls._instance.artist_progress_current = 0
-            cls._instance.artist_progress_goal = 0
-            cls._instance.render_progress_current = 0
-            cls._instance.render_progress_allowed = 0
-            cls._instance.render_progress_goal = 0
-            cls._instance.total_shots_finished = 0
-            cls._instance.total_shots_goal = 0
-            cls._instance.current_job_finished = 1
-            cls._instance.jobs_finished = 0
-            cls._instance.job_id = 0
-            cls._instance.job_budget = 0
-            cls._instance.current_construction_class = None
         return cls._instance
 
     def summarize_entities(self, grid):
@@ -109,9 +110,10 @@ class GameState:
             self.total_shots_goal = 0
             self.total_shots_finished = 0
 
-    def cap_render_progress_allowed(self):
-        if self.artist_progress_current > 0 and self.artist_progress_current % self.artist_progress_required_per_shot == 0:
-            self.render_progress_allowed = self.artist_progress_current * self.render_progress_required_per_shot // self.artist_progress_required_per_shot
+    def calculate_render_progress_allowed(self):
+        # Allow render progress for each full 'shot' of artist progress
+        shots_allowed = self.artist_progress_current // self.artist_progress_required_per_shot
+        self.render_progress_allowed = shots_allowed * self.render_progress_required_per_shot
 
     def increment_current_artist_progress(self, multiplier=1):
         if self.artist_progress_current < self.artist_progress_goal:
