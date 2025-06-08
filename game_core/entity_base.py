@@ -239,28 +239,12 @@ class SatisfiableEntity(BaseEntity):
 
     def _update_special_bar(self, grid):
         if self.has_special and self.is_initialized and self.is_satisfied:
-            if not hasattr(self, '_special_spawn_attempted'):
-                if self.special is None and self.special_timer is None:
-                    if random.random() < getattr(self, 'special_chance', 0.1):
-                        self.special = 0.0
-                        self.special_timer = 0
-                        self.on_special_start()
-                    else:
-                        self.special = None
-                        self.special_timer = None
-                self._special_spawn_attempted = 1
+            # Only progress the special bar if it is active
             if self.special is not None and self.special_timer is not None:
                 self.special_timer += self._BAR_REFRESH_RATE
                 if self.special_timer >= self._BAR_DURATION_FRAMES:
-                    self.special_timer = 0
-                    # When special finishes, roll again for another one or drop it
-                    if random.random() < getattr(self, 'special_chance', 0.1):
-                        self.special = 0.0
-                        self.special_timer = 0
-                        self.on_special_start()
-                    else:
-                        self.special = None
-                        self.special_timer = None
+                    self.special_timer = None
+                    self.special = None
                     self.on_special_finish()  # Fire on_special when special completes
                 else:
                     self.special = self.special_timer / self._BAR_DURATION_FRAMES
@@ -404,9 +388,10 @@ class ComputerEntity(SatisfiableEntity):
                 gs.temperature += 0.005 * self.heating_multiplier
 
     def on_special_start(self):
-        self.power_drain = 5000
+        self.power_drain = self.power_drain * 3
 
     def on_special_finish(self):
+        self.power_drain = self.power_drain / 3
         gs = GameState()
         if hasattr(gs, 'temperature'):
             gs.temperature += 0.02 * self.heating_multiplier
