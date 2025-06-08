@@ -128,6 +128,20 @@ class PowerOutage:
         if self.active:
             overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 160))  # 50% black
+            width, height = surface.get_size()
+            # Define cutout using independent start/end percentages
+            x_start_pct = 0.5   # 50% of width
+            x_end_pct = 0.615     # 60% of width
+            y_start_pct = 0.027   # 10% of height
+            y_end_pct = 0.12     # 50% of height
+            cutout_rect = pygame.Rect(
+                int(width * x_start_pct),
+                int(height * y_start_pct),
+                int(width * (x_end_pct - x_start_pct)),
+                int(height * (y_end_pct - y_start_pct))
+            )
+            # Draw a fully transparent rectangle (cutout)
+            pygame.draw.rect(overlay, (0, 0, 0, 0), cutout_rect)
             surface.blit(overlay, (0, 0))
 
 class ClimateControl:

@@ -87,9 +87,9 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
             return set(cls.__subclasses__()).union(
                 [s for c in cls.__subclasses__() for s in all_subclasses(c)]
             )
-        decoration_subclasses = list(all_subclasses(DecorationEntity))
-        RandomSpawn(decoration_subclasses, probability=0.05, on_entity_placed=on_entity_placed).spawn(grid, entity_states, GRID_WIDTH, GRID_HEIGHT)
-        # ProjectManagers (30% chance, two rows below the base Artist row)
+        class_list = list(all_subclasses(DecorationEntity))
+        class_list.append(AirConditioner)
+        RandomSpawn(class_list, probability=0.05, on_entity_placed=on_entity_placed).spawn(grid, entity_states, GRID_WIDTH, GRID_HEIGHT)
         x_start = (GRID_WIDTH - n) // 2
         y_pm = LineSpawn.start_y + 11  # 2 rows below the base Artist row (start_y + 9)
         for i in range(n):
@@ -101,7 +101,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
         print(f"Spawned 5x{n-1} Breakers (y={LineSpawn.start_y}-{{LineSpawn.start_y+4}}), {n-1} Outlets (y={LineSpawn.start_y+6}), {n-1} Computers, {n-1} Monitors, {n-1} Artists (spread), {n-1} + {n-1} extra Computers, and up to {int((n-1)*0.3)} ProjectManagers.")
 
 class RandomSpawn:
-    def __init__(self, entity_classes, probability=0.02, on_entity_placed=None):
+    def __init__(self, entity_classes, probability=0.01, on_entity_placed=None):
         self.entity_classes = entity_classes  # List of entity classes to choose from
         self.probability = probability        # Chance to spawn on each tile
         self.on_entity_placed = on_entity_placed
