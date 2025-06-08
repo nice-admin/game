@@ -76,6 +76,28 @@ RESOURCE_PANEL_CELLS = {
         "value_getter": lambda gs: gs.total_upkeep,
         "format": lambda v, gs: f"-{CURRENCY_SYMBOL}{v}",
     },
+    (1, 2): {
+        "key": "office_quality",
+        "label": "Office\nquality",
+        "icon": resource_path("data/graphics/resource_panel/office-quality.png"),
+        "value_getter": lambda gs: getattr(gs, 'office_quality', 0),
+        "format": lambda v, gs: {
+            0: "Hellhole",
+            1: "Irritating",
+            2: "Average",
+            3: "Good",
+            4: "Excellent",
+            5: "Heavenly"
+        }.get(int(v), str(v)),
+        "color": lambda v, gs: {
+            0: (255, 0, 0),         # Red
+            1: (255, 100, 0),       # Orange
+            2: (255, 220, 0),       # Yellow
+            3: (120, 200, 60),      # Light Green
+            4: (100, 230, 0),         # Green
+            5: (0, 255, 0)        # Gold
+        }.get(int(v), (255,255,255)),
+    },
     # Add more as needed
 }
 PROBLEM_PANEL_CELLS = {
