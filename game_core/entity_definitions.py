@@ -26,7 +26,7 @@ class Macbook(LaptopEntity):
     upkeep = 100
     power_drain = 50
 
-    def on_satisfaction_check(self):
+    def on_sat_check_finish(self):
         from game_core.game_state import GameState
         gs = GameState()
         value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0
@@ -61,7 +61,7 @@ class Artist(PersonEntity):
     has_project_manager = 0
     upkeep = 2000
 
-    def on_special(self):
+    def on_special_finish(self):
         gs = GameState()
         multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
         gs.increment_current_artist_progress(multiplier=multiplier)
@@ -130,7 +130,7 @@ class AirConditioner(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
-    def on_satisfaction_check(self):
+    def on_sat_check_finish(self):
         self.is_satisfied = 1
         self.state = "Good"
         from game_core.game_state import GameState

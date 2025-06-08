@@ -241,7 +241,7 @@ class SatisfiableEntity(BaseEntity):
                 if entity_type:
                     self.satisfaction_check(grid)
                 self._set_status()
-                self.on_satisfaction_check()
+                self.on_sat_check_finish()
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
@@ -253,6 +253,7 @@ class SatisfiableEntity(BaseEntity):
                     if random.random() < getattr(self, 'special_chance', 0.1):
                         self.special = 0.0
                         self.special_timer = 0
+                        self.on_special_start()
                     else:
                         self.special = None
                         self.special_timer = None
@@ -265,10 +266,11 @@ class SatisfiableEntity(BaseEntity):
                     if random.random() < getattr(self, 'special_chance', 0.1):
                         self.special = 0.0
                         self.special_timer = 0
+                        self.on_special_start()
                     else:
                         self.special = None
                         self.special_timer = None
-                    self.on_special()  # Fire on_special when special completes
+                    self.on_special_finish()  # Fire on_special when special completes
                 else:
                     self.special = self.special_timer / self._BAR_DURATION_FRAMES
         else:
@@ -363,11 +365,17 @@ class SatisfiableEntity(BaseEntity):
         self.is_satisfied = 1
         self.power_drain = self._intended_power_drain
 
-    def on_satisfaction_check(self):
+    def on_sat_check_finish(self):
         pass
 
-    def on_special(self):
+    def on_special_finish(self):
         pass
+
+    def on_special_start(self):
+        # Only multiply if not already multiplied (avoid stacking)
+        if self.power_drain == self._intended_power_drain:
+            self.power_drain = self._intended_power_drain * 3
+        # If already multiplied, do nothing
 
 # region Custom classes
 
@@ -389,39 +397,28 @@ class ComputerEntity(SatisfiableEntity):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
-    def on_satisfaction_check(self):
-        """Called on every satisfaction check. Increases global temperature by 1, but only if satisfied."""
+    def on_sat_check_finish(self):
         if self.is_satisfied == 1:
             gs = GameState()
             if hasattr(gs, 'temperature'):
                 gs.temperature += 0.005 * self.heating_multiplier
 
-    def on_special(self):
+    def on_special_start(self):
+        # Only multiply if not already multiplied (avoid stacking)
+        if self.power_drain == self._intended_power_drain:
+            self.power_drain = self._intended_power_drain * 3
+        # If already multiplied, do nothing
+
+    def on_special_finish(self):
+        # Restore to intended value if satisfied, else 0
+        self.power_drain = self._intended_power_drain if self.is_satisfied else 0
         gs = GameState()
         if hasattr(gs, 'temperature'):
             gs.temperature += 0.02 * self.heating_multiplier
+        # Increment render_progress_current if not at max
+        if gs.render_progress_current < gs.render_progress_allowed:
+            gs.render_progress_current += 1
 
-    def _update_special_bar(self, grid):
-        gs = GameState()
-        prev_special = self.special if hasattr(self, 'special') else None
-        prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
-        super()._update_special_bar(grid)
-        # Update is_rendering based on special presence
-        self.is_rendering = 1 if self.special is not None else 0
-        # Set power_drain to 3x intended if special is active, else normal logic
-        if self.special is not None:
-            self.power_drain = self._intended_power_drain * 3
-        elif self.is_satisfied:
-            self.power_drain = self._intended_power_drain
-        else:
-            self.power_drain = 0
-        # Increment render_progress_current if special just completed (allow for float rounding or special drop)
-        if prev_special is not None and prev_special >= 0.99:
-            # If special is now gone or reset to 0, count as completed
-            if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
-                gs = GameState()
-                if gs.render_progress_current < gs.render_progress_allowed:
-                    gs.render_progress_current += 1
 
 class LaptopEntity(SatisfiableEntity):
     is_initialized = 1
