@@ -19,7 +19,6 @@ from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
     from game_core.game_state import GameState
-    # Always preview the current construction class if set
     if all(v is not None for v in [camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]) and callable(GameState().current_construction_class):
         draw_entity_preview(surface, None, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     selected_entity_class = None
@@ -50,12 +49,10 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
             panel_btn_rects['section'] = section_btn_rects
             panel_btn_rects['item'] = item_btn_rects
 
-    # Anchor overview panel to bottom left
     overview_panel_x = 0
     overview_panel_y = surface.get_height() - OVERVIEW_PANEL_HEIGHT
     draw_overview_panel(surface, font, overview_panel_x, overview_panel_y, width=OVERVIEW_PANEL_WIDTH, height=OVERVIEW_PANEL_HEIGHT, grid=grid)
 
-    # Anchor details panel to bottom right
     details_panel_x = surface.get_width() - DETAILS_PANEL_WIDTH
     details_panel_y = surface.get_height() - DETAILS_PANEL_HEIGHT
     draw_details_panel(surface, font, details_panel_x, details_panel_y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=hovered_entity)
@@ -72,5 +69,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_PROJECT_OVERVIEW_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height = 130)
     power_outage.draw_overlay(surface)
-    show_arrow_pointer()  # Ensure the pointer is scheduled to appear (will only trigger once)
-    draw_arrow_pointer(surface, 1440, 85)
+    if ALLOW_ARROW_POINTER:
+        show_arrow_pointer()
+        draw_arrow_pointer(surface, 1440, 85)

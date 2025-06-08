@@ -217,6 +217,7 @@ class SatisfiableEntity(BaseEntity):
             self._update_sat_check_bar(grid)
             self._update_special_bar(grid)
         self._set_status()
+        self.on_satisfaction_check()
 
     def _update_sat_check_bar(self, grid):
         if self.has_sat_check_bar:
@@ -352,7 +353,6 @@ class SatisfiableEntity(BaseEntity):
                 count = self.count_entities_in_proximity(grid, entity_type, radius, predicate=lambda e: predicate(self, e))
             else:
                 count = self.count_entities_in_proximity(grid, entity_type, radius)
-            self.on_satisfaction_check()
             if count < threshold:
                 self.is_satisfied = 0
                 self.power_drain = 0
@@ -381,23 +381,23 @@ class ComputerEntity(SatisfiableEntity):
     special_chance = 0.5
     power_drain = 0
     satisfaction_check_gamestate = 'is_nas_online'
+    heating_multiplier = 1
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
-
 
     def on_satisfaction_check(self):
         """Called on every satisfaction check. Increases global temperature by 1, but only if satisfied."""
         if self.is_satisfied == 1:
             gs = GameState()
             if hasattr(gs, 'temperature'):
-                gs.temperature += 0.005
+                gs.temperature += 0.005 * self.heating_multiplier
 
     def on_special(self):
         gs = GameState()
         if hasattr(gs, 'temperature'):
-            gs.temperature += 0.02
+            gs.temperature += 0.02 * self.heating_multiplier
 
     def _update_special_bar(self, grid):
         gs = GameState()

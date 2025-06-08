@@ -9,6 +9,7 @@ class ComputerT1(ComputerEntity):
     display_name = 'Basic Computer'
     power_drain = 200
     upkeep = 50
+    heating_multiplier = 2
 
 
 class ComputerT2(ComputerEntity):
@@ -17,6 +18,7 @@ class ComputerT2(ComputerEntity):
     tier = 2
     power_drain = 400
     upkeep = 100
+    heating_multiplier = 1
 
 class Macbook(LaptopEntity):
     _icon = resource_path("data/graphics/macbook.png")
@@ -128,18 +130,14 @@ class AirConditioner(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
-    def satisfaction_check(self, grid):
-        self.state = 'Good'
-        self.power_drain = self._intended_power_drain
-        # DEBUG: Print before and after temperature
+    def on_satisfaction_check(self):
+        self.is_satisfied = 1
+        self.state = "Good"
         from game_core.game_state import GameState
         gs = GameState()
-        print(f"[AC] Before: gs.temperature={getattr(gs, 'temperature', None)}")
-        if hasattr(gs, 'temperature'):
-            if gs.temperature > 23:
-                gs.temperature = max(23, gs.temperature - 0.25)
-        print(f"[AC] After: gs.temperature={getattr(gs, 'temperature', None)}")
-        return 1
+        if gs.temperature > 23:
+            gs.temperature = max(23, gs.temperature - 0.25)
+
 
 
 class Humidifier(SatisfiableEntity):
