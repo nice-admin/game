@@ -110,9 +110,10 @@ class GameState:
             self.total_shots_goal = 0
             self.total_shots_finished = 0
 
-    def cap_render_progress_allowed(self):
-        if self.artist_progress_current > 0 and self.artist_progress_current % self.artist_progress_required_per_shot == 0:
-            self.render_progress_allowed = self.artist_progress_current * self.render_progress_required_per_shot // self.artist_progress_required_per_shot
+    def calculate_render_progress_allowed(self):
+        # Allow render progress for each full 'shot' of artist progress
+        shots_allowed = self.artist_progress_current // self.artist_progress_required_per_shot
+        self.render_progress_allowed = shots_allowed * self.render_progress_required_per_shot
 
     def increment_current_artist_progress(self, multiplier=1):
         if self.artist_progress_current < self.artist_progress_goal:

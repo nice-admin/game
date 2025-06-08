@@ -65,7 +65,7 @@ class Artist(PersonEntity):
         gs = GameState()
         multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
         gs.increment_current_artist_progress(multiplier=multiplier)
-        gs.cap_render_progress_allowed()
+        gs.calculate_render_progress_allowed()
 
     def check_project_manager_proximity(self, grid):
         found = 0
