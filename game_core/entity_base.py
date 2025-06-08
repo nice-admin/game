@@ -139,8 +139,6 @@ class BaseEntity:
             play_build_sound()
 
     def on_initialized(self):
-
-        """Call this when the entity becomes initialized to set power_drain to intended value."""
         self.power_drain = self._intended_power_drain
 
 # region SatisfiableEntity
@@ -227,15 +225,8 @@ class SatisfiableEntity(BaseEntity):
                 self.bar1_timer = 0
                 if not self.is_initialized:
                     self.is_initialized = 1
-                    self.on_initialized()  # Set power_drain when initialized
-                # Always roll for special after bar1 completes, if has_special and not currently rendering
-                if self.has_special and (self.special is None and self.special_timer is None):
-                    if random.random() < getattr(self, 'special_chance', 0.1):
-                        self.special = 0.0
-                        self.special_timer = 0
-                    else:
-                        self.special = None
-                        self.special_timer = None
+                    self.on_initialized()
+                # Remove special roll logic here (now handled in satisfaction_check)
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
@@ -363,7 +354,16 @@ class SatisfiableEntity(BaseEntity):
                 return
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
-        self.power_drain = self._intended_power_drain
+        # Roll for special bar if applicable
+        if getattr(self, 'has_special', 0):
+            if getattr(self, 'special', None) is None and getattr(self, 'special_timer', None) is None:
+                if random.random() < getattr(self, 'special_chance', 0.1):
+                    self.special = 0.0
+                    self.special_timer = 0
+                    self.on_special_start()
+                else:
+                    self.special = None
+                    self.special_timer = None
 
     def on_sat_check_finish(self):
         pass
@@ -404,14 +404,9 @@ class ComputerEntity(SatisfiableEntity):
                 gs.temperature += 0.005 * self.heating_multiplier
 
     def on_special_start(self):
-        # Only multiply if not already multiplied (avoid stacking)
-        if self.power_drain == self._intended_power_drain:
-            self.power_drain = self._intended_power_drain * 3
-        # If already multiplied, do nothing
+        self.power_drain = 5000
 
     def on_special_finish(self):
-        # Restore to intended value if satisfied, else 0
-        self.power_drain = self._intended_power_drain if self.is_satisfied else 0
         gs = GameState()
         if hasattr(gs, 'temperature'):
             gs.temperature += 0.02 * self.heating_multiplier
