@@ -215,7 +215,7 @@ class SatisfiableEntity(BaseEntity):
         if self._progress_bar_frame_counter >= self._BAR_REFRESH_RATE:
             self._progress_bar_frame_counter = 0
             self._update_sat_check_bar(grid)
-            self._update_special(grid)
+            self._update_special_bar(grid)
         self._set_status()
 
     def _update_sat_check_bar(self, grid):
@@ -243,7 +243,7 @@ class SatisfiableEntity(BaseEntity):
         else:
             self.bar1 = None
 
-    def _update_special(self, grid):
+    def _update_special_bar(self, grid):
         if self.has_special and self.is_initialized and self.is_satisfied:
             if not hasattr(self, '_special_spawn_attempted'):
                 if self.special is None and self.special_timer is None:
@@ -265,6 +265,7 @@ class SatisfiableEntity(BaseEntity):
                     else:
                         self.special = None
                         self.special_timer = None
+                    self.on_special()  # Fire on_special when special completes
                 else:
                     self.special = self.special_timer / self._BAR_DURATION_FRAMES
         else:
@@ -334,6 +335,9 @@ class SatisfiableEntity(BaseEntity):
     def on_satisfaction_check(self):
         pass
 
+    def on_special(self):
+        pass
+
     def satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
@@ -383,18 +387,24 @@ class ComputerEntity(SatisfiableEntity):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
+
     def on_satisfaction_check(self):
         """Called on every satisfaction check. Increases global temperature by 1, but only if satisfied."""
         if self.is_satisfied == 1:
             gs = GameState()
             if hasattr(gs, 'temperature'):
-                gs.temperature += 1
+                gs.temperature += 0.005
 
-    def _update_special(self, grid):
+    def on_special(self):
+        gs = GameState()
+        if hasattr(gs, 'temperature'):
+            gs.temperature += 0.02
+
+    def _update_special_bar(self, grid):
         gs = GameState()
         prev_special = self.special if hasattr(self, 'special') else None
         prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
-        super()._update_special(grid)
+        super()._update_special_bar(grid)
         # Update is_rendering based on special presence
         self.is_rendering = 1 if self.special is not None else 0
         # Set power_drain to 3x intended if special is active, else normal logic

@@ -59,10 +59,10 @@ class Artist(PersonEntity):
     has_project_manager = 0
     upkeep = 2000
 
-    def _update_special(self, grid):
+    def _update_special_bar(self, grid):
         prev_special = self.special if hasattr(self, 'special') else None
         prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
-        super()._update_special(grid)
+        super()._update_special_bar(grid)
         # Increment artist_progress_current if special just completed
         if prev_special is not None and prev_special >= 0.99:
             if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
