@@ -6,6 +6,8 @@ ROWS_SPACING = 10    # Space between rows (icon, name, person_name, status, attr
 TEXT_COL = (255, 255, 255)  # Default text color for all non-status text
 DETAILS_PANEL_WIDTH = 400
 DETAILS_PANEL_HEIGHT = 160
+ROUNDING = 12  # px, for rounded corners
+BORDER_WIDTH = 3  # px, for border thickness
 # --- Status message logic migrated from info_panel.py ---
 def draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size):
     """Draws a status message based on the entity's state."""
@@ -123,36 +125,74 @@ class Header:
         else:
             self.name_rect = None
 
-def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=None):
+# Global config for entity property rows: (attribute, display label)
+ENTITY_PROPERTY_CONFIG = [
+    ("person_name", "Name"),
+    ("hunger", "Hunger"),
+    # Add more as needed
+]
+
+class EntityPropertyRow:
+    """Renders a single property row (label: value) for an entity."""
+    FIXED_ROW_HEIGHT = 28  # Set a fixed height for each property row (adjust as needed)
+    def __init__(self, entity, prop_name, display_label, font, x, y):
+        self.entity = entity
+        self.prop_name = prop_name
+        self.display_label = display_label
+        self.font = font
+        self.x = x
+        self.y = y
+        self.rect = None
+
+    def render(self, surface):
+        if hasattr(self.entity, self.prop_name):
+            value = getattr(self.entity, self.prop_name)
+            label = f"{self.display_label}: {value}"
+            surf = self.font.render(label, True, TEXT_COL)
+            rect = surf.get_rect(topleft=(self.x, self.y))
+            surface.blit(surf, rect)
+            # Use fixed row height for alignment
+            self.rect = pygame.Rect(self.x, self.y, rect.width, self.FIXED_ROW_HEIGHT)
+        else:
+            self.rect = None
+
+def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=None, show_bg=True):
     """
     Draws a details panel at (x, y) with the given width and height.
     If an entity is provided, show its details; otherwise, show a placeholder.
+    If show_bg is False, the panel background will not be drawn (for hidden/cached state).
+    The panel height will expand based on the number of property rows if entity is not None.
+    Only properties in ENTITY_PROPERTY_CONFIG are shown, along with icon, display name, and status.
     """
-    # Panel background using UI_BG1_COL (with alpha if present)
-    bg_col = UI_BG1_COL
-    panel_surf = pygame.Surface((width, height), pygame.SRCALPHA)
-    pygame.draw.rect(panel_surf, bg_col, panel_surf.get_rect())
-    surface.blit(panel_surf, (x, y))
     # --- HEADER ---
+    dynamic_height = height
+    if entity is not None:
+        # Use actual icon size (64), font height for status, and property rows
+        icon_height = 64
+        header_margin = MARGIN_FROM_TOP + ROWS_SPACING
+        header_height = icon_height + header_margin
+        status_height = font.get_height() + ROWS_SPACING
+        property_row_count = sum(1 for prop_name, _ in ENTITY_PROPERTY_CONFIG if hasattr(entity, prop_name))
+        property_rows_height = property_row_count * (font.get_height() + ROWS_SPACING)
+        # Minimal padding at the bottom
+        dynamic_height = header_height + status_height + property_rows_height
+    # Panel background using UI_BG1_COL (with alpha if present)
+    if show_bg:
+        bg_col = UI_BG1_COL
+        from game_core.config import UI_BORDER1_COL
+        panel_surf = pygame.Surface((width, dynamic_height), pygame.SRCALPHA)
+        pygame.draw.rect(panel_surf, bg_col, panel_surf.get_rect(), border_radius=ROUNDING)
+        pygame.draw.rect(panel_surf, UI_BORDER1_COL, panel_surf.get_rect(), BORDER_WIDTH, border_radius=ROUNDING)
+        surface.blit(panel_surf, (x, y))
     if entity is not None:
         header = Header(entity, font, x, y)
         header.render(surface)
-        # --- MAIN SECTION (10px below header) ---
         section_y = (header.name_rect.bottom if header.name_rect else y + MARGIN_FROM_TOP + ROWS_SPACING + 32) + 5
-        # person_name (if present) under display_name, with dynamic spacing
-        if hasattr(entity, 'person_name'):
-            person_name = getattr(entity, 'person_name')
-            person_name_surf = font.render(person_name, True, TEXT_COL)
-            person_name_rect = person_name_surf.get_rect(topleft=(x + 96, section_y))
-            surface.blit(person_name_surf, person_name_rect)
-            y_status = person_name_rect.bottom + ROWS_SPACING
-        else:
-            y_status = section_y + ROWS_SPACING
-        # Status message row (same mechanic as info_panel)
-        draw_status_by_state(surface, font, entity, x + 96, y_status - 8, 0)
-        # List public attributes (skip person_name/display_name)
-        attr_y = y_status + ROWS_SPACING
-        for idx, (k, v) in enumerate(sorted(entity.__dict__.items())):
-            if not k.startswith('_') and k not in ("person_name", "display_name"):
-                attr_surf = font.render(f"{k}: {v}", True, TEXT_COL)
-                surface.blit(attr_surf, (x + 16, attr_y + idx * (22 + ROWS_SPACING)))
+        draw_status_by_state(surface, font, entity, x + 96, section_y, 0)
+        row_y = section_y + 32
+        for prop_name, display_label in ENTITY_PROPERTY_CONFIG:
+            row = EntityPropertyRow(entity, prop_name, display_label, font, x + 96, row_y)
+            row.render(surface)
+            if row.rect:
+                row_y += EntityPropertyRow.FIXED_ROW_HEIGHT
+    # ...existing code...

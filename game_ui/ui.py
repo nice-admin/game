@@ -54,8 +54,10 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     draw_overview_panel(surface, font, overview_panel_x, overview_panel_y, width=OVERVIEW_PANEL_WIDTH, height=OVERVIEW_PANEL_HEIGHT, grid=grid)
 
     details_panel_x = surface.get_width() - DETAILS_PANEL_WIDTH
-    details_panel_y = surface.get_height() - DETAILS_PANEL_HEIGHT
-    draw_details_panel(surface, font, details_panel_x, details_panel_y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=hovered_entity)
+    # Place details panel at 50% of the screen vertically (centered vertically)
+    details_panel_y = int((surface.get_height() - DETAILS_PANEL_HEIGHT) / 2)
+    show_details_bg = hovered_entity is not None
+    draw_details_panel(surface, font, details_panel_x, details_panel_y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=hovered_entity, show_bg=show_details_bg)
 
     info_panel_width = get_info_panel_width(surface.get_width())
     check_alerts(grid, surface.get_width())

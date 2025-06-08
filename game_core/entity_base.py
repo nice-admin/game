@@ -440,12 +440,13 @@ class MonitorEntity(SatisfiableEntity):
 class PersonEntity(SatisfiableEntity):
     is_person = 1
     happiness = 10
+    hunger = 10
     NAMES = [
         "Marek Sosna",
         "Radim Zeifart",
-        "Šimon Lánský",
-        "Ondřej Skalník",
-        "Jaroslav Novotný",
+        "Simon Lansky",
+        "Ondrej Skalnik",
+        "Jaroslav Novotny",
         "Jan Reeh"
     ]
     def __init__(self, x, y):
