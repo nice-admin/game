@@ -442,8 +442,8 @@ class MonitorEntity(SatisfiableEntity):
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1
-    happiness = 10
-    hunger = 10
+    happiness = 0
+    hunger = 0
     NAMES = [
         "Marek Sosna",
         "Radim Zeifart",
@@ -458,6 +458,8 @@ class PersonEntity(SatisfiableEntity):
     def on_spawn(self):
         self.person_name = random.choice(self.NAMES)
         self.display_name = getattr(self, 'display_name', 'Person')
+        self.happiness = random.randint(1, 10)
+        self.hunger = random.randint(1, 10)
     
     def on_sat_check_finish(self):
         if hasattr(self, 'hunger'):

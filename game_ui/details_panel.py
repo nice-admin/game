@@ -125,34 +125,56 @@ class Header:
         else:
             self.name_rect = None
 
-# Global config for entity property rows: (attribute, display label)
+# Global config for entity property rows: (attribute, display label, optional value->str function, optional icon path)
 ENTITY_PROPERTY_CONFIG = [
-    ("person_name", "Name"),
-    ("hunger", "Hunger"),
+    ("person_name", "ID"),
+    ("hunger", "Hunger", lambda v: 'Very Full' if v >= 9 else 'Okay' if v >= 5 else 'Hungry', "data/graphics/details_panel/hunger.png"),
+    ("happiness", "Happiness", lambda v: 'Very Happy' if v >= 9 else 'Happy' if v >= 5 else 'Unhappy'),
     # Add more as needed
 ]
 
 class EntityPropertyRow:
-    """Renders a single property row (label: value) for an entity."""
-    FIXED_ROW_HEIGHT = 28  # Set a fixed height for each property row (adjust as needed)
-    def __init__(self, entity, prop_name, display_label, font, x, y):
+    """Renders a single property row (icon + label header, then value on next line) for an entity."""
+    FIXED_ROW_HEIGHT = 44  # Increased for two lines
+    ICON_SIZE = 24
+    def __init__(self, entity, prop_name, display_label, font, x, y, value_to_str=None, icon_path=None):
         self.entity = entity
         self.prop_name = prop_name
         self.display_label = display_label
         self.font = font
         self.x = x
         self.y = y
+        self.value_to_str = value_to_str
+        self.icon_path = icon_path
         self.rect = None
 
     def render(self, surface):
+        icon_offset = 0
+        header_y = self.y
+        value_y = self.y + 22  # Space for header
+        # Draw icon and header
+        if self.icon_path:
+            try:
+                icon_surf = pygame.image.load(self.icon_path).convert_alpha()
+                icon_surf = pygame.transform.smoothscale(icon_surf, (self.ICON_SIZE, self.ICON_SIZE))
+                surface.blit(icon_surf, (self.x, header_y + (20 - self.ICON_SIZE) // 2))
+                icon_offset = self.ICON_SIZE + 6
+            except Exception:
+                pass
+        header_label = f"{self.display_label}:"
+        header_font = self.font
+        header_surf = header_font.render(header_label, True, TEXT_COL)
+        surface.blit(header_surf, (self.x + icon_offset, header_y))
+        # Draw value on next line, using the same font size as header
         if hasattr(self.entity, self.prop_name):
             value = getattr(self.entity, self.prop_name)
-            label = f"{self.display_label}: {value}"
-            surf = self.font.render(label, True, TEXT_COL)
-            rect = surf.get_rect(topleft=(self.x, self.y))
-            surface.blit(surf, rect)
-            # Use fixed row height for alignment
-            self.rect = pygame.Rect(self.x, self.y, rect.width, self.FIXED_ROW_HEIGHT)
+            if self.value_to_str:
+                value_str = self.value_to_str(value)
+            else:
+                value_str = str(value)
+            value_surf = self.font.render(value_str, True, TEXT_COL)
+            surface.blit(value_surf, (self.x + icon_offset, value_y))
+            self.rect = pygame.Rect(self.x, self.y, max(header_surf.get_width(), value_surf.get_width()) + icon_offset, self.FIXED_ROW_HEIGHT)
         else:
             self.rect = None
 
@@ -172,10 +194,11 @@ def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DE
         header_margin = MARGIN_FROM_TOP + ROWS_SPACING
         header_height = icon_height + header_margin
         status_height = font.get_height() + ROWS_SPACING
-        property_row_count = sum(1 for prop_name, _ in ENTITY_PROPERTY_CONFIG if hasattr(entity, prop_name))
+        # Fix: handle 2 or 3 tuple config
+        property_row_count = sum(1 for prop in ENTITY_PROPERTY_CONFIG if hasattr(entity, prop[0]))
         property_rows_height = property_row_count * (font.get_height() + ROWS_SPACING)
         # Minimal padding at the bottom
-        dynamic_height = header_height + status_height + property_rows_height
+        dynamic_height = header_height + status_height + property_rows_height * 2
     # Panel background using UI_BG1_COL (with alpha if present)
     if show_bg:
         bg_col = UI_BG1_COL
@@ -190,9 +213,15 @@ def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DE
         section_y = (header.name_rect.bottom if header.name_rect else y + MARGIN_FROM_TOP + ROWS_SPACING + 32) + 5
         draw_status_by_state(surface, font, entity, x + 96, section_y, 0)
         row_y = section_y + 32
-        for prop_name, display_label in ENTITY_PROPERTY_CONFIG:
-            row = EntityPropertyRow(entity, prop_name, display_label, font, x + 96, row_y)
+        row_spacing = 15  # Add spacing between property rows
+        for prop in ENTITY_PROPERTY_CONFIG:
+            prop_name = prop[0]
+            if not hasattr(entity, prop_name):
+                continue  # Skip if entity does not have this property
+            display_label = prop[1]
+            value_to_str = prop[2] if len(prop) > 2 else None
+            icon_path = prop[3] if len(prop) > 3 else None
+            row = EntityPropertyRow(entity, prop_name, display_label, font, x + 96, row_y, value_to_str, icon_path)
             row.render(surface)
             if row.rect:
-                row_y += EntityPropertyRow.FIXED_ROW_HEIGHT
-    # ...existing code...
+                row_y += EntityPropertyRow.FIXED_ROW_HEIGHT + row_spacing
