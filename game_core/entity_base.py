@@ -450,12 +450,14 @@ class PersonEntity(SatisfiableEntity):
         "Simon Lansky",
         "Ondrej Skalnik",
         "Jaroslav Novotny",
-        "Jan Reeh"
+        "Jan Reeh",
+        "Martina Svojikova",
+        "Jachym Nadvornik",
+        "Petr Kollarcik"
     ]
     def on_spawn(self):
         self.person_name = random.choice(self.NAMES)
         self.display_name = getattr(self, 'display_name', 'Person')
-        # Add more initialization if needed
     
     def on_sat_check_finish(self):
         if hasattr(self, 'hunger'):

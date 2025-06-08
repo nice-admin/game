@@ -98,6 +98,19 @@ class ProjectManager(SatisfiableEntity):
     satisfaction_check_threshold = 1
     upkeep = 2000
 
+    def satisfaction_check(self, grid):
+        # Check for router in radius 30
+        router_count = self.count_entities_in_proximity(grid, 'router', 30)
+        # Check for Macbook in radius 1
+        macbook_count = self.count_entities_in_proximity(grid, Macbook, 1)
+        if router_count >= 1 and macbook_count >= 1:
+            self.is_satisfied = 1
+            self.state = "Good"
+        else:
+            self.is_satisfied = 0
+            self.state = "Mid"
+
+
 class AccountManager(SatisfiableEntity):
     _icon = resource_path("data/graphics/account-manager.png")
     satisfaction_check_type = 'router'
