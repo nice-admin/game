@@ -12,6 +12,7 @@ import game_other.testing_layout as testing_layout
 from game_core.game_state import update_totals_from_grid
 import game_core.gameplay_events
 from game_ui.project_overview_panel import handle_render_queue_panel_event
+from game_ui.supplies_panel import handle_supplies_panel_event
 
 
 # --- Game Grid ---
@@ -158,6 +159,8 @@ def handle_events(state, game_controls, remove_entity, place_entity):
             play_random_music_wav()
         # Handle render queue panel click/expand
         handle_render_queue_panel_event(event, screen_width, resource_panel_height)
+        # --- Supplies panel click/slide ---
+        handle_supplies_panel_event(event, pygame.display.get_surface())
         # Wire up testing layout async grid change callback
         testing_layout.handle_testing_layout(
             event,

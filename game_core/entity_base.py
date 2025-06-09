@@ -445,6 +445,7 @@ class PersonEntity(SatisfiableEntity):
     happiness = 0
     hunger = 0
     toilet_need = 0
+    has_coffee = 0
     NAMES = [
         "Marek Sosna",
         "Radim Zeifart",

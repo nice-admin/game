@@ -15,6 +15,7 @@ from game_core.game_state import GameState
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL
 from game_ui.cursor_info import draw_entity_preview
 from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
+from game_ui.supplies_panel import draw_supplies_panel
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -41,6 +42,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_resource_panel_general(surface.subsurface(pygame.Rect(x0, y0 + (total_height - general_height) // 2, general_width, general_height)),font)
         draw_resource_panel_system(surface,font,x0 + general_width + panel_gap,y0 + (total_height - system_height) // 2)
         resource_panel_height = total_height
+    draw_supplies_panel(surface)
     if ALLOW_CONSTRUCTION_PANEL:
         section_btn_rects, item_btn_rects = draw_construction_panel(
             surface, selected_section=selected_section, selected_item=selected_item, font=font, extend_below=0
