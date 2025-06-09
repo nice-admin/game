@@ -6,7 +6,7 @@ FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
 ROUNDING = 6
 SUPPLIES_PANEL_X = 0
-SUPPLIES_PANEL_Y_RATIO = 0.2  # 20% from the top
+SUPPLIES_PANEL_Y_RATIO = 0.3
 
 UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 300
@@ -59,44 +59,23 @@ class ExpandingPanel:
 
     def handle_event(self, event, surface):
         y = int(surface.get_size()[1] * self.y_ratio)
-        if self.expanded or self.animating:
-            rect = pygame.Rect(self.x, y, self.current_width, self.current_height)
-        else:
-            rect = pygame.Rect(self.x, y, self.button_width, self.button_height)
+        rect = pygame.Rect(self.x, y, self.button_width, self.button_height)
+        expanded_rect = pygame.Rect(self.x + self.button_width, y, self.expanded_width, self.expanded_height)
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if rect.collidepoint(*event.pos):
+            if rect.collidepoint(*event.pos) or (self.expanded and expanded_rect.collidepoint(*event.pos)):
                 self.expanded = not self.expanded
-                self.animating = True
-                self.anim_start_time = pygame.time.get_ticks()
                 return True
         return False
 
     def update_animation(self):
-        if not self.animating:
-            self.current_width = self.expanded_width if self.expanded else self.button_width
-            self.current_height = self.expanded_height if self.expanded else self.button_height
-            return
-        now = pygame.time.get_ticks()
-        elapsed = (now - self.anim_start_time) / 1000.0
-        t = min(elapsed / self.animation_duration, 1.0)
-        if self.expanded:
-            start_w, end_w = self.button_width, self.expanded_width
-            start_h, end_h = self.button_height, self.expanded_height
-        else:
-            start_w, end_w = self.expanded_width, self.button_width
-            start_h, end_h = self.expanded_height, self.button_height
-        self.current_width = int(start_w + (end_w - start_w) * t)
-        self.current_height = int(start_h + (end_h - start_h) * t)
-        if t >= 1.0:
-            self.current_width = end_w
-            self.current_height = end_h
-            self.animating = False
+        # No animation needed for this layout
+        self.current_width = self.button_width
+        self.current_height = self.button_height
 
     def draw(self, surface):
-        self.update_animation()
         y = int(surface.get_size()[1] * self.y_ratio)
-        left_shift = 20
-        panel_rect = pygame.Rect(self.x - left_shift, y, self.current_width + left_shift, self.current_height)
+        # Draw the main button (icon panel)
+        panel_rect = pygame.Rect(self.x, y, self.button_width, self.button_height)
         pygame.draw.rect(surface, UI_BG1_COL, panel_rect, border_radius=ROUNDING)
         pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, width=3, border_radius=ROUNDING)
         from game_core.config import resource_path
@@ -111,16 +90,13 @@ class ExpandingPanel:
             surface.blit(icon, (icon_x, icon_y))
         except Exception:
             pass
-        # Draw content to a temporary surface, then blit it masked
-        if self.expanded or self.animating:
-            padding_x = 0
-            padding_y = 0
-            content_x = padding_x
-            content_y = padding_y
-            temp_surf = pygame.Surface((self.current_width + left_shift, self.current_height), pygame.SRCALPHA)
-            # Draw header and lines, header to the right of icon
-            self.content.draw(temp_surf, content_x, content_y, icon_width=icon_size, icon_height=icon_size)
-            surface.blit(temp_surf, (self.x - left_shift, y))
+        # Draw the expanded content area to the right
+        if self.expanded:
+            content_rect = pygame.Rect(self.x + self.button_width, y, self.expanded_width, self.expanded_height)
+            pygame.draw.rect(surface, UI_BG1_COL, content_rect, border_radius=ROUNDING)
+            pygame.draw.rect(surface, UI_BORDER1_COL, content_rect, width=3, border_radius=ROUNDING)
+            # Draw content inside the expanded area
+            self.content.draw(surface, self.x + self.button_width, y, icon_width=icon_size, icon_height=icon_size)
         return panel_rect
 
 # --- Multiple panels setup ---
