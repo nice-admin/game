@@ -12,70 +12,44 @@ UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 300
 
 
-class ProgressBarWithLabel:
-    def __init__(self, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0)):
-        self.label = label
-        self.progress = progress
-        self.font = font
-        self.x = x
-        self.y = y
-        self.bar_width = bar_width
-        self.bar_height = bar_height
-        self.num_cells = num_cells
-        self.cell_spacing = cell_spacing
-        self.text_color = text_color
-
-    def draw(self, surface):
-        filled_cells = int(self.num_cells * max(0.0, min(self.progress, 1.0)) + 0.0001)
-        label_text = f"{filled_cells} / {self.num_cells} {self.label}"
-        text_surf = self.font.render(label_text, True, self.text_color)
-        surface.blit(text_surf, (self.x, self.y))
-        bar_x = self.x
-        bar_y = self.y + text_surf.get_height() + 2
-        cell_width = (self.bar_width - (self.num_cells - 1) * self.cell_spacing) // self.num_cells
-        for i in range(self.num_cells):
-            cell_x = bar_x + i * (cell_width + self.cell_spacing)
-            color = (80, 180, 80) if i < filled_cells else (180, 180, 180)
-            pygame.draw.rect(surface, color, (cell_x, bar_y, cell_width, self.bar_height), border_radius=2)
-        return bar_y + self.bar_height + 10  # next y
+def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0)):
+    filled = int(num_cells * max(0.0, min(progress, 1.0)) + 0.0001)
+    text = f"{filled} / {num_cells} {label}"
+    text_surf = font.render(text, True, text_color)
+    surface.blit(text_surf, (x, y))
+    bar_y = y + text_surf.get_height() + 2
+    cell_w = (bar_width - (num_cells - 1) * cell_spacing) // num_cells
+    for i in range(num_cells):
+        cell_x = x + i * (cell_w + cell_spacing)
+        color = (80, 180, 80) if i < filled else (180, 180, 180)
+        pygame.draw.rect(surface, color, (cell_x, bar_y, cell_w, bar_height), border_radius=2)
+    return bar_y + bar_height + 10
 
 
 class ExpandingPanelContent:
     def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None, progress_values=None):
         self.header = header
-        self.lines = lines if lines is not None else []
+        self.lines = lines or []
         self.font = font or get_font1(24)
         self.header_font = header_font or get_font1(36)
         self.header_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
         self.text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
         self.icon_path = icon_path
-        self.progress_values = progress_values or [1.0] * len(self.lines)  # 1.0 = 100%
+        self.progress_values = progress_values or [1.0] * len(self.lines)
 
     def draw(self, surface, x, y, icon_width=0, icon_height=0):
-        # Use x as left margin for header, and 10px top margin
         header_x = x + 20
         header_y = y + 10
         header_surf = self.header_font.render(self.header, True, self.header_color)
         surface.blit(header_surf, (header_x, header_y))
-        # Draw lines below, left-aligned with header
         text_y = header_y + header_surf.get_height() + 12
         bar_width = int(UNFOLDED_WIDTH * 0.92)
         for idx, line in enumerate(self.lines):
-            # Calculate value for the bar
             progress = self.progress_values[idx] if idx < len(self.progress_values) else 1.0
-            bar = ProgressBarWithLabel(
-                label=line,
-                progress=progress,
-                font=self.font,
-                x=header_x,
-                y=text_y,
-                bar_width=bar_width,
-                bar_height=20,
-                num_cells=10,
-                cell_spacing=2,
-                text_color=self.text_color
+            text_y = draw_progress_bar_with_label(
+                surface, line, progress, self.font, header_x, text_y, bar_width,
+                bar_height=20, num_cells=10, cell_spacing=2, text_color=self.text_color
             )
-            text_y = bar.draw(surface)
 
 
 class ExpandingPanel:
@@ -127,6 +101,30 @@ class ExpandingPanel:
             surface.blit(panel_surface, (self.x, self.y))
 
 
+class Indicators:
+    def __init__(self, iconbutton, rect_size=10, spacing=4):
+        self.iconbutton = iconbutton
+        self.rect_size = rect_size
+        self.spacing = spacing
+
+    def draw(self, surface):
+        # Get the number of bars and their fullness from the content
+        content = self.iconbutton.content
+        num = len(content.lines)
+        # Use progress_values if available, else full
+        progresses = content.progress_values if hasattr(content, 'progress_values') else [1.0]*num
+        # Position: right of the iconbutton
+        x = self.iconbutton.x + self.iconbutton.button_width + 8
+        y0 = int(surface.get_size()[1] * self.iconbutton.y_ratio)
+        total_height = num * self.rect_size + (num-1)*self.spacing if num > 0 else 0
+        y = y0 + (self.iconbutton.button_height - total_height)//2
+        for i, prog in enumerate(progresses):
+            color = (80, 180, 80) if prog >= 1.0 else (180, 180, 180)
+            rect = pygame.Rect(x, y + i*(self.rect_size+self.spacing), self.rect_size, self.rect_size)
+            pygame.draw.rect(surface, color, rect, border_radius=2)
+            pygame.draw.rect(surface, (60,60,60), rect, width=1, border_radius=2)
+
+
 class IconButton:
     def __init__(self, x, y_ratio, button_size, expanded_size, animation_duration=None, content=None, icon_path=None):
         self.button_width, self.button_height = button_size
@@ -154,6 +152,7 @@ class IconButton:
             self.expanded_width, self.expanded_height, self.content, icon_size=min(self.button_width, self.button_height) - 16,
             animation_duration=panel_anim_duration
         )
+        self.indicators = Indicators(self)
 
     def handle_event(self, event, surface):
         y = int(surface.get_size()[1] * self.y_ratio)
@@ -199,7 +198,9 @@ class IconButton:
             surface.blit(icon, (icon_x, icon_y))
         except Exception:
             pass
-        # Draw the expanded content area to the right using ExpandingPanel
+        # Draw indicators to the right of the button (below the expanding panel)
+        self.indicators.draw(surface)
+        # Draw the expanded content area to the right using ExpandingPanel (draw after indicators so it covers them)
         if self.expanded or self.expanding_panel.animating:
             self.update_expanding_panel(surface)
             self.expanding_panel.draw(surface)
