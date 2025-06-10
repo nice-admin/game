@@ -13,50 +13,91 @@ UNFOLDED_HEIGHT = 300
 
 
 class ExpandingPanelContent:
-    def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None):
+    def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None, progress_values=None):
         self.header = header
         self.lines = lines if lines is not None else []
         self.font = font or get_font1(24)
         self.header_font = header_font or get_font1(36)
         self.header_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
-        self.text_color = (0, 0, 0)
+        self.text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
         self.icon_path = icon_path
+        self.progress_values = progress_values or [1.0] * len(self.lines)  # 1.0 = 100%
 
     def draw(self, surface, x, y, icon_width=0, icon_height=0):
-        # Use SUPPLIES_PANEL_WIDTH as left margin for header, and 10px top margin
-        header_x = FOLDED_WIDTH + 20
+        # Use x as left margin for header, and 10px top margin
+        header_x = x + 20
         header_y = y + 10
         header_surf = self.header_font.render(self.header, True, self.header_color)
         surface.blit(header_surf, (header_x, header_y))
         # Draw lines below, left-aligned with header
         text_y = header_y + header_surf.get_height() + 12
-        for line in self.lines:
+        for idx, line in enumerate(self.lines):
             text_surf = self.font.render(line, True, self.text_color)
             surface.blit(text_surf, (header_x, text_y))
-            text_y += text_surf.get_height() + 6
+            # Draw progress bar next to text
+            bar_x = header_x + 160
+            bar_y = text_y
+            bar_width = 200
+            bar_height = 20
+            pygame.draw.rect(surface, (180, 180, 180), (bar_x, bar_y, bar_width, bar_height), border_radius=6)
+            # Progress fill
+            progress = self.progress_values[idx] if idx < len(self.progress_values) else 1.0
+            fill_width = int(bar_width * max(0.0, min(progress, 1.0)))
+            pygame.draw.rect(surface, (80, 180, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=6)
+            text_y += max(text_surf.get_height(), bar_height) + 10
 
 
 class ExpandingPanel:
-    def __init__(self, x, y, width, height, content, icon_size=None):
+    def __init__(self, x, y, width, height, content, icon_size=None, animation_duration=0.1):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.content = content
         self.icon_size = icon_size
+        self.animation_duration = animation_duration  # seconds
+        self.animating = False
+        self.anim_start_time = None
+        self.current_width = 0
+        self.current_height = 0
+
+    def start_animation(self):
+        self.animating = True
+        self.anim_start_time = pygame.time.get_ticks()
+        self.current_width = 0
+        self.current_height = 0
+
+    def update_animation(self):
+        if not self.animating:
+            self.current_width = self.width
+            self.current_height = self.height
+            return
+        elapsed = (pygame.time.get_ticks() - self.anim_start_time) / 1000.0
+        t = min(elapsed / self.animation_duration, 1.0)
+        self.current_width = int(self.width * t)
+        self.current_height = self.height  # Keep height constant during animation
+        if t >= 1.0:
+            self.animating = False
+            self.current_width = self.width
+            self.current_height = self.height
 
     def draw(self, surface):
-        content_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.update_animation()
+        content_rect = pygame.Rect(self.x, self.y, self.current_width, self.current_height)
         pygame.draw.rect(surface, UI_BG1_COL, content_rect, border_radius=ROUNDING)
         pygame.draw.rect(surface, UI_BORDER1_COL, content_rect, width=3, border_radius=ROUNDING)
-        # Draw content inside the expanded area
-        icon_w = self.icon_size if self.icon_size is not None else 0
-        icon_h = self.icon_size if self.icon_size is not None else 0
-        self.content.draw(surface, self.x, self.y, icon_width=icon_w, icon_height=icon_h)
+        # Only draw content if panel is visible
+        if self.current_width > 20 and self.current_height > 20:
+            # Use a temporary surface with alpha for masking
+            panel_surface = pygame.Surface((self.current_width, self.current_height), pygame.SRCALPHA)
+            icon_w = self.icon_size if self.icon_size is not None else 0
+            icon_h = self.icon_size if self.icon_size is not None else 0
+            self.content.draw(panel_surface, 0, 0, icon_width=icon_w, icon_height=icon_h)
+            surface.blit(panel_surface, (self.x, self.y))
 
 
 class IconButton:
-    def __init__(self, x, y_ratio, button_size, expanded_size, animation_duration=0.07, content=None, icon_path=None):
+    def __init__(self, x, y_ratio, button_size, expanded_size, animation_duration=None, content=None, icon_path=None):
         self.button_width, self.button_height = button_size
         self.expanded_width, self.expanded_height = expanded_size
         self.x = x
@@ -75,7 +116,13 @@ class IconButton:
             self.content = ExpandingPanelContent(content[0], content[1:], self.font, icon_path=icon_path)
         else:
             self.content = ExpandingPanelContent("", [], self.font, icon_path=icon_path)
-        self.expanding_panel = None  # Will be created on demand
+        # Use animation_duration if provided, else use ExpandingPanel default
+        panel_anim_duration = animation_duration if animation_duration is not None else 0.1
+        self.expanding_panel = ExpandingPanel(
+            self.x + self.button_width, int(pygame.display.get_surface().get_size()[1] * self.y_ratio),
+            self.expanded_width, self.expanded_height, self.content, icon_size=min(self.button_width, self.button_height) - 16,
+            animation_duration=panel_anim_duration
+        )
 
     def handle_event(self, event, surface):
         y = int(surface.get_size()[1] * self.y_ratio)
@@ -84,6 +131,8 @@ class IconButton:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if rect.collidepoint(*event.pos) or (self.expanded and expanded_rect.collidepoint(*event.pos)):
                 self.expanded = not self.expanded
+                if self.expanded:
+                    self.expanding_panel.start_animation()
                 return True
         return False
 
@@ -91,6 +140,15 @@ class IconButton:
         # No animation needed for this layout
         self.current_width = self.button_width
         self.current_height = self.button_height
+
+    def update_expanding_panel(self, surface):
+        y = int(surface.get_size()[1] * self.y_ratio)
+        icon_size = min(self.button_width, self.button_height) - 16
+        self.expanding_panel.x = self.x + self.button_width
+        self.expanding_panel.y = y
+        self.expanding_panel.width = self.expanded_width
+        self.expanding_panel.height = self.expanded_height
+        self.expanding_panel.icon_size = icon_size
 
     def draw(self, surface):
         y = int(surface.get_size()[1] * self.y_ratio)
@@ -111,37 +169,27 @@ class IconButton:
         except Exception:
             pass
         # Draw the expanded content area to the right using ExpandingPanel
-        if self.expanded:
-            if not self.expanding_panel:
-                self.expanding_panel = ExpandingPanel(
-                    self.x + self.button_width, y, self.expanded_width, self.expanded_height, self.content, icon_size=icon_size
-                )
-            else:
-                # Update position in case of window resize
-                self.expanding_panel.x = self.x + self.button_width
-                self.expanding_panel.y = y
-                self.expanding_panel.width = self.expanded_width
-                self.expanding_panel.height = self.expanded_height
-                self.expanding_panel.icon_size = icon_size
+        if self.expanded or self.expanding_panel.animating:
+            self.update_expanding_panel(surface)
             self.expanding_panel.draw(surface)
         return panel_rect
 
 # --- Multiple panels setup ---
 panel_configs = [
     {
-        'header': 'Supplies:',
+        'header': 'Electronics:',
         'lines': ['- Food', '- Water', '- Tools'],
         'icon_path': 'data/graphics/supplies_panel/supplies.png',
     },
     {
-        'header': 'Equipment:',
+        'header': 'Coffee:',
         'lines': ['- Radios', '- Flashlights', '- Batteries'],
-        'icon_path': 'data/graphics/supplies_panel/equipment.png',
+        'icon_path': 'data/graphics/supplies_panel/coffee.png',
     },
     {
-        'header': 'Medical:',
+        'header': 'Medicine:',
         'lines': ['- Bandages', '- Medicine', '- First Aid'],
-        'icon_path': 'data/graphics/supplies_panel/medical.png',
+        'icon_path': 'data/graphics/supplies_panel/medicine.png',
     },
     {
         'header': 'Tools:',
