@@ -12,7 +12,7 @@ UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 300
 
 
-class PanelContent:
+class ExpandingPanelContent:
     def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None):
         self.header = header
         self.lines = lines if lines is not None else []
@@ -37,6 +37,25 @@ class PanelContent:
 
 
 class ExpandingPanel:
+    def __init__(self, x, y, width, height, content, icon_size=None):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.content = content
+        self.icon_size = icon_size
+
+    def draw(self, surface):
+        content_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        pygame.draw.rect(surface, UI_BG1_COL, content_rect, border_radius=ROUNDING)
+        pygame.draw.rect(surface, UI_BORDER1_COL, content_rect, width=3, border_radius=ROUNDING)
+        # Draw content inside the expanded area
+        icon_w = self.icon_size if self.icon_size is not None else 0
+        icon_h = self.icon_size if self.icon_size is not None else 0
+        self.content.draw(surface, self.x, self.y, icon_width=icon_w, icon_height=icon_h)
+
+
+class IconButton:
     def __init__(self, x, y_ratio, button_size, expanded_size, animation_duration=0.07, content=None, icon_path=None):
         self.button_width, self.button_height = button_size
         self.expanded_width, self.expanded_height = expanded_size
@@ -50,12 +69,13 @@ class ExpandingPanel:
         self.current_height = self.button_height
         self.font = pygame.font.SysFont(None, 24)
         self.icon_path = icon_path
-        if isinstance(content, PanelContent):
+        if isinstance(content, ExpandingPanelContent):
             self.content = content
         elif isinstance(content, (list, tuple)) and content:
-            self.content = PanelContent(content[0], content[1:], self.font, icon_path=icon_path)
+            self.content = ExpandingPanelContent(content[0], content[1:], self.font, icon_path=icon_path)
         else:
-            self.content = PanelContent("", [], self.font, icon_path=icon_path)
+            self.content = ExpandingPanelContent("", [], self.font, icon_path=icon_path)
+        self.expanding_panel = None  # Will be created on demand
 
     def handle_event(self, event, surface):
         y = int(surface.get_size()[1] * self.y_ratio)
@@ -90,13 +110,20 @@ class ExpandingPanel:
             surface.blit(icon, (icon_x, icon_y))
         except Exception:
             pass
-        # Draw the expanded content area to the right
+        # Draw the expanded content area to the right using ExpandingPanel
         if self.expanded:
-            content_rect = pygame.Rect(self.x + self.button_width, y, self.expanded_width, self.expanded_height)
-            pygame.draw.rect(surface, UI_BG1_COL, content_rect, border_radius=ROUNDING)
-            pygame.draw.rect(surface, UI_BORDER1_COL, content_rect, width=3, border_radius=ROUNDING)
-            # Draw content inside the expanded area
-            self.content.draw(surface, self.x + self.button_width, y, icon_width=icon_size, icon_height=icon_size)
+            if not self.expanding_panel:
+                self.expanding_panel = ExpandingPanel(
+                    self.x + self.button_width, y, self.expanded_width, self.expanded_height, self.content, icon_size=icon_size
+                )
+            else:
+                # Update position in case of window resize
+                self.expanding_panel.x = self.x + self.button_width
+                self.expanding_panel.y = y
+                self.expanding_panel.width = self.expanded_width
+                self.expanding_panel.height = self.expanded_height
+                self.expanding_panel.icon_size = icon_size
+            self.expanding_panel.draw(surface)
         return panel_rect
 
 # --- Multiple panels setup ---
@@ -134,12 +161,12 @@ def create_panels(surface):
     screen_height = surface.get_height()
     for i, cfg in enumerate(panel_configs):
         y_ratio = SUPPLIES_PANEL_Y_RATIO + i * (panel_spacing / screen_height)
-        panel = ExpandingPanel(
+        panel = IconButton(
             SUPPLIES_PANEL_X,
             y_ratio,
             (FOLDED_WIDTH, FOLDED_HEIGHT),
             (UNFOLDED_WIDTH, UNFOLDED_HEIGHT),
-            content=PanelContent(cfg['header'], cfg['lines'], icon_path=cfg['icon_path']),
+            content=ExpandingPanelContent(cfg['header'], cfg['lines'], icon_path=cfg['icon_path']),
             icon_path=cfg['icon_path']
         )
         panels.append(panel)
