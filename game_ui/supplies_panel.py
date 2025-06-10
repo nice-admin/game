@@ -6,7 +6,7 @@ FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
 ROUNDING = 6
 SUPPLIES_PANEL_X = 0
-SUPPLIES_PANEL_Y_RATIO = 0.3
+SUPPLIES_PANEL_Y_RATIO = 0.32
 
 UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 300
@@ -30,7 +30,7 @@ class ExpandingPanelContent:
     def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None, progress_values=None):
         self.header = header
         self.lines = lines or []
-        self.font = font or get_font1(24)
+        self.font = font or get_font1(20)
         self.header_font = header_font or get_font1(36)
         self.header_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
         self.text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
@@ -50,6 +50,7 @@ class ExpandingPanelContent:
                 surface, line, progress, self.font, header_x, text_y, bar_width,
                 bar_height=20, num_cells=10, cell_spacing=2, text_color=self.text_color
             )
+            text_y += 10  # Add 10px spacing between bars
 
 
 class ExpandingPanel:
@@ -102,7 +103,7 @@ class ExpandingPanel:
 
 
 class Indicators:
-    def __init__(self, iconbutton, rect_size=10, spacing=4):
+    def __init__(self, iconbutton, rect_size=15, spacing=4):
         self.iconbutton = iconbutton
         self.rect_size = rect_size
         self.spacing = spacing
@@ -114,7 +115,7 @@ class Indicators:
         # Use progress_values if available, else full
         progresses = content.progress_values if hasattr(content, 'progress_values') else [1.0]*num
         # Position: right of the iconbutton
-        x = self.iconbutton.x + self.iconbutton.button_width + 8
+        x = self.iconbutton.x + self.iconbutton.button_width
         y0 = int(surface.get_size()[1] * self.iconbutton.y_ratio)
         total_height = num * self.rect_size + (num-1)*self.spacing if num > 0 else 0
         y = y0 + (self.iconbutton.button_height - total_height)//2
@@ -122,7 +123,6 @@ class Indicators:
             color = (80, 180, 80) if prog >= 1.0 else (180, 180, 180)
             rect = pygame.Rect(x, y + i*(self.rect_size+self.spacing), self.rect_size, self.rect_size)
             pygame.draw.rect(surface, color, rect, border_radius=2)
-            pygame.draw.rect(surface, (60,60,60), rect, width=1, border_radius=2)
 
 
 class IconButton:
@@ -210,7 +210,7 @@ class IconButton:
 panel_configs = [
     {
         'header': 'Electronics:',
-        'lines': ['Food', 'Water', 'Tools'],
+        'lines': ['Cables', 'Mouse', 'Keyboard'],
         'icon_path': 'data/graphics/supplies_panel/supplies.png',
     },
     {
@@ -220,7 +220,7 @@ panel_configs = [
     },
     {
         'header': 'Medicine:',
-        'lines': ['Bandages', 'Medicine', 'First Aid'],
+        'lines': ['Ibalgin', 'Bandages', 'PCR Test'],
         'icon_path': 'data/graphics/supplies_panel/medicine.png',
     },
     {
