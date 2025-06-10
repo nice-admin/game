@@ -155,10 +155,10 @@ class SatisfiableEntity(BaseEntity):
     _BAR_HEIGHT_RATIO = 0.15
     _BAR_DURATION_FRAMES = 300
     _BAR_REFRESH_RATE = 1
-    has_basic_bar = 1
-    has_basic_bar_hidden = 0
-    has_special_bar = 0
-    has_special_bar_hidden = 0  # New: allows hiding special bar
+    has_sat_check_bar = 1
+    has_sat_check_bar_hidden = 0
+    has_special = 0
+    has_special_hidden = 0  # New: allows hiding special bar
     special_chance = 1
     warning_hidden = 0
     is_satisfied = 0
@@ -169,10 +169,10 @@ class SatisfiableEntity(BaseEntity):
 
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.bar1 = 0.0 if self.has_basic_bar else None
-        self.bar1_timer = 0 if self.has_basic_bar else None
-        self.special = 0.0 if self.has_special_bar else None
-        self.special_timer = 0 if self.has_special_bar else None
+        self.bar1 = 0.0 if self.has_sat_check_bar else None
+        self.bar1_timer = 0 if self.has_sat_check_bar else None
+        self.special = 0.0 if self.has_special else None
+        self.special_timer = 0 if self.has_special else None
         self._progress_bar_frame_counter = 0
         self.on_spawn()
 
@@ -219,66 +219,31 @@ class SatisfiableEntity(BaseEntity):
             self._update_sat_check_bar(grid)
             self._update_special_bar(grid)
 
-<<<<<<< HEAD
-    def _update_bar1(self, grid):
-        if self.has_basic_bar:
-=======
 
 
     def _update_sat_check_bar(self, grid):
         if self.has_sat_check_bar:
->>>>>>> satisfaction-check-overhaul
             prev_initialized = self.is_initialized
             self.bar1_timer += self._BAR_REFRESH_RATE
             if self.bar1_timer >= self._BAR_DURATION_FRAMES:
                 self.bar1_timer = 0
                 if not self.is_initialized:
                     self.is_initialized = 1
-<<<<<<< HEAD
-                    self.on_initialized()  # Set power_drain when initialized
-                # Always roll for special after bar1 completes, if has_special and not currently rendering
-                if self.has_special_bar and (self.special is None and self.special_timer is None):
-                    if random.random() < getattr(self, 'special_chance', 0.1):
-                        self.special = 0.0
-                        self.special_timer = 0
-                    else:
-                        self.special = None
-                        self.special_timer = None
-                self.is_satisfied = self.do_on_satisfaction_check(grid)
-=======
                     self.on_initialized()
                 # Remove special roll logic here (now handled in satisfaction_check)
->>>>>>> satisfaction-check-overhaul
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
                     self.satisfaction_check(grid)
-<<<<<<< HEAD
-=======
                 self._set_status()
                 self.on_sat_check_finish()
->>>>>>> satisfaction-check-overhaul
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
 
-<<<<<<< HEAD
-    def _update_special(self, grid):
-        if self.has_special_bar and self.is_initialized and self.is_satisfied:
-            if not hasattr(self, '_special_spawn_attempted'):
-                if self.special is None and self.special_timer is None:
-                    if random.random() < getattr(self, 'special_chance', 0.1):
-                        self.special = 0.0
-                        self.special_timer = 0
-                    else:
-                        self.special = None
-                        self.special_timer = None
-                self._special_spawn_attempted = 1
-=======
     def _update_special_bar(self, grid):
         if self.has_special and self.is_initialized and self.is_satisfied:
             # Only progress the special bar if it is active
->>>>>>> satisfaction-check-overhaul
             if self.special is not None and self.special_timer is not None:
                 self.special_timer += self._BAR_REFRESH_RATE
                 if self.special_timer >= self._BAR_DURATION_FRAMES:
@@ -350,12 +315,6 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
-<<<<<<< HEAD
-    def do_on_satisfaction_check(self, grid):
-        return 0
-
-=======
->>>>>>> satisfaction-check-overhaul
     def satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
@@ -419,18 +378,12 @@ class ComputerEntity(SatisfiableEntity):
     has_special = 1
     special_chance = 0.5
     power_drain = 0
-<<<<<<< HEAD
-=======
     satisfaction_check_gamestate = 'is_nas_online'
     heating_multiplier = 1
->>>>>>> satisfaction-check-overhaul
 
     def on_spawn(self):
         self.is_rendering = 1 if self.special is not None else 0
 
-<<<<<<< HEAD
-    def _update_special(self, grid):
-=======
     def on_sat_check_finish(self):
         if self.is_satisfied == 1:
             gs = GameState()
@@ -442,7 +395,6 @@ class ComputerEntity(SatisfiableEntity):
 
     def on_special_finish(self):
         self.power_drain = self.power_drain / 3
->>>>>>> satisfaction-check-overhaul
         gs = GameState()
         if hasattr(gs, 'temperature'):
             gs.temperature += 0.02 * self.heating_multiplier

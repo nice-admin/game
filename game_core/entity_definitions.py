@@ -26,11 +26,7 @@ class Macbook(LaptopEntity):
     upkeep = 100
     power_drain = 50
 
-<<<<<<< HEAD
-    def satisfaction_check(self, grid):
-=======
     def on_sat_check_finish(self):
->>>>>>> satisfaction-check-overhaul
         from game_core.game_state import GameState
         gs = GameState()
         value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0
@@ -147,16 +143,9 @@ class AirConditioner(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
-<<<<<<< HEAD
-    def satisfaction_check(self, grid):
-        self.state = 'Good'
-        self.power_drain = self._intended_power_drain
-        # DEBUG: Print before and after temperature
-=======
     def on_sat_check_finish(self):
         self.is_satisfied = 1
         self.state = "Good"
->>>>>>> satisfaction-check-overhaul
         from game_core.game_state import GameState
         gs = GameState()
         if gs.temperature > 23:
