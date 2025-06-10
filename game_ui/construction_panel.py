@@ -193,7 +193,7 @@ class Background:
     DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 8 * BUTTON_SPACING + 40  # Default for 8 entity buttons
     DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 30
     ROUNDING = 12  # Default corner radius for background rounding
-    BORDER_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=2)  # Default border color (matches UI_BORDER1_COL)
+    BORDER_COLOR = UI_BORDER1_COL  # Use UI_BORDER1_COL for border color
     BORDER_WIDTH = 5
 
     def __init__(self, x=0, y=0, width=None, height=None, color=None, rounding=None, border_color=None, border_width=None, extend_below=0):

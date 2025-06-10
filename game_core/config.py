@@ -38,7 +38,7 @@ FULLSCREEN = True
 RESOLUTION = (0, 0)
 
 UI_BG1_COL = (40, 45, 50, 255)
-UI_BORDER1_COL = (100, 100, 100, 255)
+UI_BORDER1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=2) 
 TEXT1_COL = (180, 180, 180)
 GRID_BG_COL = exposure_color(UI_BG1_COL, 1.6)
 GRID_BORDER_COL = exposure_color(UI_BG1_COL, 2)

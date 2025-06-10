@@ -1,38 +1,44 @@
 class GameState:
     _instance = None
-    temperature = 23
-    game_time_seconds = 0
-    game_time_days = 0
-    total_money = 20000
-    total_upkeep = 0
-    total_power_drain = 0
-    total_breaker_strength = 0
-    total_employees = 0
-    total_risky_entities = 0
-    total_broken_entities = 0
-    is_internet_online = 1
-    is_wifi_online = 1
-    is_nas_online = 1
-    temperature = 23
-    artist_progress_required_per_shot = 15
-    render_progress_required_per_shot = 50
-    artist_progress_current = 0
-    artist_progress_goal = 0
-    render_progress_current = 0
-    render_progress_allowed = 0
-    render_progress_goal = 0
-    total_shots_finished = 0
-    total_shots_goal = 0
-    current_job_finished = 1
-    jobs_finished = 0
-    job_id = 0
-    job_budget = 0
-    current_construction_class = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(GameState, cls).__new__(cls)
+            cls._instance._initialized = False
         return cls._instance
+
+    def __init__(self):
+        if getattr(self, '_initialized', False):
+            return
+        self.game_time_seconds = 0
+        self.game_time_days = 0
+        self.total_money = 20000
+        self.total_upkeep = 0
+        self.total_power_drain = 0
+        self.total_breaker_strength = 0
+        self.total_employees = 0
+        self.total_risky_entities = 0
+        self.total_broken_entities = 0
+        self.is_internet_online = 1
+        self.is_wifi_online = 1
+        self.is_nas_online = 1
+        self.temperature = 23
+        self.office_quality = 1
+        self.artist_progress_required_per_shot = 15
+        self.render_progress_required_per_shot = 50
+        self.artist_progress_current = 0
+        self.artist_progress_goal = 0
+        self.render_progress_current = 0
+        self.render_progress_allowed = 0
+        self.render_progress_goal = 0
+        self.total_shots_finished = 0
+        self.total_shots_goal = 0
+        self.current_job_finished = 1
+        self.jobs_finished = 0
+        self.job_id = 0
+        self.job_budget = 0
+        self.current_construction_class = None
+        self._initialized = True
 
     def summarize_entities(self, grid):
         summary = []
@@ -120,6 +126,37 @@ class GameState:
             self.artist_progress_current = min(self.artist_progress_current + multiplier, self.artist_progress_goal)
         else:
             self.artist_progress_current = self.artist_progress_goal
+
+class EntityStats:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(EntityStats, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
+
+    def __init__(self):
+        if getattr(self, '_initialized', False):
+            return
+        self.reset()
+        self._initialized = True
+
+    def reset(self):
+        self.num_decor = 0
+        self.num_computers = 0
+        # Add more entity counters as needed
+
+    def update_from_grid(self, grid):
+        self.reset()
+        from game_core.entity_definitions import DecorationEntity, ComputerEntity
+        for row in grid:
+            for entity in row:
+                if isinstance(entity, DecorationEntity):
+                    self.num_decor += 1
+                if isinstance(entity, ComputerEntity):
+                    self.num_computers += 1
+        # Add more entity type checks as needed
 
 def get_totals_dict():
     return GameState().get_totals_dict()

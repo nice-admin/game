@@ -4,6 +4,7 @@ import time
 from game_core.game_state import GameState
 import game_other.audio
 import pygame
+from game_core.entity_definitions import DecorationEntity, ComputerEntity
 
 class GamePlayEvent:
     def trigger(self):
@@ -201,6 +202,46 @@ class ClimateControl:
                     self._direction = 1
                     self._pick_new_target(state.temperature)
 
+class OfficeQualityCheck(GamePlayEvent):
+    INITIAL_DELAY = 5  # seconds
+    INTERVAL = 5  # seconds
+    def __init__(self):
+        self._started = False
+        self._thread = None
+
+    def trigger(self):
+        if not self._started:
+            self._started = True
+            threading.Thread(target=self._run_with_delay, daemon=True).start()
+        return True
+
+    def _run_with_delay(self):
+        time.sleep(self.INITIAL_DELAY)
+        from game_core.game_state import EntityStats
+        while True:
+            state = GameState()
+            stats = EntityStats()
+            num_decor = stats.num_decor
+            num_computers = stats.num_computers
+            if num_computers == 0:
+                office_quality = 0
+            elif num_decor > num_computers:
+                office_quality = 5
+            elif num_decor == num_computers:
+                office_quality = 4
+            elif num_computers >= 5 * num_decor:
+                office_quality = 0
+            elif num_computers >= 4 * num_decor:
+                office_quality = 1
+            elif num_computers >= 3 * num_decor:
+                office_quality = 2
+            elif num_computers >= 2 * num_decor:
+                office_quality = 3
+            else:
+                office_quality = 0
+            state.office_quality = office_quality
+            time.sleep(self.INTERVAL)
+
 RANDOM_GAMEPLAY_EVENTS = [
     InternetOutage(),
     # NasCrashed(),
@@ -210,14 +251,13 @@ RANDOM_GAMEPLAY_EVENTS = [
 DETERMINISTIC_GAMEPLAY_EVENTS = [
     JobArrived(),
     JobFinished(),
+    OfficeQualityCheck(),
     # Add more deterministic situation instances here...
 ]
 
 GAMEPLAY_EVENTS = RANDOM_GAMEPLAY_EVENTS + DETERMINISTIC_GAMEPLAY_EVENTS
 
-START_DELAY = 10  # seconds before situation manager starts
-
-# Start random events in a background thread
+START_DELAY = 10
 
 def start_random_gameplay_events():
     def random_event_loop():
@@ -229,15 +269,20 @@ def start_random_gameplay_events():
     thread = threading.Thread(target=random_event_loop, daemon=True)
     thread.start()
 
-# Deterministic events are checked every second in the main/game loop or a separate thread
-
 def start_deterministic_gameplay_events():
     def deterministic_event_loop():
         time.sleep(2)  # Wait 2 seconds at game start
+        counter = 0
         while True:
             for event in DETERMINISTIC_GAMEPLAY_EVENTS:
-                event.trigger()
+                # For OfficeQualityCheck, only trigger every 30 seconds
+                if isinstance(event, OfficeQualityCheck):
+                    if counter % 30 == 0:
+                        event.trigger()
+                else:
+                    event.trigger()
             time.sleep(1)  # Tick every second
+            counter += 1
     thread = threading.Thread(target=deterministic_event_loop, daemon=True)
     thread.start()
 
