@@ -174,6 +174,10 @@ class SatisfiableEntity(BaseEntity):
         self.special = 0.0 if self.has_special_bar else None
         self.special_timer = 0 if self.has_special_bar else None
         self._progress_bar_frame_counter = 0
+        self.on_spawn()
+
+    def on_spawn(self):
+        pass
 
     def count_entities_in_proximity(self, grid, entity_type, radius, predicate=None):
         count = 0
@@ -421,8 +425,7 @@ class ComputerEntity(SatisfiableEntity):
     heating_multiplier = 1
 >>>>>>> satisfaction-check-overhaul
 
-    def __init__(self, x, y):
-        super().__init__(x, y)
+    def on_spawn(self):
         self.is_rendering = 1 if self.special is not None else 0
 
 <<<<<<< HEAD
@@ -487,18 +490,28 @@ class MonitorEntity(SatisfiableEntity):
 
 class PersonEntity(SatisfiableEntity):
     is_person = 1
-    happiness = 10
+    happiness = 0
+    hunger = 0
+    toilet_need = 0
+    has_coffee = 0
     NAMES = [
         "Marek Sosna",
         "Radim Zeifart",
-        "Šimon Lánský",
-        "Ondřej Skalník",
-        "Jaroslav Novotný",
-        "Jan Reeh"
+        "Simon Lansky",
+        "Ondrej Skalnik",
+        "Jaroslav Novotny",
+        "Jan Reeh",
+        "Martina Svojikova",
+        "Jachym Nadvornik",
+        "Petr Kollarcik"
     ]
-    def __init__(self, x, y):
-        super().__init__(x, y)
-        import random
+    def on_spawn(self):
         self.person_name = random.choice(self.NAMES)
         self.display_name = getattr(self, 'display_name', 'Person')
-        # Add more initialization if needed
+        self.happiness = random.randint(1, 10)
+        self.hunger = random.randint(1, 10)
+        self.toilet_need = random.randint(1, 10)
+
+    def on_sat_check_finish(self):
+        if hasattr(self, 'hunger'):
+            self.hunger = max(0, self.hunger - 0.1)
