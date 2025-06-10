@@ -139,8 +139,6 @@ class BaseEntity:
             play_build_sound()
 
     def on_initialized(self):
-
-        """Call this when the entity becomes initialized to set power_drain to intended value."""
         self.power_drain = self._intended_power_drain
 
 # region SatisfiableEntity
@@ -214,18 +212,25 @@ class SatisfiableEntity(BaseEntity):
         self._progress_bar_frame_counter += 1
         if self._progress_bar_frame_counter >= self._BAR_REFRESH_RATE:
             self._progress_bar_frame_counter = 0
-            self._update_bar1(grid)
-            self._update_special(grid)
-        self._set_status()
+            self._update_sat_check_bar(grid)
+            self._update_special_bar(grid)
 
+<<<<<<< HEAD
     def _update_bar1(self, grid):
         if self.has_basic_bar:
+=======
+
+
+    def _update_sat_check_bar(self, grid):
+        if self.has_sat_check_bar:
+>>>>>>> satisfaction-check-overhaul
             prev_initialized = self.is_initialized
             self.bar1_timer += self._BAR_REFRESH_RATE
             if self.bar1_timer >= self._BAR_DURATION_FRAMES:
                 self.bar1_timer = 0
                 if not self.is_initialized:
                     self.is_initialized = 1
+<<<<<<< HEAD
                     self.on_initialized()  # Set power_drain when initialized
                 # Always roll for special after bar1 completes, if has_special and not currently rendering
                 if self.has_special_bar and (self.special is None and self.special_timer is None):
@@ -236,14 +241,24 @@ class SatisfiableEntity(BaseEntity):
                         self.special = None
                         self.special_timer = None
                 self.is_satisfied = self.do_on_satisfaction_check(grid)
+=======
+                    self.on_initialized()
+                # Remove special roll logic here (now handled in satisfaction_check)
+>>>>>>> satisfaction-check-overhaul
                 entity_type = getattr(self, 'satisfaction_check_type', None)
                 radius = getattr(self, 'satisfaction_check_radius', 2)
                 if entity_type:
                     self.satisfaction_check(grid)
+<<<<<<< HEAD
+=======
+                self._set_status()
+                self.on_sat_check_finish()
+>>>>>>> satisfaction-check-overhaul
             self.bar1 = self.bar1_timer / self._BAR_DURATION_FRAMES
         else:
             self.bar1 = None
 
+<<<<<<< HEAD
     def _update_special(self, grid):
         if self.has_special_bar and self.is_initialized and self.is_satisfied:
             if not hasattr(self, '_special_spawn_attempted'):
@@ -255,17 +270,17 @@ class SatisfiableEntity(BaseEntity):
                         self.special = None
                         self.special_timer = None
                 self._special_spawn_attempted = 1
+=======
+    def _update_special_bar(self, grid):
+        if self.has_special and self.is_initialized and self.is_satisfied:
+            # Only progress the special bar if it is active
+>>>>>>> satisfaction-check-overhaul
             if self.special is not None and self.special_timer is not None:
                 self.special_timer += self._BAR_REFRESH_RATE
                 if self.special_timer >= self._BAR_DURATION_FRAMES:
-                    self.special_timer = 0
-                    # When special finishes, roll again for another one or drop it
-                    if random.random() < getattr(self, 'special_chance', 0.1):
-                        self.special = 0.0
-                        self.special_timer = 0
-                    else:
-                        self.special = None
-                        self.special_timer = None
+                    self.special_timer = None
+                    self.special = None
+                    self.on_special_finish()  # Fire on_special when special completes
                 else:
                     self.special = self.special_timer / self._BAR_DURATION_FRAMES
         else:
@@ -331,9 +346,12 @@ class SatisfiableEntity(BaseEntity):
         fill_width = int(bar_width * self.special)
         pygame.draw.rect(surface, self._SPECIAL_COL_FILL, (x, y, fill_width, bar_height))
 
+<<<<<<< HEAD
     def do_on_satisfaction_check(self, grid):
         return 0
 
+=======
+>>>>>>> satisfaction-check-overhaul
     def satisfaction_check(self, grid):
         gs = GameState()
         # Existing logic
@@ -355,16 +373,34 @@ class SatisfiableEntity(BaseEntity):
                 count = self.count_entities_in_proximity(grid, entity_type, radius, predicate=lambda e: predicate(self, e))
             else:
                 count = self.count_entities_in_proximity(grid, entity_type, radius)
-            if hasattr(self, 'on_satisfaction_check'):
-                self.on_satisfaction_check(count, threshold)
-                return
             if count < threshold:
                 self.is_satisfied = 0
                 self.power_drain = 0
                 return
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
-        self.power_drain = self._intended_power_drain
+        # Roll for special bar if applicable
+        if getattr(self, 'has_special', 0):
+            if getattr(self, 'special', None) is None and getattr(self, 'special_timer', None) is None:
+                if random.random() < getattr(self, 'special_chance', 0.1):
+                    self.special = 0.0
+                    self.special_timer = 0
+                    self.on_special_start()
+                else:
+                    self.special = None
+                    self.special_timer = None
+
+    def on_sat_check_finish(self):
+        pass
+
+    def on_special_finish(self):
+        pass
+
+    def on_special_start(self):
+        # Only multiply if not already multiplied (avoid stacking)
+        if self.power_drain == self._intended_power_drain:
+            self.power_drain = self._intended_power_drain * 3
+        # If already multiplied, do nothing
 
 # region Custom classes
 
@@ -379,32 +415,38 @@ class ComputerEntity(SatisfiableEntity):
     has_special = 1
     special_chance = 0.5
     power_drain = 0
+<<<<<<< HEAD
+=======
+    satisfaction_check_gamestate = 'is_nas_online'
+    heating_multiplier = 1
+>>>>>>> satisfaction-check-overhaul
 
     def __init__(self, x, y):
         super().__init__(x, y)
         self.is_rendering = 1 if self.special is not None else 0
 
+<<<<<<< HEAD
     def _update_special(self, grid):
+=======
+    def on_sat_check_finish(self):
+        if self.is_satisfied == 1:
+            gs = GameState()
+            if hasattr(gs, 'temperature'):
+                gs.temperature += 0.005 * self.heating_multiplier
+
+    def on_special_start(self):
+        self.power_drain = self.power_drain * 3
+
+    def on_special_finish(self):
+        self.power_drain = self.power_drain / 3
+>>>>>>> satisfaction-check-overhaul
         gs = GameState()
-        prev_special = self.special if hasattr(self, 'special') else None
-        prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
-        super()._update_special(grid)
-        # Update is_rendering based on special presence
-        self.is_rendering = 1 if self.special is not None else 0
-        # Set power_drain to 3x intended if special is active, else normal logic
-        if self.special is not None:
-            self.power_drain = self._intended_power_drain * 3
-        elif self.is_satisfied:
-            self.power_drain = self._intended_power_drain
-        else:
-            self.power_drain = 0
-        # Increment render_progress_current if special just completed (allow for float rounding or special drop)
-        if prev_special is not None and prev_special >= 0.99:
-            # If special is now gone or reset to 0, count as completed
-            if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
-                gs = GameState()
-                if gs.render_progress_current < gs.render_progress_allowed:
-                    gs.render_progress_current += 1
+        if hasattr(gs, 'temperature'):
+            gs.temperature += 0.02 * self.heating_multiplier
+        # Increment render_progress_current if not at max
+        if gs.render_progress_current < gs.render_progress_allowed:
+            gs.render_progress_current += 1
+
 
 class LaptopEntity(SatisfiableEntity):
     is_initialized = 1

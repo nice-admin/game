@@ -9,6 +9,7 @@ class ComputerT1(ComputerEntity):
     display_name = 'Basic Computer'
     power_drain = 200
     upkeep = 50
+    heating_multiplier = 2
 
 
 class ComputerT2(ComputerEntity):
@@ -17,6 +18,7 @@ class ComputerT2(ComputerEntity):
     tier = 2
     power_drain = 400
     upkeep = 100
+    heating_multiplier = 1
 
 class Macbook(LaptopEntity):
     _icon = resource_path("data/graphics/macbook.png")
@@ -24,7 +26,11 @@ class Macbook(LaptopEntity):
     upkeep = 100
     power_drain = 50
 
+<<<<<<< HEAD
     def satisfaction_check(self, grid):
+=======
+    def on_sat_check_finish(self):
+>>>>>>> satisfaction-check-overhaul
         from game_core.game_state import GameState
         gs = GameState()
         value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0
@@ -59,20 +65,13 @@ class Artist(PersonEntity):
     has_project_manager = 0
     upkeep = 2000
 
-    def _update_special(self, grid):
-        prev_special = self.special if hasattr(self, 'special') else None
-        prev_special_timer = self.special_timer if hasattr(self, 'special_timer') else None
-        super()._update_special(grid)
-        # Increment artist_progress_current if special just completed
-        if prev_special is not None and prev_special >= 0.99:
-            if (self.special is None or (self.special == 0.0 and self.special_timer == 0)):
-                gs = GameState()
-                multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
-                gs.increment_current_artist_progress(multiplier=multiplier)
-                gs.cap_render_progress_allowed()
+    def on_special_finish(self):
+        gs = GameState()
+        multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
+        gs.increment_current_artist_progress(multiplier=multiplier)
+        gs.calculate_render_progress_allowed()
 
     def check_project_manager_proximity(self, grid):
-        # Check for ProjectManager within 4x4 area centered on artist
         found = 0
         for row in grid:
             for entity in row:
@@ -135,18 +134,21 @@ class AirConditioner(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 5000
 
+<<<<<<< HEAD
     def satisfaction_check(self, grid):
         self.state = 'Good'
         self.power_drain = self._intended_power_drain
         # DEBUG: Print before and after temperature
+=======
+    def on_sat_check_finish(self):
+        self.is_satisfied = 1
+        self.state = "Good"
+>>>>>>> satisfaction-check-overhaul
         from game_core.game_state import GameState
         gs = GameState()
-        print(f"[AC] Before: gs.temperature={getattr(gs, 'temperature', None)}")
-        if hasattr(gs, 'temperature'):
-            if gs.temperature > 23:
-                gs.temperature = max(23, gs.temperature - 0.25)
-        print(f"[AC] After: gs.temperature={getattr(gs, 'temperature', None)}")
-        return 1
+        if gs.temperature > 23:
+            gs.temperature = max(23, gs.temperature - 0.25)
+
 
 
 class Humidifier(SatisfiableEntity):
