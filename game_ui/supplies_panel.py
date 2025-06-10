@@ -12,6 +12,34 @@ UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 300
 
 
+class ProgressBarWithLabel:
+    def __init__(self, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0)):
+        self.label = label
+        self.progress = progress
+        self.font = font
+        self.x = x
+        self.y = y
+        self.bar_width = bar_width
+        self.bar_height = bar_height
+        self.num_cells = num_cells
+        self.cell_spacing = cell_spacing
+        self.text_color = text_color
+
+    def draw(self, surface):
+        filled_cells = int(self.num_cells * max(0.0, min(self.progress, 1.0)) + 0.0001)
+        label_text = f"{filled_cells} / {self.num_cells} {self.label}"
+        text_surf = self.font.render(label_text, True, self.text_color)
+        surface.blit(text_surf, (self.x, self.y))
+        bar_x = self.x
+        bar_y = self.y + text_surf.get_height() + 2
+        cell_width = (self.bar_width - (self.num_cells - 1) * self.cell_spacing) // self.num_cells
+        for i in range(self.num_cells):
+            cell_x = bar_x + i * (cell_width + self.cell_spacing)
+            color = (80, 180, 80) if i < filled_cells else (180, 180, 180)
+            pygame.draw.rect(surface, color, (cell_x, bar_y, cell_width, self.bar_height), border_radius=2)
+        return bar_y + self.bar_height + 10  # next y
+
+
 class ExpandingPanelContent:
     def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None, progress_values=None):
         self.header = header
@@ -31,20 +59,23 @@ class ExpandingPanelContent:
         surface.blit(header_surf, (header_x, header_y))
         # Draw lines below, left-aligned with header
         text_y = header_y + header_surf.get_height() + 12
+        bar_width = int(UNFOLDED_WIDTH * 0.92)
         for idx, line in enumerate(self.lines):
-            text_surf = self.font.render(line, True, self.text_color)
-            surface.blit(text_surf, (header_x, text_y))
-            # Draw progress bar next to text
-            bar_x = header_x + 160
-            bar_y = text_y
-            bar_width = 200
-            bar_height = 20
-            pygame.draw.rect(surface, (180, 180, 180), (bar_x, bar_y, bar_width, bar_height), border_radius=6)
-            # Progress fill
+            # Calculate value for the bar
             progress = self.progress_values[idx] if idx < len(self.progress_values) else 1.0
-            fill_width = int(bar_width * max(0.0, min(progress, 1.0)))
-            pygame.draw.rect(surface, (80, 180, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=6)
-            text_y += max(text_surf.get_height(), bar_height) + 10
+            bar = ProgressBarWithLabel(
+                label=line,
+                progress=progress,
+                font=self.font,
+                x=header_x,
+                y=text_y,
+                bar_width=bar_width,
+                bar_height=20,
+                num_cells=10,
+                cell_spacing=2,
+                text_color=self.text_color
+            )
+            text_y = bar.draw(surface)
 
 
 class ExpandingPanel:
@@ -178,27 +209,27 @@ class IconButton:
 panel_configs = [
     {
         'header': 'Electronics:',
-        'lines': ['- Food', '- Water', '- Tools'],
+        'lines': ['Food', 'Water', 'Tools'],
         'icon_path': 'data/graphics/supplies_panel/supplies.png',
     },
     {
         'header': 'Coffee:',
-        'lines': ['- Radios', '- Flashlights', '- Batteries'],
+        'lines': ['Coffe Beans', 'Milk', 'Sugar'],
         'icon_path': 'data/graphics/supplies_panel/coffee.png',
     },
     {
         'header': 'Medicine:',
-        'lines': ['- Bandages', '- Medicine', '- First Aid'],
+        'lines': ['Bandages', 'Medicine', 'First Aid'],
         'icon_path': 'data/graphics/supplies_panel/medicine.png',
     },
     {
         'header': 'Tools:',
-        'lines': ['- Hammer', '- Wrench', '- Screwdriver'],
+        'lines': ['Hammer', 'Wrench', 'Screwdriver'],
         'icon_path': 'data/graphics/supplies_panel/tools.png',
     },
     {
         'header': 'Misc:',
-        'lines': ['- Rope', '- Tape', '- Glue'],
+        'lines': ['Rope', 'Tape', 'Glue'],
         'icon_path': 'data/graphics/supplies_panel/misc.png',
     },
 ]
