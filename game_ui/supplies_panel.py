@@ -1,6 +1,7 @@
 import pygame
 pygame.font.init()
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL, BASE_COL, adjust_color, get_font1, resource_path
+from game_core.game_state import GameState, SUPPLIES_MAX
 
 FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
@@ -19,9 +20,21 @@ def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width
     surface.blit(text_surf, (x, y))
     bar_y = y + text_surf.get_height() + 2
     cell_w = (bar_width - (num_cells - 1) * cell_spacing) // num_cells
+    # Use the same gradient as indicators
+    def get_gradient_color(progress):
+        if progress <= 0.5:
+            r = 255
+            g = int(255 * (progress / 0.5))
+            b = 0
+        else:
+            r = int(255 * (1 - (progress - 0.5) / 0.5))
+            g = 255
+            b = 0
+        return (r, g, b)
+    fill_color = get_gradient_color(max(0.0, min(progress, 1.0)))
     for i in range(num_cells):
         cell_x = x + i * (cell_w + cell_spacing)
-        color = (80, 180, 80) if i < filled else (180, 180, 180)
+        color = fill_color if i < filled else (180, 180, 180)
         pygame.draw.rect(surface, color, (cell_x, bar_y, cell_w, bar_height), border_radius=2)
     return bar_y + bar_height + 10
 
@@ -108,6 +121,20 @@ class Indicators:
         self.rect_size = rect_size
         self.spacing = spacing
 
+    def get_gradient_color(self, progress):
+        # 0.0 = red, 0.5 = yellow, 1.0 = green
+        if progress <= 0.5:
+            # Red to yellow
+            r = 255
+            g = int(255 * (progress / 0.5))
+            b = 0
+        else:
+            # Yellow to green
+            r = int(255 * (1 - (progress - 0.5) / 0.5))
+            g = 255
+            b = 0
+        return (r, g, b)
+
     def draw(self, surface):
         # Get the number of bars and their fullness from the content
         content = self.iconbutton.content
@@ -120,7 +147,7 @@ class Indicators:
         total_height = num * self.rect_size + (num-1)*self.spacing if num > 0 else 0
         y = y0 + (self.iconbutton.button_height - total_height)//2
         for i, prog in enumerate(progresses):
-            color = (80, 180, 80) if prog >= 1.0 else (180, 180, 180)
+            color = self.get_gradient_color(max(0.0, min(prog, 1.0)))
             rect = pygame.Rect(x, y + i*(self.rect_size+self.spacing), self.rect_size, self.rect_size)
             pygame.draw.rect(surface, color, rect, border_radius=2)
 
@@ -234,18 +261,43 @@ panel_configs = [
     },
 ]
 
+def get_panel_progress_values(header, lines):
+    gs = GameState()
+    # Map headers/lines to GameState attributes
+    if header == 'Electronics:':
+        attrs = ['total_cables', 'total_mouses', 'total_keyboards']
+    elif header == 'Coffee:':
+        attrs = ['total_coffe_beans', 'total_milk', 'total_sugar']
+    elif header == 'Medicine:':
+        attrs = ['total_ibalgin', 'total_bandages', 'total_pcr_test']
+    elif header == 'Tools:':
+        attrs = ['total_hammer', 'total_wrench', 'total_screwdriver']
+    elif header == 'Misc:':
+        attrs = ['total_rope', 'total_tape', 'total_glue']
+    else:
+        attrs = [None] * len(lines)
+    values = []
+    for attr in attrs:
+        if attr and hasattr(gs, attr):
+            val = getattr(gs, attr, 0)
+            values.append(val / SUPPLIES_MAX)
+        else:
+            values.append(1.0)
+    return values
+
 def create_panels(surface):
     panels = []
     panel_spacing = FOLDED_HEIGHT * 1.1
     screen_height = surface.get_height()
     for i, cfg in enumerate(panel_configs):
         y_ratio = SUPPLIES_PANEL_Y_RATIO + i * (panel_spacing / screen_height)
+        progress_values = get_panel_progress_values(cfg['header'], cfg['lines'])
         panel = IconButton(
             SUPPLIES_PANEL_X,
             y_ratio,
             (FOLDED_WIDTH, FOLDED_HEIGHT),
             (UNFOLDED_WIDTH, UNFOLDED_HEIGHT),
-            content=ExpandingPanelContent(cfg['header'], cfg['lines'], icon_path=cfg['icon_path']),
+            content=ExpandingPanelContent(cfg['header'], cfg['lines'], icon_path=cfg['icon_path'], progress_values=progress_values),
             icon_path=cfg['icon_path']
         )
         panels.append(panel)
