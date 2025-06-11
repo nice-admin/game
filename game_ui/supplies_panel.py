@@ -321,6 +321,7 @@ def create_panels(surface):
             content=ExpandingPanelContent(cfg['header'], labels, icon_path=cfg['icon_path'], progress_values=progress_values, value_pairs=value_pairs),
             icon_path=cfg['icon_path']
         )
+        panel.lines_config = cfg['lines']  # Store the original config for updates
         panels.append(panel)
     return panels
 
@@ -352,10 +353,23 @@ def update_supplies_panel_animation():
     for panel in panels:
         panel.update_animation()
 
+def update_panel_contents():
+    """
+    Update each panel's progress_values and value_pairs from the current GameState.
+    """
+    for panel in panels:
+        lines = getattr(panel, 'lines_config', None)
+        if lines is not None:
+            progress_values, value_pairs = get_panel_progress_and_values(lines)
+            if hasattr(panel, 'content'):
+                panel.content.progress_values = progress_values
+                panel.content.value_pairs = value_pairs
+
 def draw_supplies_panel(surface):
     global panels
     if not panels or len(panels) != len(panel_configs):
         panels = create_panels(surface)
+    update_panel_contents()
     rects = []
     for panel in panels:
         rects.append(panel.draw(surface))
