@@ -467,3 +467,8 @@ class PersonEntity(SatisfiableEntity):
     def on_sat_check_finish(self):
         if hasattr(self, 'hunger'):
             self.hunger = max(0, self.hunger - 0.1)
+        # Roll random chance to decrease global singleton total_coffee_beans by 1
+        gs = GameState()
+        if hasattr(gs, 'total_coffee_beans'):
+            if gs.total_coffee_beans > 0 and random.random() < 0.1:
+                gs.total_coffee_beans -= 1

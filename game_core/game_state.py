@@ -1,7 +1,7 @@
 import random
 
-SUPPLIES_MIN = 4
-SUPPLIES_MAX = 9
+SUPPLIES_MIN = 2
+SUPPLIES_MAX = 8
 
 class GameState:
     _instance = None
@@ -49,9 +49,12 @@ class GameState:
         self.total_cables = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
         self.total_mouses = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
         self.total_keyboards = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_coffe_beans = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_coffee_beans = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
         self.total_milk = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
         self.total_sugar = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_ibalgin = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_bandages = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_pcr_tests = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
 
     def summarize_entities(self, grid):
         summary = []

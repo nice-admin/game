@@ -1,6 +1,6 @@
 import pygame
 from game_core.game_state import GameState
-from game_core.config import FONT1, CURRENCY_SYMBOL
+from game_core.config import FONT1, CURRENCY_SYMBOL, BASE_COL, adjust_color
     
 class NameLabel:
     def __init__(self, display_name, font, pad_x=10, pad_y=6):
@@ -35,7 +35,7 @@ class DetailLabel:
         surface.blit(self.surf, (x + self.pad_x, y + self.pad_y))
 
 class EntityInfo:
-    BG_COL = (0, 0, 0, 60)  # Semi-transparent black
+    BG_COL = (*adjust_color(BASE_COL, white_factor=0.0, exposure=1.4)[:3], 190)  # Themed background color, 50% opacity
     BG_ROUNDING = 5         # Border radius for background rectangle
     FONT_SIZE = 15          # Default font size (can be scaled)
     margin_from_top = 0     # Margin from top of background to NameLabel
