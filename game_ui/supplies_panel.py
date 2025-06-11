@@ -13,9 +13,13 @@ UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 270
 
 
-def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0)):
+def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0), value=None, max_value=None):
     filled = int(num_cells * max(0.0, min(progress, 1.0)) + 0.0001)
-    text = f"{filled} / {num_cells} {label}"
+    # Show actual value/max if provided, else fallback to filled/num_cells
+    if value is not None and max_value is not None:
+        text = f"{value} / {max_value} {label}"
+    else:
+        text = f"{filled} / {num_cells} {label}"
     text_surf = font.render(text, True, text_color)
     surface.blit(text_surf, (x, y))
     bar_y = y + text_surf.get_height() + 2
@@ -41,7 +45,7 @@ def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width
 
 
 class ExpandingPanelContent:
-    def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None, progress_values=None):
+    def __init__(self, header, lines=None, font=None, header_font=None, icon_path=None, progress_values=None, value_pairs=None):
         self.header = header
         self.lines = lines or []
         self.font = font or get_font1(20)
@@ -50,6 +54,7 @@ class ExpandingPanelContent:
         self.text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
         self.icon_path = icon_path
         self.progress_values = progress_values or [1.0] * len(self.lines)
+        self.value_pairs = value_pairs or [(None, None)] * len(self.lines)
 
     def draw(self, surface, x, y, icon_width=0, icon_height=0):
         header_x = x + 20
@@ -60,9 +65,11 @@ class ExpandingPanelContent:
         bar_width = int(UNFOLDED_WIDTH * 0.92)
         for idx, line in enumerate(self.lines):
             progress = self.progress_values[idx] if idx < len(self.progress_values) else 1.0
+            value, max_value = self.value_pairs[idx] if idx < len(self.value_pairs) else (None, None)
             text_y = draw_progress_bar_with_label(
                 surface, line, progress, self.font, header_x, text_y, bar_width,
-                bar_height=20, num_cells=10, cell_spacing=2, text_color=self.text_color
+                bar_height=20, num_cells=10, cell_spacing=2, text_color=self.text_color,
+                value=value, max_value=max_value
             )
             text_y += 10  # Add 10px spacing between bars
 
@@ -282,17 +289,21 @@ panel_configs = [
     },
 ]
 
-def get_panel_progress_values(lines):
+def get_panel_progress_and_values(lines):
     gs = GameState()
-    values = []
+    progress_values = []
+    value_pairs = []
+    fixed_max = 10
     for line in lines:
         attr = line.get('attr')
         if attr and hasattr(gs, attr):
             val = getattr(gs, attr, 0)
-            values.append(val / SUPPLIES_MAX)
+            progress_values.append(val / fixed_max)
+            value_pairs.append((val, fixed_max))
         else:
-            values.append(1.0)
-    return values
+            progress_values.append(1.0)
+            value_pairs.append((None, fixed_max))
+    return progress_values, value_pairs
 
 def create_panels(surface):
     panels = []
@@ -300,14 +311,14 @@ def create_panels(surface):
     screen_height = surface.get_height()
     for i, cfg in enumerate(panel_configs):
         y_ratio = SUPPLIES_PANEL_Y_RATIO + i * (panel_spacing / screen_height)
-        progress_values = get_panel_progress_values(cfg['lines'])
+        progress_values, value_pairs = get_panel_progress_and_values(cfg['lines'])
         labels = [line['label'] for line in cfg['lines']]
         panel = IconButton(
             SUPPLIES_PANEL_X,
             y_ratio,
             (FOLDED_WIDTH, FOLDED_HEIGHT),
             (UNFOLDED_WIDTH, UNFOLDED_HEIGHT),
-            content=ExpandingPanelContent(cfg['header'], labels, icon_path=cfg['icon_path'], progress_values=progress_values),
+            content=ExpandingPanelContent(cfg['header'], labels, icon_path=cfg['icon_path'], progress_values=progress_values, value_pairs=value_pairs),
             icon_path=cfg['icon_path']
         )
         panels.append(panel)
