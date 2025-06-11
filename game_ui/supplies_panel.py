@@ -1,6 +1,6 @@
 import pygame
 pygame.font.init()
-from game_core.config import UI_BG1_COL, UI_BORDER1_COL, BASE_COL, adjust_color, get_font1
+from game_core.config import UI_BG1_COL, UI_BORDER1_COL, BASE_COL, adjust_color, get_font1, resource_path
 
 FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
@@ -186,8 +186,7 @@ class IconButton:
         panel_rect = pygame.Rect(self.x, y, self.button_width, self.button_height)
         pygame.draw.rect(surface, UI_BG1_COL, panel_rect, border_radius=ROUNDING)
         pygame.draw.rect(surface, UI_BORDER1_COL, panel_rect, width=3, border_radius=ROUNDING)
-        from game_core.config import resource_path
-        icon_path = self.icon_path or resource_path('data/graphics/supplies_panel/supplies.png')
+        icon_path = resource_path(self.icon_path) if self.icon_path else resource_path('data/graphics/supplies_panel/supplies.png')
         icon = None
         icon_size = min(self.button_width, self.button_height) - 16
         icon_x = self.x + (self.button_width - icon_size) // 2
