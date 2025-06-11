@@ -10,7 +10,7 @@ SUPPLIES_PANEL_X = 0
 SUPPLIES_PANEL_Y_RATIO = 0.32
 
 UNFOLDED_WIDTH = 500
-UNFOLDED_HEIGHT = 300
+UNFOLDED_HEIGHT = 270
 
 
 def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0)):
@@ -32,9 +32,10 @@ def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width
             b = 0
         return (r, g, b)
     fill_color = get_gradient_color(max(0.0, min(progress, 1.0)))
+    empty_color = adjust_color(BASE_COL, white_factor=0.0, exposure=2)
     for i in range(num_cells):
         cell_x = x + i * (cell_w + cell_spacing)
-        color = fill_color if i < filled else (180, 180, 180)
+        color = fill_color if i < filled else empty_color
         pygame.draw.rect(surface, color, (cell_x, bar_y, cell_w, bar_height), border_radius=2)
     return bar_y + bar_height + 10
 
@@ -236,48 +237,56 @@ class IconButton:
 panel_configs = [
     {
         'header': 'Electronics:',
-        'lines': ['Cables', 'Mouse', 'Keyboard'],
+        'lines': [
+            {'label': 'Cables', 'attr': 'total_cables'},
+            {'label': 'Mouse', 'attr': 'total_mouses'},
+            {'label': 'Keyboard', 'attr': 'total_keyboards'},
+        ],
         'icon_path': 'data/graphics/supplies_panel/supplies.png',
     },
     {
         'header': 'Coffee:',
-        'lines': ['Coffe Beans', 'Milk', 'Sugar'],
+        'lines': [
+            {'label': 'Coffe Beans', 'attr': 'total_coffe_beans'},
+            {'label': 'Milk', 'attr': 'total_milk'},
+            {'label': 'Sugar', 'attr': 'total_sugar'},
+        ],
         'icon_path': 'data/graphics/supplies_panel/coffee.png',
     },
     {
         'header': 'Medicine:',
-        'lines': ['Ibalgin', 'Bandages', 'PCR Test'],
+        'lines': [
+            {'label': 'Ibalgin', 'attr': 'total_ibalgin'},
+            {'label': 'Bandages', 'attr': 'total_bandages'},
+            {'label': 'PCR Test', 'attr': 'total_pcr_test'},
+        ],
         'icon_path': 'data/graphics/supplies_panel/medicine.png',
     },
     {
         'header': 'Tools:',
-        'lines': ['Hammer', 'Wrench', 'Screwdriver'],
+        'lines': [
+            {'label': 'Hammer', 'attr': 'total_hammer'},
+            {'label': 'Wrench', 'attr': 'total_wrench'},
+            {'label': 'Screwdriver', 'attr': 'total_screwdriver'},
+        ],
         'icon_path': 'data/graphics/supplies_panel/tools.png',
     },
     {
         'header': 'Misc:',
-        'lines': ['Rope', 'Tape', 'Glue'],
+        'lines': [
+            {'label': 'Rope', 'attr': 'total_rope'},
+            {'label': 'Tape', 'attr': 'total_tape'},
+            {'label': 'Glue', 'attr': 'total_glue'},
+        ],
         'icon_path': 'data/graphics/supplies_panel/misc.png',
     },
 ]
 
-def get_panel_progress_values(header, lines):
+def get_panel_progress_values(lines):
     gs = GameState()
-    # Map headers/lines to GameState attributes
-    if header == 'Electronics:':
-        attrs = ['total_cables', 'total_mouses', 'total_keyboards']
-    elif header == 'Coffee:':
-        attrs = ['total_coffe_beans', 'total_milk', 'total_sugar']
-    elif header == 'Medicine:':
-        attrs = ['total_ibalgin', 'total_bandages', 'total_pcr_test']
-    elif header == 'Tools:':
-        attrs = ['total_hammer', 'total_wrench', 'total_screwdriver']
-    elif header == 'Misc:':
-        attrs = ['total_rope', 'total_tape', 'total_glue']
-    else:
-        attrs = [None] * len(lines)
     values = []
-    for attr in attrs:
+    for line in lines:
+        attr = line.get('attr')
         if attr and hasattr(gs, attr):
             val = getattr(gs, attr, 0)
             values.append(val / SUPPLIES_MAX)
@@ -291,13 +300,14 @@ def create_panels(surface):
     screen_height = surface.get_height()
     for i, cfg in enumerate(panel_configs):
         y_ratio = SUPPLIES_PANEL_Y_RATIO + i * (panel_spacing / screen_height)
-        progress_values = get_panel_progress_values(cfg['header'], cfg['lines'])
+        progress_values = get_panel_progress_values(cfg['lines'])
+        labels = [line['label'] for line in cfg['lines']]
         panel = IconButton(
             SUPPLIES_PANEL_X,
             y_ratio,
             (FOLDED_WIDTH, FOLDED_HEIGHT),
             (UNFOLDED_WIDTH, UNFOLDED_HEIGHT),
-            content=ExpandingPanelContent(cfg['header'], cfg['lines'], icon_path=cfg['icon_path'], progress_values=progress_values),
+            content=ExpandingPanelContent(cfg['header'], labels, icon_path=cfg['icon_path'], progress_values=progress_values),
             icon_path=cfg['icon_path']
         )
         panels.append(panel)
