@@ -234,13 +234,6 @@ class IconButton:
         return panel_rect
 
 # --- Multiple panels setup ---
-
-_last_supplies_state = None  # Cache for last supplies state
-
-def supplies_state_snapshot():
-    gs = GameState()
-    return tuple(getattr(gs, line['attr'], 0) for cfg in panel_configs for line in cfg['lines'])
-
 panel_configs = [
     {
         'header': 'Electronics:',
@@ -345,11 +338,6 @@ def handle_supplies_panel_event(event, surface):
     return False
 
 def update_supplies_panel_animation():
-    global _last_supplies_state, panels
-    current_state = supplies_state_snapshot()
-    if _last_supplies_state != current_state:
-        panels = []  # Force recreation on next draw
-        _last_supplies_state = current_state
     for panel in panels:
         panel.update_animation()
 
