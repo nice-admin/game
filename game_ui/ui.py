@@ -42,7 +42,8 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_resource_panel_general(surface.subsurface(pygame.Rect(x0, y0 + (total_height - general_height) // 2, general_width, general_height)),font)
         draw_resource_panel_system(surface,font,x0 + general_width + panel_gap,y0 + (total_height - system_height) // 2)
         resource_panel_height = total_height
-    draw_supplies_panel(surface)
+    if ALLOW_SUPPLIES_PANEL:
+        draw_supplies_panel(surface)
     if ALLOW_CONSTRUCTION_PANEL:
         section_btn_rects, item_btn_rects = draw_construction_panel(
             surface, selected_section=selected_section, selected_item=selected_item, font=font, extend_below=0
