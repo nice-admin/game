@@ -1,7 +1,8 @@
 import pygame
 pygame.font.init()
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL, BASE_COL, adjust_color, get_font1, resource_path
-from game_core.game_state import GameState, SUPPLIES_MAX
+from game_core.game_state import GameState, SUPPLIES_RND_MAX, SUPPLIES_MAX
+from game_other.audio import play_purchase_sound
 
 FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
@@ -255,6 +256,36 @@ class IconButton:
             self.expanding_panel.draw(surface)
         return panel_rect
 
+class ResupplyButton:
+    def __init__(self, x, y, width=FOLDED_WIDTH, height=30, label="Resupply", font=None):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.label = label
+        self.font = font or get_font1(15)
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+        self.hovered = False
+
+    def draw(self, surface):
+        if self.hovered:
+            color = (0, 255, 0)  # bright green
+        else:
+            color = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
+        text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=3)
+        pygame.draw.rect(surface, color, self.rect, border_radius=2)
+        text_surf = self.font.render(self.label, True, text_color)
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        surface.blit(text_surf, text_rect)
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEMOTION:
+            self.hovered = self.rect.collidepoint(event.pos)
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                return True
+        return False
+
 # --- Multiple panels setup ---
 panel_configs = [
     {
@@ -323,11 +354,31 @@ def create_panels(surface):
 
 # Remove old panels list and creation
 panels = []  # will be set in init or first draw
+resupply_button = None  # global button instance
 
 def handle_supplies_panel_event(event, surface):
-    global panels
+    global panels, resupply_button
     if not panels or len(panels) != len(panel_configs):
         panels = create_panels(surface)
+    # Place resupply button 10px above the first IconButton
+    if resupply_button is None:
+        first_panel_y = int(surface.get_size()[1] * SUPPLIES_PANEL_Y_RATIO)
+        resupply_button = ResupplyButton(SUPPLIES_PANEL_X, first_panel_y - 10 - 30)  # 30 is button height
+    if resupply_button.handle_event(event):
+        play_purchase_sound()
+        gs = GameState()
+        gs.total_money -= 5000
+        gs.total_cables = SUPPLIES_MAX
+        gs.total_mouses = SUPPLIES_MAX
+        gs.total_keyboards = SUPPLIES_MAX
+        gs.total_coffee_beans = SUPPLIES_MAX
+        gs.total_milk = SUPPLIES_MAX
+        gs.total_sugar = SUPPLIES_MAX
+        gs.total_ibalgin = SUPPLIES_MAX
+        gs.total_bandages = SUPPLIES_MAX
+        gs.total_pcr_test = SUPPLIES_MAX
+        update_panel_contents()
+        return True
     clicked_idx = None
     for idx, panel in enumerate(panels):
         if panel.handle_event(event, surface):
@@ -362,11 +413,16 @@ def update_panel_contents():
                 panel.content.value_pairs = value_pairs
 
 def draw_supplies_panel(surface):
-    global panels
+    global panels, resupply_button
     if not panels or len(panels) != len(panel_configs):
         panels = create_panels(surface)
+    # Place resupply button 10px above the first IconButton
+    if resupply_button is None:
+        first_panel_y = int(surface.get_size()[1] * SUPPLIES_PANEL_Y_RATIO)
+        resupply_button = ResupplyButton(SUPPLIES_PANEL_X, first_panel_y - 10 - 30)  # 30 is button height
     update_panel_contents()
     rects = []
+    resupply_button.draw(surface)
     for panel in panels:
         rects.append(panel.draw(surface))
     return rects

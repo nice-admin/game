@@ -1,7 +1,8 @@
 import random
 
-SUPPLIES_MIN = 10
-SUPPLIES_MAX = 40
+SUPPLIES_RND_MIN = 10
+SUPPLIES_RND_MAX = 40
+SUPPLIES_MAX = 50
 
 class GameState:
     _instance = None
@@ -45,15 +46,15 @@ class GameState:
         self.current_construction_class = None
         self._initialized = True
         # supplies
-        self.total_cables = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_mouses = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_keyboards = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_coffee_beans = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_milk = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_sugar = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_ibalgin = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_bandages = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
-        self.total_pcr_test = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_cables = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_mouses = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_keyboards = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_coffee_beans = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_milk = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_sugar = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_ibalgin = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_bandages = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
+        self.total_pcr_test = random.randint(SUPPLIES_RND_MIN, SUPPLIES_RND_MAX)
 
 
     def summarize_entities(self, grid):
