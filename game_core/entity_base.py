@@ -465,12 +465,32 @@ class PersonEntity(SatisfiableEntity):
         self.toilet_need = random.randint(1, 10)
 
     def on_sat_check_finish(self):
+        gs = GameState()
+        # 0.01 chance for medical items
+        if random.random() < 0.01:
+            if hasattr(gs, 'total_ibalgin') and gs.total_ibalgin > 0:
+                gs.total_ibalgin -= 1
+        if random.random() < 0.01:
+            if hasattr(gs, 'total_bandages') and gs.total_bandages > 0:
+                gs.total_bandages -= 1
+        if random.random() < 0.01:
+            if hasattr(gs, 'total_pcr_test') and gs.total_pcr_test > 0:
+                gs.total_pcr_test -= 1
+        # 0.005 chance for cables, mouses, keyboards
+        if random.random() < 0.005:
+            if hasattr(gs, 'total_cables') and gs.total_cables > 0:
+                gs.total_cables -= 1
+        if random.random() < 0.005:
+            if hasattr(gs, 'total_mouses') and gs.total_mouses > 0:
+                gs.total_mouses -= 1
+        if random.random() < 0.005:
+            if hasattr(gs, 'total_keyboards') and gs.total_keyboards > 0:
+                gs.total_keyboards -= 1
         if getattr(self, 'has_coffee', 0) == 1 and random.random() < 0.2:
             self.has_coffee = 0
         if hasattr(self, 'hunger'):
             self.hunger = max(0, self.hunger - 0.1)
         if getattr(self, 'has_coffee', 0) == 0 and random.random() < 0.01:
-            gs = GameState()
             if (
                 hasattr(gs, 'total_coffee_beans') and gs.total_coffee_beans > 0 and
                 EntityStats().total_coffeemachine_entities > 0
@@ -481,8 +501,3 @@ class PersonEntity(SatisfiableEntity):
                     gs.total_milk -= 1
                 if hasattr(gs, 'total_sugar') and gs.total_sugar > 0 and random.random() < 0.2:
                     gs.total_sugar -= 1
-        if random.random() < 0.1:
-            gs = GameState()
-            if hasattr(gs, 'total_ibalgin') and gs.total_ibalgin > 0:
-                gs.total_ibalgin -= 1
-

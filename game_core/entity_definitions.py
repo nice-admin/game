@@ -57,14 +57,16 @@ class Artist(PersonEntity):
     satisfaction_check_type = MonitorEntity
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
-    is_person = 1
     has_project_manager = 0
     upkeep = 2000
+    multiplier = 1 
 
     def on_special_finish(self):
         gs = GameState()
-        multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
-        gs.increment_current_artist_progress(multiplier=multiplier)
+        self.multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
+        if getattr(self, 'has_coffee', 0):
+            self.multiplier += 1
+        gs.increment_current_artist_progress(multiplier=self.multiplier)
         gs.calculate_render_progress_allowed()
 
     def check_project_manager_proximity(self, grid):
