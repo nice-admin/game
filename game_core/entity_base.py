@@ -469,7 +469,7 @@ class PersonEntity(SatisfiableEntity):
             self.has_coffee = 0
         if hasattr(self, 'hunger'):
             self.hunger = max(0, self.hunger - 0.1)
-        if getattr(self, 'has_coffee', 0) == 0 and random.random() < 0.8:
+        if getattr(self, 'has_coffee', 0) == 0 and random.random() < 0.01:
             gs = GameState()
             if (
                 hasattr(gs, 'total_coffee_beans') and gs.total_coffee_beans > 0 and

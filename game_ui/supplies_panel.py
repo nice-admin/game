@@ -12,6 +12,8 @@ SUPPLIES_PANEL_Y_RATIO = 0.32
 UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 270
 
+MAX_RANGE = 50
+
 
 def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width, bar_height=20, num_cells=10, cell_spacing=2, text_color=(0,0,0), value=None, max_value=None):
     filled = int(num_cells * max(0.0, min(progress, 1.0)) + 0.0001)
@@ -23,8 +25,22 @@ def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width
     text_surf = font.render(text, True, text_color)
     surface.blit(text_surf, (x, y))
     bar_y = y + text_surf.get_height() + 2
-    cell_w = (bar_width - (num_cells - 1) * cell_spacing) // num_cells
-    # Use the same gradient as indicators
+    # Use float division for cell_w
+    cell_ws = []
+    cell_xs = []
+    acc_x = x
+    total_width = 0.0
+    # Compute ideal cell width (float), but accumulate rounding error and compensate in last cell
+    cell_w_float = (bar_width - (num_cells - 1) * cell_spacing) / num_cells
+    for i in range(num_cells):
+        # For all but last cell, round width, for last cell, use remaining width
+        if i < num_cells - 1:
+            width = round(cell_w_float)
+        else:
+            width = round(x + bar_width - acc_x)  # Ensure last cell ends at bar end
+        cell_ws.append(width)
+        cell_xs.append(int(round(acc_x)))
+        acc_x += width + cell_spacing
     def get_gradient_color(progress):
         if progress <= 0.5:
             r = 255
@@ -38,9 +54,8 @@ def draw_progress_bar_with_label(surface, label, progress, font, x, y, bar_width
     fill_color = get_gradient_color(max(0.0, min(progress, 1.0)))
     empty_color = adjust_color(BASE_COL, white_factor=0.0, exposure=2)
     for i in range(num_cells):
-        cell_x = x + i * (cell_w + cell_spacing)
         color = fill_color if i < filled else empty_color
-        pygame.draw.rect(surface, color, (cell_x, bar_y, cell_w, bar_height), border_radius=2)
+        pygame.draw.rect(surface, color, (cell_xs[i], bar_y, cell_ws[i], bar_height), border_radius=2)
     return bar_y + bar_height + 10
 
 
@@ -58,17 +73,17 @@ class ExpandingPanelContent:
 
     def draw(self, surface, x, y, icon_width=0, icon_height=0):
         header_x = x + 20
-        header_y = y + 10
+        header_y = y + 20
         header_surf = self.header_font.render(self.header, True, self.header_color)
         surface.blit(header_surf, (header_x, header_y))
         text_y = header_y + header_surf.get_height() + 12
-        bar_width = int(UNFOLDED_WIDTH * 0.92)
+        bar_width = UNFOLDED_WIDTH * 0.9
         for idx, line in enumerate(self.lines):
             progress = self.progress_values[idx] if idx < len(self.progress_values) else 1.0
             value, max_value = self.value_pairs[idx] if idx < len(self.value_pairs) else (None, None)
             text_y = draw_progress_bar_with_label(
                 surface, line, progress, self.font, header_x, text_y, bar_width,
-                bar_height=20, num_cells=10, cell_spacing=2, text_color=self.text_color,
+                bar_height=20, num_cells=MAX_RANGE, cell_spacing=2, text_color=self.text_color,
                 value=value, max_value=max_value
             )
             text_y += 10  # Add 10px spacing between bars
@@ -275,16 +290,15 @@ def get_panel_progress_and_values(lines):
     gs = GameState()
     progress_values = []
     value_pairs = []
-    fixed_max = 10
     for line in lines:
         attr = line.get('attr')
         if attr and hasattr(gs, attr):
             val = getattr(gs, attr, 0)
-            progress_values.append(val / fixed_max)
-            value_pairs.append((val, fixed_max))
+            progress_values.append(val / MAX_RANGE)
+            value_pairs.append((val, MAX_RANGE))
         else:
             progress_values.append(1.0)
-            value_pairs.append((None, fixed_max))
+            value_pairs.append((None, MAX_RANGE))
     return progress_values, value_pairs
 
 def create_panels(surface):

@@ -1,7 +1,7 @@
 import random
 
-SUPPLIES_MIN = 4
-SUPPLIES_MAX = 9
+SUPPLIES_MIN = 10
+SUPPLIES_MAX = 40
 
 class GameState:
     _instance = None
