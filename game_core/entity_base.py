@@ -3,7 +3,7 @@ import re
 import random
 import time
 from .config import *
-from game_core.game_state import GameState
+from game_core.game_state import GameState, EntityStats
 from game_other.audio import *
 
 
@@ -465,10 +465,24 @@ class PersonEntity(SatisfiableEntity):
         self.toilet_need = random.randint(1, 10)
 
     def on_sat_check_finish(self):
+        if getattr(self, 'has_coffee', 0) == 1 and random.random() < 0.2:
+            self.has_coffee = 0
         if hasattr(self, 'hunger'):
             self.hunger = max(0, self.hunger - 0.1)
-        # Randomly decrease total_coffee_beans by 1
-        if random.random() < 0.5:  # 50% chance, adjust as needed
+        if getattr(self, 'has_coffee', 0) == 0 and random.random() < 0.8:
             gs = GameState()
-            if hasattr(gs, 'total_coffee_beans') and gs.total_coffee_beans > 0:
+            if (
+                hasattr(gs, 'total_coffee_beans') and gs.total_coffee_beans > 0 and
+                EntityStats().total_coffeemachine_entities > 0
+            ):
                 gs.total_coffee_beans -= 1
+                self.has_coffee = 1
+                if hasattr(gs, 'total_milk') and gs.total_milk > 0 and random.random() < 0.2:
+                    gs.total_milk -= 1
+                if hasattr(gs, 'total_sugar') and gs.total_sugar > 0 and random.random() < 0.2:
+                    gs.total_sugar -= 1
+        if random.random() < 0.1:
+            gs = GameState()
+            if hasattr(gs, 'total_ibalgin') and gs.total_ibalgin > 0:
+                gs.total_ibalgin -= 1
+

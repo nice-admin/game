@@ -51,6 +51,10 @@ class GameState:
         self.total_coffee_beans = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
         self.total_milk = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
         self.total_sugar = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_ibalgin = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_bandages = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+        self.total_pcr_test = random.randint(SUPPLIES_MIN, SUPPLIES_MAX)
+
 
     def summarize_entities(self, grid):
         summary = []
@@ -155,19 +159,22 @@ class EntityStats:
         self._initialized = True
 
     def reset(self):
-        self.num_decor = 0
-        self.num_computers = 0
+        self.total_decor_entities = 0
+        self.total_computer_entities = 0
+        self.total_coffeemachine_entities = 0  # Track number of coffee machines
         # Add more entity counters as needed
 
     def update_from_grid(self, grid):
         self.reset()
-        from game_core.entity_definitions import DecorationEntity, ComputerEntity
+        from game_core.entity_definitions import DecorationEntity, ComputerEntity, EspressoMachine
         for row in grid:
             for entity in row:
                 if isinstance(entity, DecorationEntity):
-                    self.num_decor += 1
+                    self.total_decor_entities += 1
                 if isinstance(entity, ComputerEntity):
-                    self.num_computers += 1
+                    self.total_computer_entities += 1
+                if isinstance(entity, EspressoMachine):
+                    self.total_coffeemachine_entities += 1
         # Add more entity type checks as needed
 
 def get_totals_dict():

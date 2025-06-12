@@ -268,25 +268,7 @@ panel_configs = [
             {'label': 'PCR Test', 'attr': 'total_pcr_test'},
         ],
         'icon_path': 'data/graphics/supplies_panel/medicine.png',
-    },
-    {
-        'header': 'Tools:',
-        'lines': [
-            {'label': 'Hammer', 'attr': 'total_hammer'},
-            {'label': 'Wrench', 'attr': 'total_wrench'},
-            {'label': 'Screwdriver', 'attr': 'total_screwdriver'},
-        ],
-        'icon_path': 'data/graphics/supplies_panel/tools.png',
-    },
-    {
-        'header': 'Misc:',
-        'lines': [
-            {'label': 'Rope', 'attr': 'total_rope'},
-            {'label': 'Tape', 'attr': 'total_tape'},
-            {'label': 'Glue', 'attr': 'total_glue'},
-        ],
-        'icon_path': 'data/graphics/supplies_panel/misc.png',
-    },
+    }
 ]
 
 def get_panel_progress_and_values(lines):
