@@ -30,6 +30,7 @@ class GameState:
         self.is_nas_online = 1
         self.temperature = 23
         self.office_quality = 1
+        self.total_decoration = 0
         self.artist_progress_required_per_shot = 50
         self.render_progress_required_per_shot = 50
         self.artist_progress_current = 0
@@ -110,6 +111,18 @@ class GameState:
                         pass
         return int(round(total))
 
+    def count_decoration(self, grid):
+        total = 0
+        for row in grid:
+            for entity in row:
+                if entity is not None and hasattr(entity, 'decoration'):
+                    try:
+                        val = float(getattr(entity, 'decoration', 0))
+                        total += val  # Sum all values, positive or negative
+                    except Exception:
+                        pass
+        return total
+
     def update_totals_from_grid(self, grid):
         self.total_employees = self.count_employees(grid)
         self.total_power_drain = self.count_power_drain(grid)
@@ -117,6 +130,7 @@ class GameState:
         self.total_risky_entities = self.count_risky_entities(grid)
         self.total_broken_entities = self.count_broken_entities(grid)
         self.total_upkeep = self.count_upkeep(grid) + 100
+        self.total_decoration = self.count_decoration(grid)
         from game_core.gameplay_events import power_outage
         power_outage.trigger()
 
@@ -182,4 +196,5 @@ def get_totals_dict():
     return GameState().get_totals_dict()
 
 def update_totals_from_grid(grid):
+    GameState().update_totals_from_grid(grid)
     GameState().update_totals_from_grid(grid)

@@ -370,6 +370,7 @@ class SatisfiableEntity(BaseEntity):
 
 class DecorationEntity(BaseEntity):
     upkeep = 20
+    decoration = 5
 
 class UtilityEntity(BaseEntity):
     pass
