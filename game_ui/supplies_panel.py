@@ -3,6 +3,7 @@ pygame.font.init()
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL, BASE_COL, adjust_color, get_font1, resource_path
 from game_core.game_state import GameState, SUPPLIES_RND_MAX, SUPPLIES_MAX
 from game_other.audio import play_purchase_sound
+from game_core.config import CURRENCY_SYMBOL
 
 FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
@@ -278,6 +279,19 @@ class ResupplyButton:
         text_rect = text_surf.get_rect(center=self.rect.center)
         surface.blit(text_surf, text_rect)
 
+        # Draw the second rectangle below the main button
+        second_rect_height = 24
+        second_rect_y = self.y - self.height + 4  # 4px gap
+        second_rect = pygame.Rect(self.x, second_rect_y, self.width, second_rect_height)
+        second_color = adjust_color(BASE_COL, white_factor=0.0, exposure=2)
+        second_text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
+        pygame.draw.rect(surface, second_color, second_rect, border_radius=2)
+        price = get_resupply_price()
+        price_font = get_font1(14)
+        price_surf = price_font.render(f"{price}{CURRENCY_SYMBOL}", True, second_text_color)
+        price_rect = price_surf.get_rect(center=second_rect.center)
+        surface.blit(price_surf, price_rect)
+
     def handle_event(self, event):
         if event.type == pygame.MOUSEMOTION:
             self.hovered = self.rect.collidepoint(event.pos)
@@ -332,6 +346,22 @@ def get_panel_progress_and_values(lines):
             value_pairs.append((None, MAX_RANGE))
     return progress_values, value_pairs
 
+def get_resupply_price():
+    """
+    Calculate the resupply price as the sum of all missing singleton supply values (from supplies panel) times 50.
+    """
+    gs = GameState()
+    total_missing = 0
+    for cfg in panel_configs:
+        for line in cfg['lines']:
+            attr = line.get('attr')
+            if attr and hasattr(gs, attr):
+                current = getattr(gs, attr, 0)
+                missing = MAX_RANGE - current
+                if missing > 0:
+                    total_missing += missing
+    return total_missing * 10
+
 def create_panels(surface):
     panels = []
     panel_spacing = FOLDED_HEIGHT * 1.1
@@ -367,7 +397,8 @@ def handle_supplies_panel_event(event, surface):
     if resupply_button.handle_event(event):
         play_purchase_sound()
         gs = GameState()
-        gs.total_money -= 5000
+        price = get_resupply_price()
+        gs.total_money -= price
         gs.total_cables = SUPPLIES_MAX
         gs.total_mouses = SUPPLIES_MAX
         gs.total_keyboards = SUPPLIES_MAX
