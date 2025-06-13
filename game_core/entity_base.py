@@ -37,6 +37,7 @@ class BaseEntity:
     state = "Basic"
     purchase_cost = 0
     upkeep = 0
+    decoration = 0
     tier = 1
     
     power_drain = 0  # Intended power drain when initialized (override in subclasses)
@@ -380,6 +381,7 @@ class ComputerEntity(SatisfiableEntity):
     power_drain = 0
     satisfaction_check_gamestate = 'is_nas_online'
     heating_multiplier = 1
+    decoration = -5
 
     def on_spawn(self):
         self.is_rendering = 1 if self.special is not None else 0
@@ -407,6 +409,7 @@ class LaptopEntity(SatisfiableEntity):
     is_initialized = 1
     is_satisfied = 1
     has_bar1 = 0
+    decoration = 1
     pass
 
 class MonitorEntity(SatisfiableEntity):
@@ -414,6 +417,7 @@ class MonitorEntity(SatisfiableEntity):
     satisfaction_check_type = ComputerEntity
     satisfaction_check_radius = 1
     satisfaction_check_threshold = 1
+    decoration = -1
 
     def satisfaction_check(self, grid):
         # Standard proximity check for ComputerEntity in radius 1
