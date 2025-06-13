@@ -31,6 +31,7 @@ class Macbook(LaptopEntity):
         gs = GameState()
         value = 1 if getattr(gs, "is_wifi_online", 0) == 1 else 0
         self.is_satisfied = value
+        self.state = "Good" if value else "Mid"
         return value
 
 class BasicMonitor(MonitorEntity):

@@ -223,8 +223,8 @@ class OfficeQualityCheck(GamePlayEvent):
             stats = EntityStats()
             num_decor = stats.total_decor_entities
             num_computers = stats.total_computer_entities
-            if num_computers == 0:
-                office_quality = 0
+            if num_computers == 0 and num_decor > 0:
+                office_quality = 2
             elif num_decor > num_computers:
                 office_quality = 5
             elif num_decor == num_computers:

@@ -9,7 +9,7 @@ FOLDED_WIDTH = 80
 FOLDED_HEIGHT = 80
 ROUNDING = 6
 SUPPLIES_PANEL_X = 0
-SUPPLIES_PANEL_Y_RATIO = 0.32
+TOP_MARGIN = 0.38
 
 UNFOLDED_WIDTH = 500
 UNFOLDED_HEIGHT = 270
@@ -367,7 +367,7 @@ def create_panels(surface):
     panel_spacing = FOLDED_HEIGHT * 1.1
     screen_height = surface.get_height()
     for i, cfg in enumerate(panel_configs):
-        y_ratio = SUPPLIES_PANEL_Y_RATIO + i * (panel_spacing / screen_height)
+        y_ratio = TOP_MARGIN + i * (panel_spacing / screen_height)
         progress_values, value_pairs = get_panel_progress_and_values(cfg['lines'])
         labels = [line['label'] for line in cfg['lines']]
         panel = IconButton(
@@ -392,7 +392,7 @@ def handle_supplies_panel_event(event, surface):
         panels = create_panels(surface)
     # Place resupply button 10px above the first IconButton
     if resupply_button is None:
-        first_panel_y = int(surface.get_size()[1] * SUPPLIES_PANEL_Y_RATIO)
+        first_panel_y = int(surface.get_size()[1] * TOP_MARGIN)
         resupply_button = ResupplyButton(SUPPLIES_PANEL_X, first_panel_y - 10 - 30)  # 30 is button height
     if resupply_button.handle_event(event):
         play_purchase_sound()
@@ -449,7 +449,7 @@ def draw_supplies_panel(surface):
         panels = create_panels(surface)
     # Place resupply button 10px above the first IconButton
     if resupply_button is None:
-        first_panel_y = int(surface.get_size()[1] * SUPPLIES_PANEL_Y_RATIO)
+        first_panel_y = int(surface.get_size()[1] * TOP_MARGIN)
         resupply_button = ResupplyButton(SUPPLIES_PANEL_X, first_panel_y - 10 - 30)  # 30 is button height
     update_panel_contents()
     rects = []
