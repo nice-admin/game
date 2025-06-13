@@ -203,8 +203,8 @@ class ClimateControl:
                     self._pick_new_target(state.temperature)
 
 class OfficeQualityCheck(GamePlayEvent):
-    INITIAL_DELAY = 5  # seconds
-    INTERVAL = 5  # seconds
+    INITIAL_DELAY = 1  # seconds
+    INTERVAL = 1  # seconds
     def __init__(self):
         self._started = False
         self._thread = None
@@ -223,22 +223,25 @@ class OfficeQualityCheck(GamePlayEvent):
             stats = EntityStats()
             num_decor = stats.total_decor_entities
             num_computers = stats.total_computer_entities
-            if num_computers == 0 and num_decor > 0:
-                office_quality = 2
-            elif num_decor > num_computers:
-                office_quality = 5
-            elif num_decor == num_computers:
-                office_quality = 4
-            elif num_computers >= 5 * num_decor:
-                office_quality = 0
-            elif num_computers >= 4 * num_decor:
+            # Intuitive office quality logic
+            if num_computers == 0 and num_decor == 0:
                 office_quality = 1
-            elif num_computers >= 3 * num_decor:
+            elif num_computers == 0:
                 office_quality = 2
-            elif num_computers >= 2 * num_decor:
-                office_quality = 3
-            else:
+            elif num_decor == 0:
                 office_quality = 0
+            elif num_decor >= 2 * num_computers:
+                office_quality = 5
+            elif num_decor > num_computers:
+                office_quality = 4
+            elif num_decor == num_computers:
+                office_quality = 3
+            elif num_computers >= 2 * num_decor:
+                office_quality = 0
+            elif num_computers > num_decor:
+                office_quality = 2
+            else:
+                office_quality = 1  # fallback, should rarely hit
             state.office_quality = office_quality
             time.sleep(self.INTERVAL)
 
