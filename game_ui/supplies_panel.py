@@ -279,10 +279,12 @@ class ResupplyButton:
         text_rect = text_surf.get_rect(center=self.rect.center)
         surface.blit(text_surf, text_rect)
 
-        # Draw the second rectangle below the main button
-        second_rect_height = 24
-        second_rect_y = self.y - self.height + 4  # 4px gap
-        second_rect = pygame.Rect(self.x, second_rect_y, self.width, second_rect_height)
+        # Draw the second rectangle below the main button, at 0.8x width and centered
+        second_rect_height = 20
+        second_rect_width = int(self.width * 0.8)
+        second_rect_x = self.x + (self.width - second_rect_width) // 2
+        second_rect_y = self.y + self.height  # 4px gap
+        second_rect = pygame.Rect(second_rect_x, second_rect_y, second_rect_width, second_rect_height)
         second_color = adjust_color(BASE_COL, white_factor=0.0, exposure=2)
         second_text_color = adjust_color(BASE_COL, white_factor=0.0, exposure=5)
         pygame.draw.rect(surface, second_color, second_rect, border_radius=2)
@@ -393,7 +395,7 @@ def handle_supplies_panel_event(event, surface):
     # Place resupply button 10px above the first IconButton
     if resupply_button is None:
         first_panel_y = int(surface.get_size()[1] * TOP_MARGIN)
-        resupply_button = ResupplyButton(SUPPLIES_PANEL_X, first_panel_y - 10 - 30)  # 30 is button height
+        resupply_button = ResupplyButton(SUPPLIES_PANEL_X, first_panel_y - 10 - 50)  # 30 is button height
     if resupply_button.handle_event(event):
         play_purchase_sound()
         gs = GameState()
