@@ -66,6 +66,8 @@ class Artist(PersonEntity):
         self.multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
         if getattr(self, 'has_coffee', 0):
             self.multiplier += 1
+        office_quality_bonus = getattr(gs, 'office_quality', 0) // 2
+        self.multiplier += office_quality_bonus
         gs.increment_current_artist_progress(multiplier=self.multiplier)
         gs.calculate_render_progress_allowed()
 
