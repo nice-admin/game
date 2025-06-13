@@ -446,7 +446,8 @@ class PersonEntity(SatisfiableEntity):
     hunger = 0
     toilet_need = 0
     has_coffee = 0
-    NAMES = [
+    max_temp_tolerance = 0
+    names = [
         "Marek Sosna",
         "Radim Zeifart",
         "Simon Lansky",
@@ -458,14 +459,20 @@ class PersonEntity(SatisfiableEntity):
         "Petr Kollarcik"
     ]
     def on_spawn(self):
-        self.person_name = random.choice(self.NAMES)
+        self.person_name = random.choice(self.names)
         self.display_name = getattr(self, 'display_name', 'Person')
         self.happiness = random.randint(1, 10)
         self.hunger = random.randint(1, 10)
         self.toilet_need = random.randint(1, 10)
+        self.max_temp_tolerance = random.randint(25, 35)
 
     def on_sat_check_finish(self):
         gs = GameState()
+        if hasattr(gs, 'temperature') and getattr(self, 'max_temp_tolerance', None) is not None:
+            if gs.temperature > self.max_temp_tolerance:
+                if random.random() < 0.3:
+                    self.is_satisfied = 0
+                    self.state = "Mid"
         # 0.01 chance for medical items
         if random.random() < 0.01:
             if hasattr(gs, 'total_ibalgin') and gs.total_ibalgin > 0:
