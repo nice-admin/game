@@ -280,7 +280,6 @@ _baked_panel_cache = {
     'size': None,
 }
 
-
 def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8, extend_below=0):
     """
     Draws a new construction panel with two rows:
@@ -382,3 +381,27 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     # Blit the baked panel
     surface.blit(panel_surf, (x, y))
     return section_buttons, entity_buttons
+
+def get_entity_button_hover(entity_buttons, mouse_pos):
+    for btn in entity_buttons:
+        if btn.entity_class is not None and btn.rect.collidepoint(mouse_pos):
+            return btn.entity_class, btn.rect
+    return None, None
+
+def draw_entity_hover_label(surface, entity_class, mouse_pos, font=None):
+    if entity_class is None:
+        return
+    display_name = getattr(entity_class, 'display_name', entity_class.__name__)
+    font = pygame.font.Font(FONT1, 20)
+    text_surf = font.render(display_name, True, (255,255,255))
+    text_rect = text_surf.get_rect()
+    # Expand the background rect more for padding
+    bg_rect = text_rect.inflate(24, 14)  # Wider and taller for more padding
+    bg_rect.topleft = (mouse_pos[0] + 18, mouse_pos[1] + 8)
+    # Center the text in the background rect
+    text_rect.center = bg_rect.center
+    text_rect.y += 1  # Move text 1px lower
+    temp_surf = pygame.Surface(bg_rect.size, pygame.SRCALPHA)
+    pygame.draw.rect(temp_surf, (0,0,0,180), temp_surf.get_rect(), border_radius=4)
+    surface.blit(temp_surf, bg_rect.topleft)
+    surface.blit(text_surf, text_rect)

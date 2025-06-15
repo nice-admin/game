@@ -282,3 +282,10 @@ def draw_project_overview_panel(surface, font, screen_width, resource_panel_heig
     panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, _render_queue_panel_current_height)
     surface.blit(bake_project_overview_panel(font, screen_width, resource_panel_height), (panel_x, panel_y))
     return panel_rect
+
+def expand_render_queue_panel(screen_width, resource_panel_height):
+    global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
+    _render_queue_panel_expanded = True
+    expanded_height = get_expanded_extra_height()
+    _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + expanded_height
+    _render_queue_panel_anim_start_time = time.time()

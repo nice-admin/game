@@ -5,6 +5,7 @@ from game_core.game_state import GameState
 import game_other.audio
 import pygame
 from game_core.entity_definitions import DecorationEntity, ComputerEntity
+from game_ui.project_overview_panel import expand_render_queue_panel
 
 class GamePlayEvent:
     def trigger(self):
@@ -101,6 +102,7 @@ class JobArrived(GamePlayEvent):
         state.job_budget = 10000 * n
         state.current_job_finished = 0  # Reset for next job
         game_other.audio.play_job_arrived_sound()
+        expand_render_queue_panel(1000, 0)
         return True
 
     def notify_jobs_finished(self, jobs_finished):
@@ -203,8 +205,8 @@ class ClimateControl:
                     self._pick_new_target(state.temperature)
 
 class OfficeQualityCheck(GamePlayEvent):
-    INITIAL_DELAY = 1  # seconds
-    INTERVAL = 1  # seconds
+    INITIAL_DELAY = 5  # seconds
+    INTERVAL = 5  # seconds
     def __init__(self):
         self._started = False
         self._thread = None

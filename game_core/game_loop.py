@@ -9,10 +9,10 @@ from game_ui.hidden_info_panel import *
 import game_other.savegame as savegame
 import game_other.feature_toggle as feature_toggle
 import game_other.testing_layout as testing_layout
-from game_core.game_state import update_totals_from_grid
 import game_core.gameplay_events
 from game_ui.project_overview_panel import handle_render_queue_panel_event
 from game_ui.supplies_panel import handle_supplies_panel_event
+from game_ui.ui import draw_entity_hover_label_if_needed
 
 
 # --- Game Grid ---
@@ -224,4 +224,7 @@ def render_game(state, screen, background_surface, font, timings, clock):
         entity_buttons=entity_buttons
     )
     state['panel_btn_rects'] = panel_btn_rects
+
+    draw_entity_hover_label_if_needed(screen, font)
+
     pygame.display.flip()
