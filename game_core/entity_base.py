@@ -6,9 +6,6 @@ from .config import *
 from game_core.game_state import GameState, EntityStats
 from game_other.audio import *
 
-
-CELL_SIZE = 64  # Default cell size, can be overridden by main.py
-
 # --- ICON CACHE ---
 _ICON_CACHE = {}
 
@@ -71,8 +68,14 @@ class BaseEntity:
             self._icon_surface = get_icon_surface(icon_path)
             self._last_icon_path = icon_path
         if self._icon_surface and not static_only:
-            icon = pygame.transform.smoothscale(self._icon_surface, (cell_size, cell_size))
-            surface.blit(icon, (self.x * cell_size + offset[0], self.y * cell_size + offset[1]))
+            icon_scale = 0.8  # 20% of cell size
+            icon_size = int(cell_size * icon_scale)
+            icon = pygame.transform.smoothscale(self._icon_surface, (icon_size, icon_size))
+            cell_x = self.x * cell_size + offset[0]
+            cell_y = self.y * cell_size + offset[1]
+            icon_x = cell_x + (cell_size - icon_size) // 2
+            icon_y = cell_y + (cell_size - icon_size) // 2
+            surface.blit(icon, (icon_x, icon_y))
         # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is 0
         highlight_color = None
         if (
@@ -82,9 +85,11 @@ class BaseEntity:
         if getattr(self, 'is_broken', 0):
             highlight_color = STATUS_BAD_COL
         if highlight_color and not getattr(self, 'warning_hidden', 0) and not static_only:
-            x = self.x * cell_size + offset[0]
-            y = self.y * cell_size + offset[1]
-            pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
+            # Center the highlight rectangle using CELL_SIZE_INNER
+            rect_size = CELL_SIZE_INNER
+            x = self.x * cell_size + offset[0] + (cell_size - rect_size) // 2
+            y = self.y * cell_size + offset[1] + (cell_size - rect_size) // 2
+            pygame.draw.rect(surface, highlight_color, (x, y, rect_size, rect_size), 3)
         if not static_only:
             if getattr(self, "has_bar1", 1) and not getattr(self, 'has_sat_check_bar_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
@@ -265,25 +270,7 @@ class SatisfiableEntity(BaseEntity):
         return self._icon
 
     def draw(self, surface, offset=(0, 0), cell_size=64, static_only=False):
-        icon_path = self.get_icon_path() if hasattr(self, 'get_icon_path') else (self._icon if hasattr(self, '_icon') else self.__class__._icon)
-        if getattr(self, '_last_icon_path', None) != icon_path:
-            self._icon_surface = get_icon_surface(icon_path)
-            self._last_icon_path = icon_path
-        if self._icon_surface and not static_only:
-            icon = pygame.transform.smoothscale(self._icon_surface, (cell_size, cell_size))
-            surface.blit(icon, (self.x * cell_size + offset[0], self.y * cell_size + offset[1]))
-        # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is 0
-        highlight_color = None
-        if (
-            getattr(self, 'is_initialized', 0) and not getattr(self, 'is_satisfied', 1)
-        ):
-            highlight_color = STATUS_MID_COL
-        if getattr(self, 'is_broken', 0):
-            highlight_color = STATUS_BAD_COL
-        if highlight_color and not getattr(self, 'warning_hidden', 0) and not static_only:
-            x = self.x * cell_size + offset[0]
-            y = self.y * cell_size + offset[1]
-            pygame.draw.rect(surface, highlight_color, (x, y, cell_size, cell_size), 3)
+        super().draw(surface, offset, cell_size, static_only)
         if not static_only:
             if getattr(self, "has_bar1", 1) and not getattr(self, 'has_sat_check_bar_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
@@ -292,8 +279,9 @@ class SatisfiableEntity(BaseEntity):
 
     def draw_bar1(self, surface, ox, oy, cell_size):
         bar_height = int(cell_size * self._BAR_HEIGHT_RATIO)
-        bar_width = cell_size
-        x = self.x * cell_size + ox
+        bar_width = CELL_SIZE_INNER
+        # Center bar horizontally in the cell
+        x = self.x * cell_size + ox + (cell_size - bar_width) // 2
         y = self.y * cell_size + oy + cell_size - bar_height
         if self.is_initialized and not self.is_satisfied:
             bar_color = self._BAR1_COL_FILL_UNSAT
@@ -309,8 +297,9 @@ class SatisfiableEntity(BaseEntity):
         if self.special is None:
             return
         bar_height = int(cell_size * self._BAR_HEIGHT_RATIO)
-        bar_width = cell_size
-        x = self.x * cell_size + ox
+        bar_width = CELL_SIZE_INNER
+        # Center bar horizontally in the cell, stack above bar1
+        x = self.x * cell_size + ox + (cell_size - bar_width) // 2
         y = self.y * cell_size + oy + cell_size - 2 * bar_height
         pygame.draw.rect(surface, self._SPECIAL_COL_BG, (x, y, bar_width, bar_height))
         fill_width = int(bar_width * self.special)

@@ -1,7 +1,7 @@
 import pygame
 import sys
 from game_core.entity_definitions import *
-from game_core.config import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_BG_COL, GRID_BORDER_COL, BG_OUTSIDE_GRID_COL
+from game_core.config import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_FILL_COL, GRID_EMPTY_SPACE_COL, BG_OUTSIDE_GRID_COL, adjust_color, BASE_COL
 from game_core.controls import *
 from game_ui.ui import *
 from game_core.entity_state import EntityStateList
@@ -13,6 +13,7 @@ import game_core.gameplay_events
 from game_ui.project_overview_panel import handle_render_queue_panel_event
 from game_ui.supplies_panel import handle_supplies_panel_event
 from game_ui.ui import draw_entity_hover_label_if_needed
+import random
 
 
 # --- Game Grid ---
@@ -45,7 +46,9 @@ def run_game():
 
     grid = create_grid()
     # Load game state if available
-    entity_states, camera_offset, cell_size = savegame.load_game(grid)
+    entity_states, camera_offset, _ = savegame.load_game(grid)
+    cell_size = CELL_SIZE  # Always use config value, ignore saved value
+
     # --- Use new GameControls class for all input ---
     from game_core.controls import GameControls
     game_controls = GameControls()
@@ -68,13 +71,22 @@ def run_game():
     # --- Static Entities Baking ---
     background_surface = pygame.Surface((GRID_WIDTH * cell_size, GRID_HEIGHT * cell_size))
     def bake_static_entities():
-        background_surface.fill(GRID_BG_COL)
-        # Draw grid lines onto background
-        for x in range(GRID_WIDTH + 1):
-            pygame.draw.line(background_surface, GRID_BORDER_COL, (x * cell_size, 0), (x * cell_size, GRID_HEIGHT * cell_size))
-        for y in range(GRID_HEIGHT + 1):
-            pygame.draw.line(background_surface, GRID_BORDER_COL, (0, y * cell_size), (GRID_WIDTH * cell_size, y * cell_size))
-        # Draw all entities onto background (static layer, no progress bars)
+        background_surface.fill(GRID_EMPTY_SPACE_COL)
+        cell_margin = 4  # Space in pixels between cells
+        color = GRID_FILL_COL
+        for gy in range(GRID_HEIGHT):
+            for gx in range(GRID_WIDTH):
+                rect = pygame.Rect(
+                    gx * cell_size + cell_margin,
+                    gy * cell_size + cell_margin,
+                    cell_size - 2 * cell_margin,
+                    cell_size - 2 * cell_margin
+                )
+                # Draw rounded rectangle for cell
+                pygame.draw.rect(background_surface, color, rect, border_radius=2)
+                # Draw 2px border with adjusted color
+                border_col = adjust_color(BASE_COL, white_factor=0.0, exposure=1.3)
+                pygame.draw.rect(background_surface, border_col, rect, width=1, border_radius=3)
         for row in grid:
             for entity in row:
                 if entity and hasattr(entity, 'draw'):

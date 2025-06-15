@@ -32,17 +32,18 @@ def adjust_color(base_color=BASE_COL, white_factor=0.0, exposure=1.0):
 GRID_WIDTH = 70
 GRID_HEIGHT = 35
 CELL_SIZE = 64
+CELL_SIZE_INNER = CELL_SIZE - 10
 FPS = 60
 
 FULLSCREEN = True
 RESOLUTION = (0, 0)
 
-UI_BG1_COL = (40, 45, 50, 255)
-UI_BORDER1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=2) 
+GRID_FILL_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.6) 
+GRID_EMPTY_SPACE_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.7) 
+BG_OUTSIDE_GRID_COL = GRID_EMPTY_SPACE_COL
+UI_BG1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=0.7) 
+UI_BORDER1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.5) 
 TEXT1_COL = (180, 180, 180)
-GRID_BG_COL = exposure_color(UI_BG1_COL, 1.6)
-GRID_BORDER_COL = exposure_color(UI_BG1_COL, 2)
-BG_OUTSIDE_GRID_COL = GRID_BG_COL
 STATUS_BASIC_COL = (180, 180, 180)
 STATUS_INIT_COL = (120, 150, 180)
 STATUS_BAD_COL = (255, 0, 0)
