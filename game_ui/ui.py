@@ -64,7 +64,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     show_details_bg = hovered_entity is not None
     draw_details_panel(surface, font, entity=hovered_entity, show_bg=show_details_bg)
     # Draw experience panel (example: 60% progress)
-    draw_experience_panel(surface, progress=0.6)
+    draw_experience_panel(surface)
 
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:

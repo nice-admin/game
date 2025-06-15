@@ -4,7 +4,7 @@ import hashlib
 from game_core import entity_definitions
 from game_core.entity_base import *
 from game_core.entity_definitions import *
-from game_core.config import BASE_COL, UI_BG1_COL, exposure_color, adjust_color, FONT1, CURRENCY_SYMBOL
+from game_core.config import BASE_COL, UI_BG1_COL, adjust_color, FONT1, CURRENCY_SYMBOL
 
 # --- Constants ---
 BG_COLOR = UI_BG1_COL
@@ -13,6 +13,7 @@ SECTION_LABELS = ["Computers", "Monitors", "Utility", "Production", "Management"
 BUTTON_SPACING = 8  # Spacing between entity buttons
 BUTTONS_TOP_MARGIN = 10  # Top margin for section buttons
 PANEL_Y_OFFSET = 10  # Offset to move the construction panel downwards
+ENTITY_BUTTON_COUNT = 10  # Default number of entity buttons in the construction panel
 
 def get_computer_entities():
     classes = set()
@@ -80,14 +81,14 @@ class SectionButton:
         self.width = width if width is not None else self.DEFAULT_WIDTH
 
 class EntityButton:
-    DEFAULT_HEIGHT = 130
-    DEFAULT_WIDTH = 130
-    DEFAULT_ICON_WIDTH = 80
+    DEFAULT_HEIGHT = 120
+    DEFAULT_WIDTH = 120
+    DEFAULT_ICON_WIDTH = 75
     DEFAULT_ICON_HEIGHT = DEFAULT_ICON_WIDTH
-    DEFAULT_ICON_TOP_MARGIN = 13
+    DEFAULT_ICON_TOP_MARGIN = DEFAULT_HEIGHT // 14
     DEFAULT_LABEL_BOTTOM_MARGIN = 33
     FONT_SIZE = 18
-    ROUNDING = 10  # Default corner radius for button rounding
+    ROUNDING = 5  # Default corner radius for button rounding
     BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.8, exposure=1)  # Use adjust_color for gradient start
     BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.7, exposure=1)    # Gradient end color
     BG_COL_GRAD_EMPTY = adjust_color(BASE_COL, white_factor=0, exposure=0.9)  # For empty entity buttons
@@ -198,7 +199,7 @@ class EntityButton:
 
 class Background:
     DEFAULT_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
-    DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * 8 + 8 * BUTTON_SPACING + 40  # Default for 8 entity buttons
+    DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * ENTITY_BUTTON_COUNT + ENTITY_BUTTON_COUNT * BUTTON_SPACING + 40  # Panel width matches entity button count
     DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 30
     ROUNDING = 12  # Default corner radius for background rounding
     BORDER_COLOR = UI_BORDER1_COL  # Use UI_BORDER1_COL for border color
@@ -288,7 +289,7 @@ _baked_panel_cache = {
     'size': None,
 }
 
-def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=8, extend_below=0):
+def draw_construction_panel(surface, selected_section=0, selected_item=None, font=None, x=None, y=None, width=None, height=100, number_of_entity_buttons=ENTITY_BUTTON_COUNT, extend_below=0):
     """
     Draws a new construction panel with two rows:
     - First row: 7 section buttons ("Computers", "Monitors", rest are "empty")
