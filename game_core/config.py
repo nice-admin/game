@@ -29,9 +29,9 @@ def adjust_color(base_color=BASE_COL, white_factor=0.0, exposure=1.0):
         for c, w in zip(col, white)
     )
 
-GRID_WIDTH = 70
-GRID_HEIGHT = 35
-CELL_SIZE = 64
+GAME_AREA_WIDTH = 70
+GAME_AREA_HEIGHT = 35
+CELL_SIZE = 60
 CELL_SIZE_INNER = CELL_SIZE - 10
 FPS = 60
 
@@ -41,9 +41,11 @@ RESOLUTION = (0, 0)
 GRID_FILL_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.6) 
 GRID_EMPTY_SPACE_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.7) 
 BG_OUTSIDE_GRID_COL = GRID_EMPTY_SPACE_COL
-UI_BG1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=0.7) 
+
+UI_BG1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1) 
 UI_BORDER1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.5) 
 TEXT1_COL = (180, 180, 180)
+
 STATUS_BASIC_COL = (180, 180, 180)
 STATUS_INIT_COL = (120, 150, 180)
 STATUS_BAD_COL = (255, 0, 0)
@@ -69,6 +71,6 @@ def get_display_mode():
     if FULLSCREEN:
         return RESOLUTION, pygame.FULLSCREEN | pygame.NOFRAME
     else:
-        return (GRID_WIDTH * CELL_SIZE, GRID_HEIGHT * CELL_SIZE), 0
+        return (GAME_AREA_WIDTH * CELL_SIZE, GAME_AREA_HEIGHT * CELL_SIZE), 0
 
 CURRENCY_SYMBOL = "§"  # You can change this to any symbol, e.g., 'S', '₴', etc.

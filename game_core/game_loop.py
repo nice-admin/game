@@ -1,7 +1,7 @@
 import pygame
 import sys
 from game_core.entity_definitions import *
-from game_core.config import GRID_WIDTH, GRID_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_FILL_COL, GRID_EMPTY_SPACE_COL, BG_OUTSIDE_GRID_COL, adjust_color, BASE_COL
+from game_core.config import GAME_AREA_WIDTH, GAME_AREA_HEIGHT, CELL_SIZE, FPS, get_display_mode, GRID_FILL_COL, GRID_EMPTY_SPACE_COL, BG_OUTSIDE_GRID_COL, adjust_color, BASE_COL
 from game_core.controls import *
 from game_ui.ui import *
 from game_core.entity_state import EntityStateList
@@ -18,7 +18,7 @@ import random
 
 # --- Game Grid ---
 def create_grid():
-    return [[None for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
+    return [[None for _ in range(GAME_AREA_WIDTH)] for _ in range(GAME_AREA_HEIGHT)]
 
 def place_entity(grid, entity_states, entity):
     gx, gy = entity.x, entity.y
@@ -59,8 +59,8 @@ def run_game():
     # Center camera if no saved offset (i.e., default [0, 0])
     if camera_offset == [0, 0]:
         screen_width, screen_height = screen.get_width(), screen.get_height()
-        camera_offset[0] = -(GRID_WIDTH * cell_size // 2 - screen_width // 2)
-        camera_offset[1] = -(GRID_HEIGHT * cell_size // 2 - screen_height // 2)
+        camera_offset[0] = -(GAME_AREA_WIDTH * cell_size // 2 - screen_width // 2)
+        camera_offset[1] = -(GAME_AREA_HEIGHT * cell_size // 2 - screen_height // 2)
 
     # Load icons for all entities in grid at startup
     for row in grid:
@@ -69,13 +69,13 @@ def run_game():
                 entity.load_icon()
 
     # --- Static Entities Baking ---
-    background_surface = pygame.Surface((GRID_WIDTH * cell_size, GRID_HEIGHT * cell_size))
+    background_surface = pygame.Surface((GAME_AREA_WIDTH * cell_size, GAME_AREA_HEIGHT * cell_size))
     def bake_static_entities():
         background_surface.fill(GRID_EMPTY_SPACE_COL)
         cell_margin = 4  # Space in pixels between cells
         color = GRID_FILL_COL
-        for gy in range(GRID_HEIGHT):
-            for gx in range(GRID_WIDTH):
+        for gy in range(GAME_AREA_HEIGHT):
+            for gx in range(GAME_AREA_WIDTH):
                 rect = pygame.Rect(
                     gx * cell_size + cell_margin,
                     gy * cell_size + cell_margin,
@@ -108,7 +108,7 @@ def run_game():
     running = True
     prev_camera_offset = camera_offset
     prev_cell_size = cell_size
-    state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=game_controls.camera_drag, paint_brush=game_controls.paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, line_start=None, erase_line_start=None, GRID_WIDTH=GRID_WIDTH, GRID_HEIGHT=GRID_HEIGHT)
+    state = dict(grid=grid, entity_states=entity_states, camera_offset=camera_offset, cell_size=cell_size, camera_drag=game_controls.camera_drag, paint_brush=game_controls.paint_brush, selected_index=selected_index, selected_entity_type=selected_entity_type, line_start=None, erase_line_start=None, GRID_WIDTH=GAME_AREA_WIDTH, GRID_HEIGHT=GAME_AREA_HEIGHT)
     from game_core.game_state import GameState
     gs = GameState()
     while running:
@@ -195,9 +195,9 @@ def render_game(state, screen, background_surface, font, timings, clock):
     screen.fill(BG_OUTSIDE_GRID_COL)
     screen.blit(background_surface, state['camera_offset'])
     min_x = max(0, int(-state['camera_offset'][0] // state['cell_size']))
-    max_x = min(GRID_WIDTH, int((-state['camera_offset'][0] + screen.get_width()) // state['cell_size']) + 1)
+    max_x = min(GAME_AREA_WIDTH, int((-state['camera_offset'][0] + screen.get_width()) // state['cell_size']) + 1)
     min_y = max(0, int(-state['camera_offset'][1] // state['cell_size']))
-    max_y = min(GRID_HEIGHT, int((-state['camera_offset'][1] + screen.get_height()) // state['cell_size']) + 1)
+    max_y = min(GAME_AREA_HEIGHT, int((-state['camera_offset'][1] + screen.get_height()) // state['cell_size']) + 1)
     grid_ref = state['grid']
     cam_offset = state['camera_offset']
     cell_sz = state['cell_size']
@@ -210,7 +210,7 @@ def render_game(state, screen, background_surface, font, timings, clock):
     mx, my = pygame.mouse.get_pos()
     gx = int((mx - cam_offset[0]) // cell_sz)
     gy = int((my - cam_offset[1]) // cell_sz)
-    hovered_entity = grid_ref[gy][gx] if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT else None
+    hovered_entity = grid_ref[gy][gx] if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT else None
     # Draw UI, pass hovered_entity and preview args
     panel_btn_rects = {}
     # Do NOT draw construction panel here; handled in draw_all_panels
@@ -228,8 +228,8 @@ def render_game(state, screen, background_surface, font, timings, clock):
         selected_entity_type=state['selected_entity_type'],
         camera_offset=cam_offset,
         cell_size=cell_sz,
-        GRID_WIDTH=GRID_WIDTH,
-        GRID_HEIGHT=GRID_HEIGHT,
+        GRID_WIDTH=GAME_AREA_WIDTH,
+        GRID_HEIGHT=GAME_AREA_HEIGHT,
         selected_section=state.get('selected_section', 0),
         selected_item=state.get('selected_item', None),
         panel_btn_rects=panel_btn_rects,

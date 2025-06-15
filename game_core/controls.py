@@ -1,7 +1,7 @@
 # game_core/controls.py
 import pygame
 import game_other.audio as audio
-from game_core.config import GRID_WIDTH, GRID_HEIGHT
+from game_core.config import GAME_AREA_WIDTH, GAME_AREA_HEIGHT
 from game_core.game_state import GameState
 # --- Merged from input_events.py ---
 import game_other.testing_layout as testing_layout
@@ -31,7 +31,7 @@ def line_build(x0, y0, x1, y1, grid, entity_class):
     err = dx - dy
     x, y = x0, y0
     while True:
-        if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT and grid[y][x] is None:
+        if 0 <= x < GAME_AREA_WIDTH and 0 <= y < GAME_AREA_HEIGHT and grid[y][x] is None:
             line_entities.append(entity_class(x, y))
         if (x, y) == (x1, y1):
             break
@@ -53,7 +53,7 @@ def line_deconstruct(x0, y0, x1, y1, grid):
     err = dx - dy
     x, y = x0, y0
     while True:
-        if 0 <= x < GRID_WIDTH and 0 <= y < GRID_HEIGHT:
+        if 0 <= x < GAME_AREA_WIDTH and 0 <= y < GAME_AREA_HEIGHT:
             erase_line_coords.append((x, y))
         if (x, y) == (x1, y1):
             break
@@ -145,12 +145,12 @@ class PaintBrush:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == self.button and selected_entity_type is not None:
                 self.active = True
-                if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is None:
+                if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT and grid[gy][gx] is None:
                     audio.play_build_sound()
                     return gx, gy, selected_entity_type(gx, gy), False
             elif event.button == self.erase_button:
                 self.erase_active = True
-                if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT and grid[gy][gx] is not None:
+                if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT and grid[gy][gx] is not None:
                     audio.play_build_sound()
                     return gx, gy, None, True
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -159,7 +159,7 @@ class PaintBrush:
             elif event.button == self.erase_button:
                 self.erase_active = False
         elif event.type == pygame.MOUSEMOTION:
-            if 0 <= gx < GRID_WIDTH and 0 <= gy < GRID_HEIGHT:
+            if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT:
                 if self.active and selected_entity_type is not None and grid[gy][gx] is None:
                     audio.play_build_sound()
                     return gx, gy, selected_entity_type(gx, gy), False
