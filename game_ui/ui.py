@@ -16,6 +16,10 @@ from game_core.config import UI_BG1_COL, UI_BORDER1_COL
 from game_ui.cursor_info import draw_entity_preview
 from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 from game_ui.supplies_panel import draw_supplies_panel
+from game_ui.software_panel import draw_software_panel
+from game_ui.quest_panel import QuestDisplayItem, draw_quest_panel, draw_active_and_random_quests
+import game_ui.quest_panel as quest_panel
+import math
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -77,6 +81,10 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_ARROW_POINTER:
         show_arrow_pointer()
         draw_arrow_pointer(surface, 1440, 85)
+
+    draw_software_panel(surface)
+    # Draw only active deterministic and random quests (right-aligned, stacked vertically)
+    draw_active_and_random_quests(surface, quest_panel.active_quests, quest_panel.random_active_quests)
 
 def draw_entity_hover_label_if_needed(screen, font):
     import pygame

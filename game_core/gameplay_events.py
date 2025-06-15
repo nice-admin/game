@@ -4,8 +4,8 @@ import time
 from game_core.game_state import GameState
 import game_other.audio
 import pygame
-from game_core.entity_definitions import DecorationEntity, ComputerEntity
 from game_ui.project_overview_panel import expand_render_queue_panel
+import game_ui.quest_panel as quest_panel
 
 class GamePlayEvent:
     def trigger(self):
@@ -247,6 +247,29 @@ class OfficeQualityCheck(GamePlayEvent):
             state.office_quality = office_quality
             time.sleep(self.INTERVAL)
 
+class RandomQuestArrived:
+    def __init__(self, quest_list):
+        self.all_quests = quest_list
+        self.active_quests = random.sample(self.all_quests, min(3, len(self.all_quests)))
+
+    def get_active_quests(self):
+        return self.active_quests
+
+    def trigger(self):
+        quest_panel.random_active_quests = self.active_quests
+
+class DeterministQuestArrived:
+    def __init__(self, quest_list):
+        self.all_quests = quest_list
+        # Only activate quest with quest_id == 1 for now
+        self.active_quests = [q for q in self.all_quests if getattr(q, 'quest_id', None) == 1]
+
+    def get_active_quests(self):
+        return self.active_quests
+
+    def trigger(self):
+        quest_panel.active_quests = self.active_quests
+
 RANDOM_GAMEPLAY_EVENTS = [
     InternetOutage(),
     # NasCrashed(),
@@ -254,6 +277,8 @@ RANDOM_GAMEPLAY_EVENTS = [
 ]
 
 DETERMINISTIC_GAMEPLAY_EVENTS = [
+    RandomQuestArrived(quest_panel.random_quests),
+    DeterministQuestArrived(quest_panel.deterministic_quests),
     JobArrived(),
     JobFinished(),
     OfficeQualityCheck(),
