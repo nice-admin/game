@@ -43,7 +43,7 @@ GRID_EMPTY_SPACE_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.7)
 BG_OUTSIDE_GRID_COL = GRID_EMPTY_SPACE_COL
 
 UI_BG1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1) 
-UI_BORDER1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=1.5) 
+UI_BORDER1_COL = adjust_color(BASE_COL, white_factor=0.0, exposure=2) 
 TEXT1_COL = (180, 180, 180)
 
 STATUS_BASIC_COL = (180, 180, 180)

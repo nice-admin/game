@@ -42,7 +42,8 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
     dy = size * 1.5 + spacing / 2
     group_height = dy * 2
     group_width = dx
-    x = int(surf_w * (1 - margin_ratio) - group_width)
+    # Place from left edge instead of right
+    x = int(surf_w * margin_ratio)
     y = int(surf_h * (1 - margin_ratio*0.3) - group_height)
     btn1 = SoftwareButton((x, y + dy), size, color, rotation_deg=30)
     btn2 = SoftwareButton((x + dx, y + dy), size, color, rotation_deg=30)

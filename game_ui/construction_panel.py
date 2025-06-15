@@ -70,8 +70,8 @@ class SectionButton:
     DEFAULT_HEIGHT = 40
     DEFAULT_WIDTH = 150
     FONT_SIZE = 18
-    BG_COL = adjust_color(BASE_COL, white_factor=0.15, exposure=1)
-    BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0.35, exposure=1)  # Added for selected state
+    BG_COL = adjust_color(BASE_COL, white_factor=0, exposure=1.5)
+    BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0, exposure=2.2)  # Added for selected state
     def __init__(self, rect, label, selected=False, height=None, width=None):
         self.rect = rect
         self.label = label
@@ -90,6 +90,7 @@ class EntityButton:
     ROUNDING = 10  # Default corner radius for button rounding
     BG_COL_GRAD_START = adjust_color(BASE_COL, white_factor=0.8, exposure=1)  # Use adjust_color for gradient start
     BG_COL_GRAD_END = adjust_color(BASE_COL, white_factor=0.7, exposure=1)    # Gradient end color
+    BG_COL_GRAD_EMPTY = adjust_color(BASE_COL, white_factor=0, exposure=0.9)  # For empty entity buttons
     BG_COL_SELECTED = adjust_color(BASE_COL, white_factor=0.9, exposure=1)
     TEXT_COL = (46, 62, 79)  # Default text color for entity button
     INNER_SHADOW_COLOR = (0, 0, 0, 60)  # RGBA for subtle shadow
@@ -123,9 +124,14 @@ class EntityButton:
             shifted_y = max(0, y - offset)
             ratio = shifted_y / max(1, self.rect.height - 1 - offset)
             ratio = min(max(ratio, 0), 1)  # Clamp between 0 and 1
-            r = int(self.BG_COL_GRAD_START[0] * (1 - ratio) + self.BG_COL_GRAD_END[0] * ratio)
-            g = int(self.BG_COL_GRAD_START[1] * (1 - ratio) + self.BG_COL_GRAD_END[1] * ratio)
-            b = int(self.BG_COL_GRAD_START[2] * (1 - ratio) + self.BG_COL_GRAD_END[2] * ratio)
+            if self.entity_class is None:
+                r = int(self.BG_COL_GRAD_EMPTY[0])
+                g = int(self.BG_COL_GRAD_EMPTY[1])
+                b = int(self.BG_COL_GRAD_EMPTY[2])
+            else:
+                r = int(self.BG_COL_GRAD_START[0] * (1 - ratio) + self.BG_COL_GRAD_END[0] * ratio)
+                g = int(self.BG_COL_GRAD_START[1] * (1 - ratio) + self.BG_COL_GRAD_END[1] * ratio)
+                b = int(self.BG_COL_GRAD_START[2] * (1 - ratio) + self.BG_COL_GRAD_END[2] * ratio)
             pygame.draw.line(grad_surf, (r, g, b), (0, y), (self.rect.width, y))
         grad_surf_rounded = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
         pygame.draw.rect(grad_surf_rounded, (255,255,255), grad_surf_rounded.get_rect(), border_radius=self.ROUNDING)
@@ -158,7 +164,9 @@ class EntityButton:
 
     def draw(self, surface, font, text_color=None):
         self._draw_gradient(surface)
-        self._draw_inner_shadow(surface)
+        # Only draw bevel/inner shadow if entity_class is not None
+        if self.entity_class is not None:
+            self._draw_inner_shadow(surface)
         if self.selected:
             pygame.draw.rect(surface, self.BG_COL_SELECTED, self.rect, border_radius=self.ROUNDING)
         # Draw icon
@@ -346,7 +354,8 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     for i, entity_class in enumerate(entity_classes_out):
         btn_x = entity_btns_x_offset + i * (item_btn_w + BUTTON_SPACING)
         btn_rect = pygame.Rect(btn_x, entity_btns_y, item_btn_w, item_btn_h - 4)
-        selected = (selected_item is not None and i == selected_item)
+        # Only allow selection if entity_class is not None
+        selected = (selected_item is not None and i == selected_item and entity_class is not None)
         entity_button = EntityButton(
             btn_rect,  # Do NOT move(x, y) here!
             entity_class=entity_class,

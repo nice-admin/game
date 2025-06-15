@@ -8,6 +8,7 @@ DETAILS_PANEL_WIDTH = 400
 DETAILS_PANEL_HEIGHT = 160
 ROUNDING = 12  # px, for rounded corners
 BORDER_WIDTH = 3  # px, for border thickness
+ONSCREEN_TOP_MARGIN = 0.6  # Ratio for top margin placement of details panel (10% from top)
 # --- Status message logic migrated from info_panel.py ---
 def draw_status_by_state(surface, font, hovered_entity, box_x, box_y, icon_size):
     """Draws a status message based on the entity's state."""
@@ -193,14 +194,14 @@ class EntityPropertyRow:
         else:
             self.rect = None
 
-def draw_details_panel(surface, font, x, y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=None, show_bg=True):
+def draw_details_panel(surface, font, entity=None, show_bg=True):
     """
-    Draws a details panel at (x, y) with the given width and height.
-    If an entity is provided, show its details; otherwise, show a placeholder.
-    If show_bg is False, the panel background will not be drawn (for hidden/cached state).
-    The panel height will expand based on the number of property rows if entity is not None.
-    Only properties in ENTITY_PROPERTY_CONFIG are shown, along with icon, display name, and status.
+    Draws the details panel at its default position and size, using the configured margin and constants.
     """
+    x = surface.get_width() - DETAILS_PANEL_WIDTH
+    y = int(surface.get_height() * ONSCREEN_TOP_MARGIN)
+    width = DETAILS_PANEL_WIDTH
+    height = DETAILS_PANEL_HEIGHT
     # --- HEADER ---
     dynamic_height = height
     if entity is not None:

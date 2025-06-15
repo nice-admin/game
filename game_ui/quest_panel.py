@@ -1,5 +1,7 @@
 import pygame
 
+ONSCREEN_TOP_MARGIN = 0.35  # Ratio for top margin placement of quest panel
+
 class QuestDisplayItem:
     def __init__(self, name, objective, completed=False, reward=None, quest_id=None):
         self.name = name
@@ -59,7 +61,7 @@ def draw_quest_panel(surface, quest_name, objective, y=None):
 
 def draw_active_and_random_quests(surface, active_deterministic, active_random):
     surf_h = surface.get_height()
-    start_y = int(surf_h * 0.4)  # Start at 60% of the screen height
+    start_y = int(surf_h * ONSCREEN_TOP_MARGIN)  # Start at defined top margin ratio of the screen height
     y = start_y
     text_font = pygame.font.SysFont(None, 24)
     # Draw active deterministic quests first

@@ -20,8 +20,11 @@ class OverviewPanelHeader:
         # No title or text rendered
         self.name_rect = pygame.Rect(self.x, self.y, 0, 0)
 
+def get_entity_icon_path(entity):
+    """Return the icon path for an entity, or None if not available."""
+    return getattr(entity, '_icon', None)
+
 def get_entity_counts(grid):
-    from game_ui.info_panel import get_entity_icon_path
     from collections import Counter
     counts = Counter()
     icon_paths = {}

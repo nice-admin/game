@@ -1,7 +1,6 @@
 from game_ui.profiler_panel import draw_profiler_panel
 from game_ui.hidden_info_panel import draw_hidden_info_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
-from game_ui.info_panel import draw_info_panel, get_info_panel_width
 from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel_general import draw_resource_panel_general, get_baked_panel
@@ -9,7 +8,7 @@ from game_ui.resource_panel_system import draw_resource_panel_system, get_system
 from game_ui.project_overview_panel import draw_project_overview_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
-from game_ui.details_panel import draw_details_panel, DETAILS_PANEL_WIDTH, DETAILS_PANEL_HEIGHT
+from game_ui.details_panel import draw_details_panel
 from game_ui.grid_overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
 from game_core.game_state import GameState
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL
@@ -20,6 +19,7 @@ from game_ui.software_panel import draw_software_panel
 from game_ui.quest_panel import QuestDisplayItem, draw_quest_panel, draw_active_and_random_quests
 import game_ui.quest_panel as quest_panel
 import math
+from game_ui.experience_panel import draw_experience_panel
 
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -58,20 +58,17 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
 
     overview_panel_x = 0
     overview_panel_y = surface.get_height() - OVERVIEW_PANEL_HEIGHT
-    draw_overview_panel(surface, font, overview_panel_x, overview_panel_y, width=OVERVIEW_PANEL_WIDTH, height=OVERVIEW_PANEL_HEIGHT, grid=grid)
+    if ALLOW_GRID_OVERVIEW_PANEL:
+        draw_overview_panel(surface, font, overview_panel_x, overview_panel_y, width=OVERVIEW_PANEL_WIDTH, height=OVERVIEW_PANEL_HEIGHT, grid=grid)
 
-    details_panel_x = surface.get_width() - DETAILS_PANEL_WIDTH
-    # Place details panel at 50% of the screen vertically (centered vertically)
-    details_panel_y = int((surface.get_height() - DETAILS_PANEL_HEIGHT) / 2)
     show_details_bg = hovered_entity is not None
-    draw_details_panel(surface, font, details_panel_x, details_panel_y, width=DETAILS_PANEL_WIDTH, height=DETAILS_PANEL_HEIGHT, entity=hovered_entity, show_bg=show_details_bg)
+    draw_details_panel(surface, font, entity=hovered_entity, show_bg=show_details_bg)
+    # Draw experience panel (example: 60% progress)
+    draw_experience_panel(surface, progress=0.6)
 
-    info_panel_width = get_info_panel_width(surface.get_width())
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:
         draw_alert_panel(surface, font, surface.get_width(), surface.get_height())
-    if ALLOW_INFO_PANEL:
-        draw_info_panel(surface, font, surface.get_width(), surface.get_height(), grid=grid)
     if ALLOW_HIDDEN_INFO_PANEL:
         draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
     draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
