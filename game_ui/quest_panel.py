@@ -79,9 +79,9 @@ class QuestItem:
                     check_x = x + 15
                     check_y = line_y + (text_font.get_height() - checkmark.size) // 2
                     checkmark.draw(surface, check_x, check_y)
-                    text_x = check_x + checkmark.size + 5
+                    text_x = check_x + checkmark.size + 7  # was +5, now +8 for +3px
                 else:
-                    text_x = x + 15 + checkmark.size + 5
+                    text_x = x + 15 + checkmark.size + 7  # was +5, now +8 for +3px
                 text_surf = text_font.render(line, True, (200, 200, 200))
                 surface.blit(text_surf, (text_x, line_y))
                 line_y += 24

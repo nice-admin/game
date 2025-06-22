@@ -1,5 +1,6 @@
 import pygame
 import math
+import time
 from game_core.config import UI_BG1_COL, resource_path
 
 SOFTWARE_BUTTON_SIZE = 70
@@ -78,6 +79,56 @@ def draw_software_buttons(surface, origin=(100, 100), size=40, color=UI_BG1_COL)
     for btn in [btn1, btn2, btn3]:
         btn.draw(surface)
 
+class Description:
+    def __init__(self, color, width=400, height=200, duration=0.1):
+        self.color = color
+        self.width = width
+        self.height = height
+        self.duration = duration
+        self.start_time = None
+        self.active = False
+        self.x = 0
+        self.y = 0
+
+    def start(self, x, y):
+        self.start_time = time.time()
+        self.active = True
+        self.x = x
+        self.y = y
+
+    def stop(self):
+        self.active = False
+        self.start_time = None
+
+    def update_position(self, x, y):
+        self.x = x
+        self.y = y
+
+    def draw(self, surface):
+        if not self.active or self.start_time is None:
+            return
+        elapsed = time.time() - self.start_time
+        progress = min(1.0, max(0.0, elapsed / self.duration))
+        rect_w = int(self.width * progress)
+        if rect_w > 0:
+            pygame.draw.rect(surface, self.color, (self.x, self.y - self.height, rect_w, self.height))
+            # Draw text if rectangle is at least 100px wide
+            if rect_w > 100:
+                font = pygame.font.SysFont(None, 28)
+                text = "Cinema 4D is versatile something"
+                text_surf = font.render(text, True, (255, 255, 255))
+                text_rect = text_surf.get_rect()
+                # 10px from top edge, pad left by 20px
+                text_rect.topleft = (self.x + 20, self.y - self.height + 10)
+                # Only blit if at least part of the text is visible
+                if text_rect.left < self.x + rect_w:
+                    # Clip the text if needed
+                    clip_rect = pygame.Rect(self.x, self.y - self.height, rect_w, self.height)
+                    prev_clip = surface.get_clip()
+                    surface.set_clip(clip_rect)
+                    surface.blit(text_surf, text_rect)
+                    surface.set_clip(prev_clip)
+
 def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, margin_ratio=0.05, cache={}, mouse_pos=None, mouse_pressed=False):
     surf_w, surf_h = surface.get_width(), surface.get_height()
     spacing = 2
@@ -132,6 +183,11 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
     surface.blit(panel_surf, (x, y))
     buttons = cache['panel_buttons']
     hovered_idx = None
+    # Animation state for unfolding rectangle
+    if 'panel_anim' not in cache:
+        cache['panel_anim'] = {'hovered_idx': None, 'desc': Description(UI_BG1_COL)}
+    anim = cache['panel_anim']
+    desc = anim['desc']
     # Draw hover/pressed overlays only if needed
     for i, btn in enumerate(buttons):
         # Adjust mouse_pos to panel-local coordinates
@@ -139,13 +195,27 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
         is_hover = local_mouse and btn.collidepoint(local_mouse)
         is_pressed = is_hover and mouse_pressed
         if is_hover or is_pressed:
+            # Animation: track hover start
+            if anim['hovered_idx'] != i:
+                anim['hovered_idx'] = i
+                desc.start(mouse_pos[0], mouse_pos[1])
+            else:
+                # Update position to follow cursor
+                desc.update_position(mouse_pos[0], mouse_pos[1])
+            hovered_idx = i
             # Draw overlay at correct screen position
             btn_screen = SoftwareButton(
                 (btn.center[0] + x, btn.center[1] + y), btn.size, btn.color, btn.rotation_deg, icon_path
             )
             btn_screen.icon = btn.icon  # reuse loaded icon
             btn_screen.draw(surface, highlight=is_hover, pressed=is_pressed)
-            hovered_idx = i
+            if is_hover and mouse_pos:
+                desc.draw(surface)
             if mouse_pressed:
                 print(f"SoftwareButton {i} clicked!")
+        else:
+            # Reset animation if not hovered
+            if anim['hovered_idx'] == i:
+                anim['hovered_idx'] = None
+                desc.stop()
     return buttons, hovered_idx
