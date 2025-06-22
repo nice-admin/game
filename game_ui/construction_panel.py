@@ -11,9 +11,11 @@ BG_COLOR = UI_BG1_COL
 TEXT_COLOR = (255, 255, 255)
 SECTION_LABELS = ["Computers", "Monitors", "Utility", "Production", "Management", "Decoration"]
 BUTTON_SPACING = 8  # Spacing between entity buttons
-BUTTONS_TOP_MARGIN = 10  # Top margin for section buttons
+SECTION_BUTTONS_TOP_MARGIN = 5  # Top margin for section buttons
 PANEL_Y_OFFSET = 10  # Offset to move the construction panel downwards
 ENTITY_BUTTON_COUNT = 10  # Default number of entity buttons in the construction panel
+ONSCREEN_BOTTOM_MARGIN = 0.024  # Ratio for bottom margin placement (10% from the bottom)
+BORDER_WIDTH = 0  # Default border width for construction panel elements
 
 def get_computer_entities():
     classes = set()
@@ -200,10 +202,10 @@ class EntityButton:
 class Background:
     DEFAULT_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
     DEFAULT_WIDTH = EntityButton.DEFAULT_WIDTH * ENTITY_BUTTON_COUNT + ENTITY_BUTTON_COUNT * BUTTON_SPACING + 40  # Panel width matches entity button count
-    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 30
+    DEFAULT_HEIGHT = SectionButton.DEFAULT_HEIGHT + EntityButton.DEFAULT_HEIGHT + 10
     ROUNDING = 12  # Default corner radius for background rounding
     BORDER_COLOR = UI_BORDER1_COL  # Use UI_BORDER1_COL for border color
-    BORDER_WIDTH = 5
+    BORDER_WIDTH = BORDER_WIDTH  # Use the global BORDER_WIDTH constant
 
     def __init__(self, x=0, y=0, width=None, height=None, color=None, rounding=None, border_color=None, border_width=None, extend_below=0):
         self.x = x
@@ -228,17 +230,18 @@ class Background:
             border_bottom_left_radius=0,
             border_bottom_right_radius=0
         )
-        # Draw border
-        pygame.draw.rect(
-            surface,
-            self.border_color,
-            self.rect,
-            width=self.border_width,
-            border_top_left_radius=self.rounding,
-            border_top_right_radius=self.rounding,
-            border_bottom_left_radius=0,
-            border_bottom_right_radius=0
-        )
+        # Draw border only if BORDER_WIDTH > 0
+        if BORDER_WIDTH > 0:
+            pygame.draw.rect(
+                surface,
+                self.border_color,
+                self.rect,
+                width=BORDER_WIDTH,
+                border_top_left_radius=self.rounding,
+                border_top_right_radius=self.rounding,
+                border_bottom_left_radius=0,
+                border_bottom_right_radius=0
+            )
 
 # --- Helper Functions ---
 def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COLOR):
@@ -301,7 +304,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     width = background.width
     panel_height = background.height
     x = (surface.get_width() - width) // 2
-    y = surface.get_height() - panel_height + extend_below + PANEL_Y_OFFSET
+    y = int(surface.get_height() * (1 - ONSCREEN_BOTTOM_MARGIN) - panel_height)
     panel_rect = pygame.Rect(x, y, width, panel_height)
 
     # Create a hash of the current panel state for cache invalidation
@@ -331,7 +334,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     section_btns_x_offset = (width - total_section_width) // 2
     section_buttons = []
     for i, label in enumerate(SECTION_LABELS):
-        btn_rect = pygame.Rect(section_btns_x_offset + i * section_btn_w + 2, BUTTONS_TOP_MARGIN, section_btn_w - 4, section_btn_h - 4)
+        btn_rect = pygame.Rect(section_btns_x_offset + i * section_btn_w + 2, SECTION_BUTTONS_TOP_MARGIN, section_btn_w - 4, section_btn_h - 4)
         selected = (i == selected_section)
         color = SectionButton.BG_COL_SELECTED if selected else SectionButton.BG_COL
         section_font = pygame.font.Font(FONT1, SectionButton.FONT_SIZE)
@@ -351,7 +354,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     # Center entity buttons horizontally in the panel with spacing
     total_btns_width = number_of_entity_buttons * item_btn_w + (number_of_entity_buttons - 1) * BUTTON_SPACING
     entity_btns_x_offset = (width - total_btns_width) // 2
-    entity_btns_y = BUTTONS_TOP_MARGIN + section_btn_h + 2
+    entity_btns_y = SECTION_BUTTONS_TOP_MARGIN + section_btn_h + 2
     for i, entity_class in enumerate(entity_classes_out):
         btn_x = entity_btns_x_offset + i * (item_btn_w + BUTTON_SPACING)
         btn_rect = pygame.Rect(btn_x, entity_btns_y, item_btn_w, item_btn_h - 4)

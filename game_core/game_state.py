@@ -25,6 +25,9 @@ class GameState:
         self.total_employees = 0
         self.total_risky_entities = 0
         self.total_broken_entities = 0
+        self.total_experience = 0
+        self.current_lvl_experience = 0
+        self.total_level = 1
         self.is_internet_online = 1
         self.is_wifi_online = 1
         self.is_nas_online = 1

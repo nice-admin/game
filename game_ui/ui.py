@@ -77,9 +77,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:
         draw_alert_panel(surface, font, surface.get_width(), surface.get_height())
-    if ALLOW_HIDDEN_INFO_PANEL:
-        draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
-    draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
+        draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     if ALLOW_PROJECT_OVERVIEW_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height = 130)
     power_outage.draw_overlay(surface)
@@ -90,6 +88,8 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     draw_software_panel(surface)
     # Draw only active deterministic and random quests (right-aligned, stacked vertically)
     draw_quest_panel(surface, quest_panel.active_quests, quest_panel.random_active_quests)
+    if ALLOW_HIDDEN_INFO_PANEL:
+        draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
 
 def draw_entity_hover_label_if_needed(screen, font):
     import pygame

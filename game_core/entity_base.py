@@ -144,6 +144,9 @@ class BaseEntity:
                 play_purchase_sound()
             else:
                 play_build_sound()
+        # 10% chance to increase total_experience by 1
+        if hasattr(gs, 'total_experience') and random.random() < 0.1:
+            gs.total_experience += 1
 
     def on_initialized(self):
         self.power_drain = self._intended_power_drain
