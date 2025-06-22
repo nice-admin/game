@@ -84,9 +84,14 @@ class EntityInfo:
             self.detail_money.draw(surface, rect_x, y)
 
 def can_place_entity(entity, grid_x, grid_y, grid):
-    # TODO: Replace with actual placement logic
-    # Example: return grid[grid_y][grid_x] is None
-    return True  # Always allow for now
+    # Returns False if any entity is present at the hovered cell
+    try:
+        if grid is not None and 0 <= grid_y < len(grid) and 0 <= grid_x < len(grid[0]):
+            return grid[grid_y][grid_x] is None
+        return True  # Always allow for now
+    except Exception:
+        # If any error occurs, treat as placeable (green)
+        return True
 
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
     # Always use the global singleton for construction class
@@ -106,8 +111,18 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
         icon_surf = pygame.transform.smoothscale(icon_surf, (CELL_SIZE_INNER, CELL_SIZE_INNER)).copy()
         icon_x = grid_x * cell_size + camera_offset[0] + (cell_size - CELL_SIZE_INNER) // 2
         icon_y = grid_y * cell_size + camera_offset[1] + (cell_size - CELL_SIZE_INNER) // 2
-        # Draw placement rectangle
-        can_place = can_place_entity(preview_entity, grid_x, grid_y, grid)
+        # --- In-place logic for keeping green after placement ---
+        if not hasattr(draw_entity_preview, 'last_placed_cell'):
+            draw_entity_preview.last_placed_cell = None
+        mouse_pressed = pygame.mouse.get_pressed()[0]
+        if mouse_pressed and draw_entity_preview.last_placed_cell != (grid_x, grid_y):
+            # User just placed entity here
+            draw_entity_preview.last_placed_cell = (grid_x, grid_y)
+        # Keep green if mouse is still over last placed cell
+        if draw_entity_preview.last_placed_cell == (grid_x, grid_y):
+            can_place = True
+        else:
+            can_place = can_place_entity(preview_entity, grid_x, grid_y, grid)
         color = (0, 255, 0, 80) if can_place else (255, 0, 0, 80)
         rect_surf = pygame.Surface((CELL_SIZE_INNER, CELL_SIZE_INNER), pygame.SRCALPHA)
         pygame.draw.rect(rect_surf, color, rect_surf.get_rect(), border_radius=6)
@@ -118,3 +133,6 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
         # Use EntityInfo for overlay
         info = EntityInfo(preview_entity, cell_size)
         info.draw(surface, icon_x, icon_y)
+        # If mouse moved away from last placed cell, reset
+        if draw_entity_preview.last_placed_cell and draw_entity_preview.last_placed_cell != (grid_x, grid_y):
+            draw_entity_preview.last_placed_cell = None
