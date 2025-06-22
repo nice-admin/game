@@ -106,28 +106,46 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
     y = int(surf_h * 0.96) - panel_h
     # Compute absolute button centers (on main surface)
     abs_btn_centers = [
-        (btn_centers[0][0] + offset_x + x, btn_centers[0][1] + offset_y + y),
-        (btn_centers[1][0] + offset_x + x, btn_centers[1][1] + offset_y + y),
-        (btn_centers[2][0] + offset_x + x, btn_centers[2][1] + offset_y + y),
+        (btn_centers[0][0] + offset_x, btn_centers[0][1] + offset_y),
+        (btn_centers[1][0] + offset_x, btn_centers[1][1] + offset_y),
+        (btn_centers[2][0] + offset_x, btn_centers[2][1] + offset_y),
     ]
-    # Create button objects
-    buttons = [
-        SoftwareButton(abs_btn_centers[0], size, color, rotation_deg=30, icon_path=icon_path),
-        SoftwareButton(abs_btn_centers[1], size, color, rotation_deg=30, icon_path=icon_path),
-        SoftwareButton(abs_btn_centers[2], size, color, rotation_deg=30, icon_path=icon_path),
-    ]
-    # Draw panel background (optional, for clarity)
-    panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
-    # Draw buttons with highlight if hovered
+    # --- Caching logic ---
+    if 'panel_cache' not in cache or cache.get('panel_cache_key') != cache_key:
+        # Bake static panel (background + buttons, no hover/press)
+        panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
+        buttons = [
+            SoftwareButton(abs_btn_centers[0], size, color, rotation_deg=30, icon_path=icon_path),
+            SoftwareButton(abs_btn_centers[1], size, color, rotation_deg=30, icon_path=icon_path),
+            SoftwareButton(abs_btn_centers[2], size, color, rotation_deg=30, icon_path=icon_path),
+        ]
+        for btn in buttons:
+            btn.draw(panel_surf)
+        cache['panel_cache'] = panel_surf
+        cache['panel_buttons'] = buttons
+        cache['panel_cache_key'] = cache_key
+        cache['panel_abs_btn_centers'] = abs_btn_centers
+        cache['panel_rect'] = pygame.Rect(x, y, panel_w, panel_h)
+    # Blit cached panel
+    panel_surf = cache['panel_cache']
+    panel_rect = cache['panel_rect']
+    surface.blit(panel_surf, (x, y))
+    buttons = cache['panel_buttons']
     hovered_idx = None
+    # Draw hover/pressed overlays only if needed
     for i, btn in enumerate(buttons):
-        is_hover = mouse_pos and btn.collidepoint(mouse_pos)
+        # Adjust mouse_pos to panel-local coordinates
+        local_mouse = (mouse_pos[0] - x, mouse_pos[1] - y) if mouse_pos else None
+        is_hover = local_mouse and btn.collidepoint(local_mouse)
         is_pressed = is_hover and mouse_pressed
-        btn.draw(surface, highlight=is_hover, pressed=is_pressed)
-        if is_hover:
+        if is_hover or is_pressed:
+            # Draw overlay at correct screen position
+            btn_screen = SoftwareButton(
+                (btn.center[0] + x, btn.center[1] + y), btn.size, btn.color, btn.rotation_deg, icon_path
+            )
+            btn_screen.icon = btn.icon  # reuse loaded icon
+            btn_screen.draw(surface, highlight=is_hover, pressed=is_pressed)
             hovered_idx = i
             if mouse_pressed:
-                # Example: print or trigger action
                 print(f"SoftwareButton {i} clicked!")
-    # Optionally return buttons for further use
     return buttons, hovered_idx
