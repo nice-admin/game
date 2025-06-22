@@ -1,7 +1,6 @@
 from game_ui.profiler_panel import draw_profiler_panel
 from game_ui.hidden_info_panel import draw_hidden_info_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
-from game_other.feature_toggle import *
 import pygame
 from game_ui.resource_panel_general import draw_resource_panel_general, get_baked_panel
 from game_ui.resource_panel_system import draw_resource_panel_system, get_system_panel_bg
@@ -16,11 +15,20 @@ from game_ui.cursor_info import draw_entity_preview
 from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 from game_ui.supplies_panel import draw_supplies_panel
 from game_ui.software_panel import draw_software_panel
-from game_ui.quest_panel import QuestDisplayItem, draw_quest_panel, draw_active_and_random_quests
+from game_ui.quest_panel import QuestDisplayItem, draw_quest_panel
 import game_ui.quest_panel as quest_panel
 import math
 from game_ui.experience_panel import draw_experience_panel
 
+ALLOW_HIDDEN_INFO_PANEL = 1
+ALLOW_RESOURCE_PANEL = 1
+ALLOW_ALERTS_PANEL = 0
+ALLOW_GRID_OVERVIEW_PANEL = 0
+ALLOW_ARROW_POINTER = 0
+ALLOW_PROJECT_OVERVIEW_PANEL = 1
+ALLOW_CONSTRUCTION_PANEL = 1
+ALLOW_SUPPLIES_PANEL = 1
+ALLOW_SAVE_AND_LOAD = 0
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
     from game_core.game_state import GameState
@@ -81,7 +89,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
 
     draw_software_panel(surface)
     # Draw only active deterministic and random quests (right-aligned, stacked vertically)
-    draw_active_and_random_quests(surface, quest_panel.active_quests, quest_panel.random_active_quests)
+    draw_quest_panel(surface, quest_panel.active_quests, quest_panel.random_active_quests)
 
 def draw_entity_hover_label_if_needed(screen, font):
     import pygame

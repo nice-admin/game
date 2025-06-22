@@ -1,6 +1,6 @@
 import pygame
 from game_core.game_state import GameState
-from game_core.config import FONT1, CURRENCY_SYMBOL
+from game_core.config import FONT1, CURRENCY_SYMBOL, CELL_SIZE_INNER
     
 class NameLabel:
     def __init__(self, display_name, font, pad_x=10, pad_y=6):
@@ -83,6 +83,11 @@ class EntityInfo:
         if self.detail_money:
             self.detail_money.draw(surface, rect_x, y)
 
+def can_place_entity(entity, grid_x, grid_y, grid):
+    # TODO: Replace with actual placement logic
+    # Example: return grid[grid_y][grid_x] is None
+    return True  # Always allow for now
+
 def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
     # Always use the global singleton for construction class
     entity_type = GameState().current_construction_class
@@ -94,15 +99,21 @@ def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size,
     grid_y = int((my - camera_offset[1]) // cell_size)
     if not (0 <= grid_x < GRID_WIDTH and 0 <= grid_y < GRID_HEIGHT):
         return
-    # Remove the check for existing entity so preview always shows
     preview_entity = entity_type(grid_x, grid_y)
     icon_path = getattr(preview_entity, '_icon', None)
     icon_surf = get_icon_surface(icon_path) if icon_path else None
     if icon_surf:
-        icon_surf = pygame.transform.smoothscale(icon_surf, (cell_size, cell_size)).copy()
+        icon_surf = pygame.transform.smoothscale(icon_surf, (CELL_SIZE_INNER, CELL_SIZE_INNER)).copy()
+        icon_x = grid_x * cell_size + camera_offset[0] + (cell_size - CELL_SIZE_INNER) // 2
+        icon_y = grid_y * cell_size + camera_offset[1] + (cell_size - CELL_SIZE_INNER) // 2
+        # Draw placement rectangle
+        can_place = can_place_entity(preview_entity, grid_x, grid_y, grid)
+        color = (0, 255, 0, 80) if can_place else (255, 0, 0, 80)
+        rect_surf = pygame.Surface((CELL_SIZE_INNER, CELL_SIZE_INNER), pygame.SRCALPHA)
+        pygame.draw.rect(rect_surf, color, rect_surf.get_rect(), border_radius=6)
+        surface.blit(rect_surf, (icon_x, icon_y))
+        # Draw the icon on top
         icon_surf.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT)
-        icon_x = grid_x * cell_size + camera_offset[0]
-        icon_y = grid_y * cell_size + camera_offset[1]
         surface.blit(icon_surf, (icon_x, icon_y))
         # Use EntityInfo for overlay
         info = EntityInfo(preview_entity, cell_size)
