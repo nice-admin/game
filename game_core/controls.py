@@ -279,7 +279,7 @@ class GameControls:
                     if getattr(self, '_pickup_mode', False):
                         place_entity(state['grid'], state['entity_states'], entity)
                         if hasattr(entity, 'on_built'):
-                            entity.on_built()
+                            entity.on_built(is_move=getattr(self, '_pickup_mode', False))
                         if hasattr(entity, 'update'):
                             entity.update(state['grid'])
                         GameState().current_construction_class = None

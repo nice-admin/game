@@ -133,16 +133,17 @@ class BaseEntity:
             d[k] = getattr(self, k, getattr(self.__class__, k, None))
         return d
 
-    def on_built(self):
-        """Call this after the entity is actually built/placed to deduct its purchase cost from total_money and add upkeep to total_upkeep."""
+    def on_built(self, is_move=False):
+        """Call this after the entity is actually built/placed to deduct its purchase cost from total_money and add upkeep to total_upkeep. If is_move is True, do not deduct money or play purchase sound."""
         gs = GameState()
         cost = getattr(self, 'purchase_cost', 0)
-        gs.total_money -= cost
-        if cost > 0:
-            from game_other.audio import play_purchase_sound
-            play_purchase_sound()
-        else:
-            play_build_sound()
+        if not is_move:
+            gs.total_money -= cost
+            if cost > 0:
+                from game_other.audio import play_purchase_sound
+                play_purchase_sound()
+            else:
+                play_build_sound()
 
     def on_initialized(self):
         self.power_drain = self._intended_power_drain

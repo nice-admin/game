@@ -11,7 +11,7 @@ from game_ui.details_panel import draw_details_panel
 from game_ui.grid_overview_panel import draw_overview_panel, OVERVIEW_PANEL_WIDTH, OVERVIEW_PANEL_HEIGHT
 from game_core.game_state import GameState
 from game_core.config import UI_BG1_COL, UI_BORDER1_COL
-from game_ui.cursor_info import draw_entity_preview
+from game_ui.cursor_info import draw_cursor_construction_overlay
 from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 from game_ui.supplies_panel import draw_supplies_panel
 from game_ui.software_panel import draw_software_panel
@@ -33,14 +33,14 @@ ALLOW_SAVE_AND_LOAD = 0
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
     from game_core.game_state import GameState
     if all(v is not None for v in [camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]) and callable(GameState().current_construction_class):
-        draw_entity_preview(surface, None, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
+        draw_cursor_construction_overlay(surface, None, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     selected_entity_class = None
     if entity_buttons is not None and selected_item is not None and 0 <= selected_item < len(entity_buttons):
         selected_entity_class = entity_buttons[selected_item].entity_class
     else:
         selected_entity_class = selected_entity_type
     if all(v is not None for v in [selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
-        draw_entity_preview(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
+        draw_cursor_construction_overlay(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     if ALLOW_RESOURCE_PANEL:
         baked = get_baked_panel(font)
         general_width, general_height = baked['total_width'], baked['total_height']

@@ -37,7 +37,7 @@ class DetailLabel:
 class EntityInfo:
     BG_COL = (0, 0, 0, 60)  # Semi-transparent black
     BG_ROUNDING = 5         # Border radius for background rectangle
-    FONT_SIZE = 15          # Default font size (can be scaled)
+    FONT_SIZE = 25          # Default font size (can be scaled)
     margin_from_top = 0     # Margin from top of background to NameLabel
 
     def __init__(self, entity, cell_size):
@@ -45,7 +45,8 @@ class EntityInfo:
         self.cell_size = cell_size
         self.display_name = getattr(entity, 'display_name', type(entity).__name__)
         self.purchase_cost = getattr(entity, 'purchase_cost', None)
-        self.font = pygame.font.Font(FONT1, max(self.FONT_SIZE, cell_size // 2))
+        # Always use FONT_SIZE for the name font size
+        self.font = pygame.font.Font(FONT1, self.FONT_SIZE)
         self.name = NameLabel(self.display_name, self.font)
         # Only show cost and money if purchase_cost > 0
         if isinstance(self.purchase_cost, (int, float)) and self.purchase_cost > 0:
@@ -84,55 +85,40 @@ class EntityInfo:
             self.detail_money.draw(surface, rect_x, y)
 
 def can_place_entity(entity, grid_x, grid_y, grid):
-    # Returns False if any entity is present at the hovered cell
     try:
-        if grid is not None and 0 <= grid_y < len(grid) and 0 <= grid_x < len(grid[0]):
-            return grid[grid_y][grid_x] is None
-        return True  # Always allow for now
+        return grid is None or not (0 <= grid_y < len(grid) and 0 <= grid_x < len(grid[0])) or grid[grid_y][grid_x] is None
     except Exception:
-        # If any error occurs, treat as placeable (green)
         return True
 
-def draw_entity_preview(surface, selected_entity_type, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid):
-    # Always use the global singleton for construction class
+def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offset, cell_size, GRID_W, GRID_H, grid):
     entity_type = GameState().current_construction_class
-    if not callable(entity_type):
-        return
+    if not callable(entity_type): return
     from game_core.entity_definitions import get_icon_surface
     mx, my = pygame.mouse.get_pos()
-    grid_x = int((mx - camera_offset[0]) // cell_size)
-    grid_y = int((my - camera_offset[1]) // cell_size)
-    if not (0 <= grid_x < GRID_WIDTH and 0 <= grid_y < GRID_HEIGHT):
-        return
-    preview_entity = entity_type(grid_x, grid_y)
-    icon_path = getattr(preview_entity, '_icon', None)
-    icon_surf = get_icon_surface(icon_path) if icon_path else None
-    if icon_surf:
-        icon_surf = pygame.transform.smoothscale(icon_surf, (CELL_SIZE_INNER, CELL_SIZE_INNER)).copy()
-        icon_x = grid_x * cell_size + camera_offset[0] + (cell_size - CELL_SIZE_INNER) // 2
-        icon_y = grid_y * cell_size + camera_offset[1] + (cell_size - CELL_SIZE_INNER) // 2
-        # --- In-place logic for keeping green after placement ---
-        if not hasattr(draw_entity_preview, 'last_placed_cell'):
-            draw_entity_preview.last_placed_cell = None
-        mouse_pressed = pygame.mouse.get_pressed()[0]
-        if mouse_pressed and draw_entity_preview.last_placed_cell != (grid_x, grid_y):
-            # User just placed entity here
-            draw_entity_preview.last_placed_cell = (grid_x, grid_y)
-        # Keep green if mouse is still over last placed cell
-        if draw_entity_preview.last_placed_cell == (grid_x, grid_y):
-            can_place = True
+    gx, gy = int((mx - camera_offset[0]) // cell_size), int((my - camera_offset[1]) // cell_size)
+    if not (0 <= gx < GRID_W and 0 <= gy < GRID_H): return
+    preview = entity_type(gx, gy)
+    icon_path = getattr(preview, '_icon', None)
+    icon = get_icon_surface(icon_path) if icon_path else None
+    if icon:
+        icon = pygame.transform.smoothscale(icon, (CELL_SIZE_INNER, CELL_SIZE_INNER)).copy()
+        ix = gx * cell_size + camera_offset[0] + (cell_size - CELL_SIZE_INNER) // 2
+        iy = gy * cell_size + camera_offset[1] + (cell_size - CELL_SIZE_INNER) // 2
+        if not hasattr(draw_cursor_construction_overlay, 'last_cell'):
+            draw_cursor_construction_overlay.last_cell = None
+        mouse_held = pygame.mouse.get_pressed()[0]
+        # Always update last_cell to the current cell while mouse is held
+        if mouse_held:
+            draw_cursor_construction_overlay.last_cell = (gx, gy)
         else:
-            can_place = can_place_entity(preview_entity, grid_x, grid_y, grid)
-        color = (0, 255, 0, 80) if can_place else (255, 0, 0, 80)
-        rect_surf = pygame.Surface((CELL_SIZE_INNER, CELL_SIZE_INNER), pygame.SRCALPHA)
-        pygame.draw.rect(rect_surf, color, rect_surf.get_rect(), border_radius=6)
-        surface.blit(rect_surf, (icon_x, icon_y))
-        # Draw the icon on top
-        icon_surf.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_MULT)
-        surface.blit(icon_surf, (icon_x, icon_y))
-        # Use EntityInfo for overlay
-        info = EntityInfo(preview_entity, cell_size)
-        info.draw(surface, icon_x, icon_y)
-        # If mouse moved away from last placed cell, reset
-        if draw_entity_preview.last_placed_cell and draw_entity_preview.last_placed_cell != (grid_x, grid_y):
-            draw_entity_preview.last_placed_cell = None
+            draw_cursor_construction_overlay.last_cell = None
+        # Only keep green if mouse is held and over last placed cell
+        can_place = mouse_held and draw_cursor_construction_overlay.last_cell == (gx, gy) or can_place_entity(preview, gx, gy, grid)
+        color = (0,255,0,80) if can_place else (255,0,0,80)
+        rect = pygame.Surface((CELL_SIZE_INNER, CELL_SIZE_INNER), pygame.SRCALPHA)
+        pygame.draw.rect(rect, color, rect.get_rect(), border_radius=2)
+        surface.blit(rect, (ix, iy))
+        icon.fill((255,255,255,128), special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(icon, (ix, iy))
+        EntityInfo(preview, cell_size).draw(surface, ix, iy)
+
