@@ -78,18 +78,23 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:
         draw_alert_panel(surface, font, surface.get_width(), surface.get_height())
-        draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     if ALLOW_PROJECT_OVERVIEW_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height = 130)
     if ALLOW_ARROW_POINTER:
         show_arrow_pointer()
         draw_arrow_pointer(surface, 1440, 85)
 
-    draw_software_panel(surface)
-    # Draw only active deterministic and random quests (right-aligned, stacked vertically)
+    # --- Software panel with hover/click logic handled here ---
+    mouse_pos = pygame.mouse.get_pos()
+    mouse_pressed = pygame.mouse.get_pressed()[0]
+    software_buttons, hovered_software_idx = draw_software_panel(
+        surface, mouse_pos=mouse_pos, mouse_pressed=mouse_pressed
+    )
+
     draw_quest_panel(surface, quest_panel.active_quests, quest_panel.random_active_quests)
     if ALLOW_HIDDEN_INFO_PANEL:
         draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
+        draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
 
 def draw_entity_hover_label_if_needed(screen, font):
     import pygame
