@@ -71,8 +71,6 @@ class JobFinished:
             if not self._last_project_finished:
                 game_other.audio.play_project_finished_sound()
                 state.current_job_finished = 1
-                # Add job_budget to total_money when job is finished
-                state.total_money += state.job_budget
                 self._last_project_finished = True
         else:
             self._last_project_finished = False
@@ -101,6 +99,7 @@ class JobArrived(GamePlayEvent):
         state.render_progress_goal = n * state.render_progress_required_per_shot
         state.job_budget = 10000 * n
         state.current_job_finished = 0  # Reset for next job
+        state.total_money += state.job_budget
         game_other.audio.play_job_arrived_sound()
         expand_render_queue_panel(1000, 0)
         return True
@@ -131,20 +130,7 @@ class PowerOutage:
         if self.active:
             overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
             overlay.fill((0, 0, 0, 160))  # 50% black
-            width, height = surface.get_size()
-            # Define cutout using independent start/end percentages
-            x_start_pct = 0.5   # 50% of width
-            x_end_pct = 0.615     # 60% of width
-            y_start_pct = 0.027   # 10% of height
-            y_end_pct = 0.12     # 50% of height
-            cutout_rect = pygame.Rect(
-                int(width * x_start_pct),
-                int(height * y_start_pct),
-                int(width * (x_end_pct - x_start_pct)),
-                int(height * (y_end_pct - y_start_pct))
-            )
-            # Draw a fully transparent rectangle (cutout)
-            pygame.draw.rect(overlay, (0, 0, 0, 0), cutout_rect)
+            # No cutout, just draw the overlay
             surface.blit(overlay, (0, 0))
 
 class ClimateControl:

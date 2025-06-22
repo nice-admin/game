@@ -1,16 +1,17 @@
 import pygame
 import time
+import random
 from game_core.entity_definitions import *
 from game_core.config import *
 from game_core.game_state import GameState
 
-RQ_WIDTH = 1000
-RQ_FOLDED_HEIGHT = 30
+PANEL_WIDTH = 1000
+PANEL_FOLDED_HEIGHT = 30
 ANIMATION_DURATION = 0.3  # seconds
 
 _render_queue_panel_expanded = False
-_render_queue_panel_current_height = RQ_FOLDED_HEIGHT
-_render_queue_panel_target_height = RQ_FOLDED_HEIGHT
+_render_queue_panel_current_height = PANEL_FOLDED_HEIGHT
+_render_queue_panel_target_height = PANEL_FOLDED_HEIGHT
 _render_queue_panel_anim_start_time = None
 
 # Progress bar visual constants (shared for all progress bars in this panel)
@@ -18,33 +19,35 @@ BAR_HEIGHT = 30
 BAR_ROUNDING = BAR_HEIGHT // 4
 
 RQI_HEIGHT = BAR_HEIGHT
-RQI_SPACING = 30  # You may want to make this a function of BAR_HEIGHT, e.g., int(BAR_HEIGHT * 0.2)
-RQI_TOP_MARGIN = 50  # Optionally, also make this a function of BAR_HEIGHT
+ITEMS_SPACING = 30  # You may want to make this a function of BAR_HEIGHT, e.g., int(BAR_HEIGHT * 0.2)
+ITEMS_TOP_MARGIN = 50  # Optionally, also make this a function of BAR_HEIGHT
+
+HEADER_TOP_MARGIN = 50  # Top margin for the project headline and budget row
 
 
 def get_expanded_extra_height():
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_goal', 10)
-    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * RQI_SPACING + RQI_TOP_MARGIN + 40
+    return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * ITEMS_SPACING + ITEMS_TOP_MARGIN + 40
 
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
     global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
-    panel_x = (screen_width - RQ_WIDTH) // 2
+    panel_x = (screen_width - PANEL_WIDTH) // 2
     panel_y = resource_panel_height
-    panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, _render_queue_panel_current_height)
+    panel_rect = pygame.Rect(panel_x, panel_y, PANEL_WIDTH, _render_queue_panel_current_height)
     gs = GameState()
     # If job_id changed while expanded, update expanded area
     if _render_queue_panel_expanded:
         if _last_baked_panel_job_id != gs.job_id:
             expanded_height = get_expanded_extra_height()
-            _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + expanded_height
+            _render_queue_panel_target_height = PANEL_FOLDED_HEIGHT + expanded_height
             _render_queue_panel_anim_start_time = time.time()
             _last_baked_panel_job_id = gs.job_id
     if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and panel_rect.collidepoint(*event.pos):
         _render_queue_panel_expanded = not _render_queue_panel_expanded
         expanded_height = get_expanded_extra_height()
-        _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + (expanded_height if _render_queue_panel_expanded else 0)
+        _render_queue_panel_target_height = PANEL_FOLDED_HEIGHT + (expanded_height if _render_queue_panel_expanded else 0)
         _render_queue_panel_anim_start_time = time.time()
         return True
     return False
@@ -135,7 +138,7 @@ def get_progress_items(job_id, shot_rows, render_progress):
         gs.total_shots_finished = finished_count
     return items
 
-class Header:
+class MinizedStatusBar:
     def __init__(self, width, font):
         self.width = width
         self.font = font
@@ -159,8 +162,25 @@ class Header:
         render_rect = render_text.get_rect(midright=(self.width - 20, title_rect.centery))
         surface.blit(render_text, render_rect)
 
-class Headline:
-    FONT_SIZE = 30  # You can adjust this value as needed
+class ProjectHeadline:
+    FONT_SIZE = 25  # Adjust as needed
+    HEADLINES = [
+        "BLORP – The Mug That Judges Your Coffee Choices",
+        # Add more headlines here in the future
+    ]
+    def __init__(self, width, font=None):
+        self.width = width
+        self.text = random.choice(self.HEADLINES)
+        self.font = pygame.font.Font(FONT1, self.FONT_SIZE)
+
+    def draw(self, surface, y=0):
+        text_surf = self.font.render(self.text, True, TEXT1_COL)
+        text_rect = text_surf.get_rect(midtop=(self.width // 2, y))
+        surface.blit(text_surf, text_rect)
+
+
+class ProjectBudget:
+    FONT_SIZE = 25  # You can adjust this value as needed
     def __init__(self, width, font=None):
         self.width = width
         # Always use FONT_SIZE for the headline, ignore passed font size
@@ -169,18 +189,19 @@ class Headline:
     def draw(self, surface, y=0):
         gs = GameState()
         budget = getattr(gs, 'job_budget', 0)
-        budget_str = f"Project budget: {CURRENCY_SYMBOL}{budget}"
+        budget_str = f"Budget: {CURRENCY_SYMBOL}{budget}"
         text = self.font.render(budget_str, True, TEXT1_COL)
         rect = text.get_rect(midtop=(self.width // 2, y))
         surface.blit(text, rect)
 
+
 def bake_project_overview_panel(font, screen_width, resource_panel_height):
     """Bake the static render queue panel (background, border, title, and RenderQueueItems) into a surface."""
     global _last_baked_panel, _last_baked_panel_job_id, _last_baked_panel_shot_rows, _last_baked_panel_width, _last_baked_panel_height
-    panel_x = (screen_width - RQ_WIDTH) // 2
+    panel_x = (screen_width - PANEL_WIDTH) // 2
     panel_y = resource_panel_height
     panel_height = _render_queue_panel_current_height
-    panel_width = RQ_WIDTH
+    panel_width = PANEL_WIDTH
     gs = GameState()
     # Use total_shots_goal for shot_rows
     shot_rows = getattr(gs, 'total_shots_goal', 10)
@@ -207,11 +228,20 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     pygame.draw.rect(panel_surface, UI_BORDER1_COL, (0, 0, panel_width, panel_height), 2)
     # Header
     header_font = pygame.font.Font(FONT1, font.get_height() if font else 24)
-    header = Header(panel_width, header_font)
+    header = MinizedStatusBar(panel_width, header_font)
     header.draw(panel_surface, y=0)
-    # Draw ProjectHeadline below the header
-    headline = Headline(panel_width, header_font)
-    headline.draw(panel_surface, y=35)
+    # Draw ProjectHeadline (left) and ProjectBudget (right) on the same row
+    project_headline = ProjectHeadline(panel_width, header_font)
+    project_budget = ProjectBudget(panel_width, header_font)
+    # Render headline left-aligned
+    headline_surf = project_headline.font.render(project_headline.text, True, TEXT1_COL)
+    headline_rect = headline_surf.get_rect(midleft=(20, HEADER_TOP_MARGIN))
+    panel_surface.blit(headline_surf, headline_rect)
+    # Render budget right-aligned
+    budget_str = f"Budget: {CURRENCY_SYMBOL}{getattr(gs, 'job_budget', 0)}"
+    budget_surf = project_budget.font.render(budget_str, True, TEXT1_COL)
+    budget_rect = budget_surf.get_rect(midright=(panel_width - 20, HEADER_TOP_MARGIN))
+    panel_surface.blit(budget_surf, budget_rect)
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress_current)
     _last_progress_items = items
@@ -241,7 +271,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
         # Left column: artist progress
         left_item = artist_items[idx]
         x_left = 0
-        y = RQI_TOP_MARGIN + idx * (RQI_HEIGHT + RQI_SPACING) + 50
+        y = ITEMS_TOP_MARGIN + idx * (RQI_HEIGHT + ITEMS_SPACING) + 50
         left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, header_font)
         # Right column: render progress (use previous gradient colors, partitions=render_progress_required_per_shot)
         right_item = items[idx]
@@ -262,12 +292,12 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
 
 def draw_project_overview_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
-    panel_x = (screen_width - RQ_WIDTH) // 2
+    panel_x = (screen_width - PANEL_WIDTH) // 2
     panel_y = resource_panel_height
     gs = GameState()
     # Update expansion/height if job_id changed while expanded
     if _render_queue_panel_expanded and _last_baked_panel_job_id != gs.job_id:
-        _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + get_expanded_extra_height()
+        _render_queue_panel_target_height = PANEL_FOLDED_HEIGHT + get_expanded_extra_height()
         _render_queue_panel_anim_start_time = time.time()
         _last_baked_panel_job_id = gs.job_id
     # Animate height
@@ -279,7 +309,7 @@ def draw_project_overview_panel(surface, font, screen_width, resource_panel_heig
             _render_queue_panel_anim_start_time = None
     else:
         _render_queue_panel_current_height = _render_queue_panel_target_height
-    panel_rect = pygame.Rect(panel_x, panel_y, RQ_WIDTH, _render_queue_panel_current_height)
+    panel_rect = pygame.Rect(panel_x, panel_y, PANEL_WIDTH, _render_queue_panel_current_height)
     surface.blit(bake_project_overview_panel(font, screen_width, resource_panel_height), (panel_x, panel_y))
     return panel_rect
 
@@ -287,5 +317,5 @@ def expand_render_queue_panel(screen_width, resource_panel_height):
     global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time
     _render_queue_panel_expanded = True
     expanded_height = get_expanded_extra_height()
-    _render_queue_panel_target_height = RQ_FOLDED_HEIGHT + expanded_height
+    _render_queue_panel_target_height = PANEL_FOLDED_HEIGHT + expanded_height
     _render_queue_panel_anim_start_time = time.time()

@@ -18,7 +18,7 @@ class GameState:
             return
         self.game_time_seconds = 0
         self.game_time_days = 0
-        self.total_money = 20000
+        self.total_money = 1000
         self.total_upkeep = 0
         self.total_power_drain = 0
         self.total_breaker_strength = 0

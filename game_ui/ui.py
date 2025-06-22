@@ -15,7 +15,7 @@ from game_ui.cursor_info import draw_cursor_construction_overlay
 from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 from game_ui.supplies_panel import draw_supplies_panel
 from game_ui.software_panel import draw_software_panel
-from game_ui.quest_panel import QuestDisplayItem, draw_quest_panel
+from game_ui.quest_panel import QuestItem, draw_quest_panel
 import game_ui.quest_panel as quest_panel
 import math
 from game_ui.experience_panel import draw_experience_panel
@@ -41,6 +41,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         selected_entity_class = selected_entity_type
     if all(v is not None for v in [selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
         draw_cursor_construction_overlay(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
+    power_outage.draw_overlay(surface)
     if ALLOW_RESOURCE_PANEL:
         baked = get_baked_panel(font)
         general_width, general_height = baked['total_width'], baked['total_height']
@@ -80,7 +81,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
     if ALLOW_PROJECT_OVERVIEW_PANEL:
         draw_project_overview_panel(surface, font, surface.get_width(), resource_panel_height = 130)
-    power_outage.draw_overlay(surface)
     if ALLOW_ARROW_POINTER:
         show_arrow_pointer()
         draw_arrow_pointer(surface, 1440, 85)
