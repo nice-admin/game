@@ -177,3 +177,47 @@ random_quests = [
 # Will be set by gameplay_events. Initially empty.
 active_quests = []
 random_active_quests = []
+
+class QuestPanelCache:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        self.dirty = True
+        self.last_deterministic = None
+        self.last_random = None
+
+    def mark_dirty(self):
+        self.dirty = True
+
+    def update_if_needed(self, deterministic, random):
+        # Compare quest lists by id and completion state
+        def quest_state(qs):
+            return [(q.header, q.completed, tuple((o.get('desc'), o.get('current'), o.get('required')) for o in q.objectives)) for q in qs]
+        if (self.last_deterministic != quest_state(deterministic) or
+            self.last_random != quest_state(random)):
+            self.dirty = True
+            self.last_deterministic = quest_state(deterministic)
+            self.last_random = quest_state(random)
+
+    def bake(self, deterministic, random):
+        self.surface.fill((0, 0, 0, 0))  # Clear with transparent
+        draw_quest_panel(self.surface, deterministic, random)
+        self.dirty = False
+
+# Create a global cache instance (could be moved elsewhere)
+quest_panel_cache = None
+
+def draw_quest_panel_baked(main_surface, active_deterministic, active_random):
+    global quest_panel_cache
+    panel_width = QUEST_PANEL_WIDTH + QUEST_PANEL_RIGHT_MARGIN
+    panel_height = main_surface.get_height()
+    if quest_panel_cache is None or quest_panel_cache.width != panel_width or quest_panel_cache.height != panel_height:
+        quest_panel_cache = QuestPanelCache(panel_width, panel_height)
+        quest_panel_cache.dirty = True
+    quest_panel_cache.update_if_needed(active_deterministic, active_random)
+    if quest_panel_cache.dirty:
+        quest_panel_cache.bake(active_deterministic, active_random)
+    # Blit the cached panel onto the main surface
+    x = main_surface.get_width() - panel_width
+    main_surface.blit(quest_panel_cache.surface, (x, 0))

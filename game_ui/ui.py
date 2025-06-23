@@ -15,7 +15,7 @@ from game_ui.cursor_info import draw_cursor_construction_overlay
 from game_ui.arrow_pointer import draw_arrow_pointer, show_arrow_pointer
 from game_ui.supplies_panel import draw_supplies_panel
 from game_ui.software_panel import draw_software_panel
-from game_ui.quest_panel import QuestItem, draw_quest_panel
+from game_ui.quest_panel import QuestItem, draw_quest_panel_baked
 import game_ui.quest_panel as quest_panel
 import math
 from game_ui.experience_panel import draw_experience_panel
@@ -28,6 +28,9 @@ ALLOW_ARROW_POINTER = 0
 ALLOW_PROJECT_OVERVIEW_PANEL = 1
 ALLOW_CONSTRUCTION_PANEL = 1
 ALLOW_SUPPLIES_PANEL = 1
+ALLOW_EXPERIENCE_PANEL = 1
+ALLOW_SOFTWARE_PANEL = 1
+ALLOW_QUEST_PANEL = 1
 ALLOW_SAVE_AND_LOAD = 0
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
@@ -72,8 +75,9 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
 
     show_details_bg = hovered_entity is not None
     draw_details_panel(surface, font, entity=hovered_entity, show_bg=show_details_bg)
-    # Draw experience panel (example: 60% progress)
-    draw_experience_panel(surface)
+
+    if ALLOW_EXPERIENCE_PANEL:
+        draw_experience_panel(surface)
 
     check_alerts(grid, surface.get_width())
     if ALLOW_ALERTS_PANEL:
@@ -84,14 +88,15 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         show_arrow_pointer()
         draw_arrow_pointer(surface, 1440, 85)
 
-    # --- Software panel with hover/click logic handled here ---
-    mouse_pos = pygame.mouse.get_pos()
-    mouse_pressed = pygame.mouse.get_pressed()[0]
-    software_buttons, hovered_software_idx = draw_software_panel(
-        surface, mouse_pos=mouse_pos, mouse_pressed=mouse_pressed
-    )
+    if ALLOW_SOFTWARE_PANEL:
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_pressed = pygame.mouse.get_pressed()[0]
+        software_buttons, hovered_software_idx = draw_software_panel(
+            surface, mouse_pos=mouse_pos, mouse_pressed=mouse_pressed
+        )
 
-    draw_quest_panel(surface, quest_panel.active_quests, quest_panel.random_active_quests)
+    if ALLOW_QUEST_PANEL:
+        draw_quest_panel_baked(surface, quest_panel.active_quests, quest_panel.random_active_quests)
     if ALLOW_HIDDEN_INFO_PANEL:
         draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
