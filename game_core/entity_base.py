@@ -72,7 +72,6 @@ class BaseEntity:
         if self._icon_surface and not static_only:
             width = getattr(self, 'width', 1)
             height = getattr(self, 'height', 1)
-            from game_core.config import CELL_SIZE_INNER
             margin = cell_size - CELL_SIZE_INNER
             icon_w = cell_size * width - margin
             icon_h = cell_size * height - margin
@@ -93,7 +92,6 @@ class BaseEntity:
         if highlight_color and not getattr(self, 'warning_hidden', 0) and not static_only:
             width = getattr(self, 'width', 1)
             height = getattr(self, 'height', 1)
-            from game_core.config import CELL_SIZE_INNER
             margin = cell_size - CELL_SIZE_INNER
             rect_size_w = cell_size * width - margin
             rect_size_h = cell_size * height - margin

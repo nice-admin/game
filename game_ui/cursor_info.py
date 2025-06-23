@@ -103,10 +103,11 @@ def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offse
     width = getattr(preview, 'width', 1)
     height = getattr(preview, 'height', 1)
     if icon:
-        # Scale icon and highlight to entity size
-        icon_w = int(cell_size * width * 0.8)
-        icon_h = int(cell_size * height * 0.8)
-        icon_scaled = pygame.transform.smoothscale(icon, (icon_w, icon_h)).copy()
+        from game_core.config import CELL_SIZE_INNER
+        margin = (cell_size - CELL_SIZE_INNER)
+        icon_w = cell_size * width - margin
+        icon_h = cell_size * height - margin
+        icon_scaled = pygame.transform.smoothscale(icon, (int(icon_w), int(icon_h))).copy()
         ix = gx * cell_size + camera_offset[0] + (cell_size * width - icon_w) // 2
         iy = gy * cell_size + camera_offset[1] + (cell_size * height - icon_h) // 2
         if not hasattr(draw_cursor_construction_overlay, 'last_cell'):
@@ -118,9 +119,6 @@ def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offse
             draw_cursor_construction_overlay.last_cell = None
         can_place = mouse_held and draw_cursor_construction_overlay.last_cell == (gx, gy) or can_place_entity(preview, gx, gy, grid)
         color = (0,255,0,80) if can_place else (255,0,0,80)
-        # Use a single margin for the highlight, regardless of entity size
-        from game_core.config import CELL_SIZE_INNER
-        margin = (cell_size - CELL_SIZE_INNER)
         highlight_w = cell_size * width - margin
         highlight_h = cell_size * height - margin
         highlight_x = gx * cell_size + camera_offset[0] + margin // 2
