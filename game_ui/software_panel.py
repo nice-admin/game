@@ -2,6 +2,7 @@ import pygame
 import math
 import time
 from game_core.config import UI_BG1_COL, resource_path
+from game_other.audio import play_software_select_sound
 
 SOFTWARE_BUTTON_SIZE = 70
 
@@ -232,6 +233,8 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
     anim = cache['panel_anim']
     desc = anim['desc']
     show_desc = False
+    # Track previous mouse_pressed state in cache
+    prev_mouse_pressed = cache.get('prev_mouse_pressed', False)
     # Draw hover/pressed overlays only if needed
     for i, btn in enumerate(buttons):
         # Adjust mouse_pos to panel-local coordinates
@@ -257,12 +260,26 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
                 show_desc = True
             if mouse_pressed:
                 cache['selected_idx'] = i
-                print(f"SoftwareButton {i} clicked!")
+                # Set software_choice in GameState singleton
+                from game_core.game_state import GameState
+                gs = GameState()
+                if i == 2:  # C4D
+                    gs.software_choice = 1
+                elif i == 1:  # Blender
+                    gs.software_choice = 2
+                elif i == 0:  # Houdini
+                    gs.software_choice = 3
+                # Play software select sound only on new click
+                if not prev_mouse_pressed:
+                    play_software_select_sound()
+                print(f"SoftwareButton {i} clicked! software_choice set to {gs.software_choice}")
         else:
             # Reset animation if not hovered
             if anim['hovered_idx'] == i:
                 anim['hovered_idx'] = None
                 desc.stop()
+    # Update previous mouse_pressed state
+    cache['prev_mouse_pressed'] = bool(mouse_pressed)
     # Draw selected fill if a button is selected
     selected = cache.get('selected')
     if selected is None or selected.size != size:

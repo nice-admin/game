@@ -44,6 +44,9 @@ def play_build_sound(sound_path=None):
 def play_pipette_sound(sound_path=None):
     play_sound_effect('data/audio/sounds/pipette1.wav', sound_path)
 
+def play_construction_panel_selection_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/construction-selection1.wav', sound_path)
+
 def play_breaker_break_sound(sound_path=None):
     play_sound_effect('data/audio/sounds/breaker-break1.wav', sound_path)
 
@@ -67,3 +70,6 @@ def play_project_finished_sound(sound_path=None):
 
 def play_job_arrived_sound(sound_path=None):
     play_sound_effect('data/audio/sounds/job-arrived1.wav', sound_path)
+
+def play_software_select_sound(sound_path=None):
+    play_sound_effect('data/audio/sounds/software-select1.ogg', sound_path)

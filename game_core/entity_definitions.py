@@ -167,6 +167,16 @@ class Humidifier(SatisfiableEntity):
 
     def satisfaction_check(self, grid):
         return 1
+    
+class Fridge(SatisfiableEntity):
+    _icon = resource_path("data/graphics/entities/fridge.png")
+    has_special = 0
+    power_drain = 40
+    has_sat_check_bar_hidden = 1
+    purchase_cost = 1000
+
+    def satisfaction_check(self, grid):
+        return 1
 
 
 class Breaker(SatisfiableEntity):

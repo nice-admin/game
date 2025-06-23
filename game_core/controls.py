@@ -256,6 +256,8 @@ class GameControls:
                         entity_btn = entity_buttons[idx]
                         GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                 state['selected_item'] = self.selected_item
+                # Play selection sound for 1-9 key selection
+                audio.play_construction_panel_selection_sound()
                 return None, grid_changed
         # PaintBrush drag-to-paint/erase logic
         paint_brush = self.paint_brush
@@ -316,6 +318,8 @@ class GameControls:
                         self.selected_item = idx
                         GameState().current_construction_class = getattr(button, 'entity_class', None)
                     state['selected_item'] = self.selected_item
+                    # Play selection sound
+                    audio.play_construction_panel_selection_sound()
                     return None, grid_changed
             # Handle left-click construction
             if self.left_click_construction(event, state, place_entity):

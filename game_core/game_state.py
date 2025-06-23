@@ -34,6 +34,7 @@ class GameState:
         self.temperature = 23
         self.office_quality = 1
         self.total_decoration = 0
+        self.software_choice = 0
         self.artist_progress_required_per_shot = 50
         self.render_progress_required_per_shot = 50
         self.artist_progress_current = 0
