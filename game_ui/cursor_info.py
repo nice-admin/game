@@ -100,25 +100,35 @@ def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offse
     preview = entity_type(gx, gy)
     icon_path = getattr(preview, '_icon', None)
     icon = get_icon_surface(icon_path) if icon_path else None
+    width = getattr(preview, 'width', 1)
+    height = getattr(preview, 'height', 1)
     if icon:
-        icon = pygame.transform.smoothscale(icon, (CELL_SIZE_INNER, CELL_SIZE_INNER)).copy()
-        ix = gx * cell_size + camera_offset[0] + (cell_size - CELL_SIZE_INNER) // 2
-        iy = gy * cell_size + camera_offset[1] + (cell_size - CELL_SIZE_INNER) // 2
+        # Scale icon and highlight to entity size
+        icon_w = int(cell_size * width * 0.8)
+        icon_h = int(cell_size * height * 0.8)
+        icon_scaled = pygame.transform.smoothscale(icon, (icon_w, icon_h)).copy()
+        ix = gx * cell_size + camera_offset[0] + (cell_size * width - icon_w) // 2
+        iy = gy * cell_size + camera_offset[1] + (cell_size * height - icon_h) // 2
         if not hasattr(draw_cursor_construction_overlay, 'last_cell'):
             draw_cursor_construction_overlay.last_cell = None
         mouse_held = pygame.mouse.get_pressed()[0]
-        # Always update last_cell to the current cell while mouse is held
         if mouse_held:
             draw_cursor_construction_overlay.last_cell = (gx, gy)
         else:
             draw_cursor_construction_overlay.last_cell = None
-        # Only keep green if mouse is held and over last placed cell
         can_place = mouse_held and draw_cursor_construction_overlay.last_cell == (gx, gy) or can_place_entity(preview, gx, gy, grid)
         color = (0,255,0,80) if can_place else (255,0,0,80)
-        rect = pygame.Surface((CELL_SIZE_INNER, CELL_SIZE_INNER), pygame.SRCALPHA)
-        pygame.draw.rect(rect, color, rect.get_rect(), border_radius=2)
-        surface.blit(rect, (ix, iy))
-        icon.fill((255,255,255,128), special_flags=pygame.BLEND_RGBA_MULT)
-        surface.blit(icon, (ix, iy))
+        # Use a single margin for the highlight, regardless of entity size
+        from game_core.config import CELL_SIZE_INNER
+        margin = (cell_size - CELL_SIZE_INNER)
+        highlight_w = cell_size * width - margin
+        highlight_h = cell_size * height - margin
+        highlight_x = gx * cell_size + camera_offset[0] + margin // 2
+        highlight_y = gy * cell_size + camera_offset[1] + margin // 2
+        rect = pygame.Surface((highlight_w, highlight_h), pygame.SRCALPHA)
+        pygame.draw.rect(rect, color, rect.get_rect(), border_radius=4)
+        surface.blit(rect, (highlight_x, highlight_y))
+        icon_scaled.fill((255,255,255,128), special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(icon_scaled, (ix, iy))
         EntityInfo(preview, cell_size).draw(surface, ix, iy)
 

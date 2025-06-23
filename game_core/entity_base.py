@@ -36,6 +36,8 @@ class BaseEntity:
     upkeep = 0
     decoration = 0
     tier = 1
+    width = 1  # Default entity width (in grid cells)
+    height = 1  # Default entity height (in grid cells)
     
     power_drain = 0  # Intended power drain when initialized (override in subclasses)
     _intended_power_drain = None  # Store intended value for restoration
@@ -68,13 +70,17 @@ class BaseEntity:
             self._icon_surface = get_icon_surface(icon_path)
             self._last_icon_path = icon_path
         if self._icon_surface and not static_only:
-            icon_scale = 0.8  # 20% of cell size
-            icon_size = int(cell_size * icon_scale)
-            icon = pygame.transform.smoothscale(self._icon_surface, (icon_size, icon_size))
+            width = getattr(self, 'width', 1)
+            height = getattr(self, 'height', 1)
+            from game_core.config import CELL_SIZE_INNER
+            margin = cell_size - CELL_SIZE_INNER
+            icon_w = cell_size * width - margin
+            icon_h = cell_size * height - margin
+            icon = pygame.transform.smoothscale(self._icon_surface, (int(icon_w), int(icon_h)))
             cell_x = self.x * cell_size + offset[0]
             cell_y = self.y * cell_size + offset[1]
-            icon_x = cell_x + (cell_size - icon_size) // 2
-            icon_y = cell_y + (cell_size - icon_size) // 2
+            icon_x = cell_x + (cell_size * width - icon_w) // 2
+            icon_y = cell_y + (cell_size * height - icon_h) // 2
             surface.blit(icon, (icon_x, icon_y))
         # Draw highlight overlay if initialized and unsatisfied, or if broken, and warning_hidden is 0
         highlight_color = None
@@ -85,11 +91,15 @@ class BaseEntity:
         if getattr(self, 'is_broken', 0):
             highlight_color = STATUS_BAD_COL
         if highlight_color and not getattr(self, 'warning_hidden', 0) and not static_only:
-            # Center the highlight rectangle using CELL_SIZE_INNER
-            rect_size = CELL_SIZE_INNER
-            x = self.x * cell_size + offset[0] + (cell_size - rect_size) // 2
-            y = self.y * cell_size + offset[1] + (cell_size - rect_size) // 2
-            pygame.draw.rect(surface, highlight_color, (x, y, rect_size, rect_size), 3)
+            width = getattr(self, 'width', 1)
+            height = getattr(self, 'height', 1)
+            from game_core.config import CELL_SIZE_INNER
+            margin = cell_size - CELL_SIZE_INNER
+            rect_size_w = cell_size * width - margin
+            rect_size_h = cell_size * height - margin
+            x = self.x * cell_size + offset[0] + (cell_size * width - rect_size_w) // 2
+            y = self.y * cell_size + offset[1] + (cell_size * height - rect_size_h) // 2
+            pygame.draw.rect(surface, highlight_color, (x, y, rect_size_w, rect_size_h), 3)
         if not static_only:
             if getattr(self, "has_bar1", 1) and not getattr(self, 'has_sat_check_bar_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
@@ -506,3 +516,10 @@ class PersonEntity(SatisfiableEntity):
                     gs.total_milk -= 1
                 if hasattr(gs, 'total_sugar') and gs.total_sugar > 0 and random.random() < 0.2:
                     gs.total_sugar -= 1
+
+class WideEntity(SatisfiableEntity):
+    """A test entity that occupies 2x1 tiles. Use for multi-tile placement testing."""
+    width = 2
+    height = 2
+    _icon = "data/graphics/entites/fridge.png"  # Use any existing icon for testing
+    display_name = "Fridge"

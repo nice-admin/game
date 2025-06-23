@@ -170,6 +170,8 @@ class Humidifier(SatisfiableEntity):
     
 class Fridge(SatisfiableEntity):
     _icon = resource_path("data/graphics/entities/fridge.png")
+    width = 2
+    height = 2
     has_special = 0
     power_drain = 40
     has_sat_check_bar_hidden = 1

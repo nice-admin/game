@@ -20,14 +20,39 @@ import random
 def create_grid():
     return [[None for _ in range(GAME_AREA_WIDTH)] for _ in range(GAME_AREA_HEIGHT)]
 
+def can_place_entity(grid, entity, x, y):
+    width = getattr(entity, 'width', 1)
+    height = getattr(entity, 'height', 1)
+    for dx in range(width):
+        for dy in range(height):
+            gx, gy = x + dx, y + dy
+            if not (0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT):
+                return False
+            if grid[gy][gx] is not None:
+                return False
+    return True
+
 def place_entity(grid, entity_states, entity):
     gx, gy = entity.x, entity.y
-    grid[gy][gx] = entity
+    width = getattr(entity, 'width', 1)
+    height = getattr(entity, 'height', 1)
+    for dx in range(width):
+        for dy in range(height):
+            grid[gy + dy][gx + dx] = entity
     entity_states.add_entity(entity)
 
 def remove_entity(grid, entity_states, gx, gy):
-    grid[gy][gx] = None
-    entity_states.remove_entity_at(gx, gy)
+    entity = grid[gy][gx]
+    if entity is not None:
+        width = getattr(entity, 'width', 1)
+        height = getattr(entity, 'height', 1)
+        ex, ey = entity.x, entity.y
+        for dx in range(width):
+            for dy in range(height):
+                if 0 <= ey + dy < GAME_AREA_HEIGHT and 0 <= ex + dx < GAME_AREA_WIDTH:
+                    if grid[ey + dy][ex + dx] == entity:
+                        grid[ey + dy][ex + dx] = None
+        entity_states.remove_entity_at(gx, gy)
 
 # --- Main Game Loop ---
 def run_game():
