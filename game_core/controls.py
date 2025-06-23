@@ -3,8 +3,9 @@ import pygame
 import game_other.audio as audio
 from game_core.config import GAME_AREA_WIDTH, GAME_AREA_HEIGHT
 from game_core.game_state import GameState
-# --- Merged from input_events.py ---
 import game_other.testing_layout as testing_layout
+from game_ui.hidden_info_panel import handle_panel_toggle_event
+from game_ui.profiler_panel import handle_profiler_panel_toggle
 
 def keybinds(event, grid=None, entity_states=None):
     if event.type == pygame.KEYDOWN:
@@ -134,20 +135,27 @@ class PaintBrush:
         self.button = 1
         self.erase_active = False
         self.erase_button = 3
+        self.last_placed = None  # Track last placed top-left cell for snapping
 
     def handle_event(self, event, selected_entity_type, camera_offset, cell_size, grid):
-        """Handle painting and erasing entities on the grid."""
+        from game_core.game_loop import can_place_entity
         screen = pygame.display.get_surface()
         mx, my = pygame.mouse.get_pos()
         if screen and my > screen.get_height() * 0.8:
             return None
         gx, gy = mouse_to_grid(camera_offset, cell_size)
+        width = getattr(selected_entity_type, 'width', 1) if selected_entity_type else 1
+        height = getattr(selected_entity_type, 'height', 1) if selected_entity_type else 1
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == self.button and selected_entity_type is not None:
                 self.active = True
-                if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT and grid[gy][gx] is None:
-                    audio.play_build_sound()
-                    return gx, gy, selected_entity_type(gx, gy), False
+                self.last_placed = None
+                if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT:
+                    entity = selected_entity_type(gx, gy)
+                    if can_place_entity(grid, entity, gx, gy):
+                        audio.play_build_sound()
+                        self.last_placed = (gx, gy)
+                        return gx, gy, entity, False
             elif event.button == self.erase_button:
                 self.erase_active = True
                 if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT and grid[gy][gx] is not None:
@@ -156,13 +164,18 @@ class PaintBrush:
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == self.button:
                 self.active = False
+                self.last_placed = None
             elif event.button == self.erase_button:
                 self.erase_active = False
         elif event.type == pygame.MOUSEMOTION:
             if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT:
-                if self.active and selected_entity_type is not None and grid[gy][gx] is None:
-                    audio.play_build_sound()
-                    return gx, gy, selected_entity_type(gx, gy), False
+                if self.active and selected_entity_type is not None:
+                    entity = selected_entity_type(gx, gy)
+                    if can_place_entity(grid, entity, gx, gy):
+                        if self.last_placed is None or abs(gx - self.last_placed[0]) >= width or abs(gy - self.last_placed[1]) >= height:
+                            audio.play_build_sound()
+                            self.last_placed = (gx, gy)
+                            return gx, gy, entity, False
                 if self.erase_active and grid[gy][gx] is not None:
                     audio.play_build_sound()
                     return gx, gy, None, True
@@ -356,8 +369,6 @@ class GameControls:
             GameState().current_construction_class = None
             return None, True
         if event.type == pygame.KEYDOWN and event.key == pygame.K_SEMICOLON:
-            from game_ui.hidden_info_panel import handle_panel_toggle_event
-            from game_ui.profiler_panel import handle_profiler_panel_toggle
             handle_panel_toggle_event(event)
             handle_profiler_panel_toggle()
             return None, grid_changed
@@ -365,21 +376,23 @@ class GameControls:
 
     def left_click_construction(self, event, state, place_entity):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            from game_core.game_loop import can_place_entity
             entity_class = GameState().current_construction_class
             if entity_class is not None:
                 gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
                 grid = state['grid']
                 entity_states = state['entity_states']
-                if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT'] and grid[gy][gx] is None:
+                if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
                     entity = entity_class(gx, gy)
-                    if hasattr(entity, 'load_icon'):
-                        entity.load_icon()
-                    place_entity(grid, entity_states, entity)
-                    if hasattr(entity, 'on_built'):
-                        entity.on_built()
-                    if hasattr(entity, 'update'):
-                        entity.update(grid)
-                    return True
+                    if can_place_entity(grid, entity, gx, gy):
+                        if hasattr(entity, 'load_icon'):
+                            entity.load_icon()
+                        place_entity(grid, entity_states, entity)
+                        if hasattr(entity, 'on_built'):
+                            entity.on_built()
+                        if hasattr(entity, 'update'):
+                            entity.update(grid)
+                        return True
         return False
 
     def right_click_deselect(self, event, state):
