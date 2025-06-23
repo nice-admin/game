@@ -5,6 +5,43 @@ from game_core.config import UI_BG1_COL, resource_path
 
 SOFTWARE_BUTTON_SIZE = 70
 
+class Selected:
+    def __init__(self, size=40, color=(0, 255, 180)):
+        self.size = size
+        self.color = color
+
+    def draw(self, surface, center, rotation_deg=0):
+        # Draw a hexagon with alpha fading from edge (opaque) to center (transparent),
+        # but the 0 alpha is only at the very edge (outer 20%)
+        steps = 16  # More steps = smoother gradient
+        max_alpha = 100  # Edge alpha (0-255)
+        min_alpha = 0    # Center alpha
+        rotation_rad = math.radians(rotation_deg)
+        s = self.size
+        x, y = center
+        temp_surf = pygame.Surface((s*2+4, s*2+4), pygame.SRCALPHA)
+        cx, cy = s+2, s+2
+        min_frac = 0.5  # 0.0 = center, 1.0 = edge; so 0.8 means fade only in outer 20%
+        for i in range(steps):
+            frac = 1 - i / (steps-1)  # 1 at edge, 0 at center
+            # Only fade in the outer 20%
+            size_frac = min_frac + (1 - min_frac) * frac  # from 0.8 to 1.0
+            curr_size = s * size_frac
+            # Alpha is 0 for inner 80%, fades in outer 20%
+            if size_frac < min_frac:
+                alpha = max_alpha
+            else:
+                fade_frac = (size_frac - min_frac) / (1 - min_frac)
+                alpha = int(max_alpha * fade_frac + min_alpha * (1-fade_frac))
+            color = (*self.color, alpha)
+            points = [
+                (cx + curr_size * math.cos(rotation_rad + a), cy + curr_size * math.sin(rotation_rad + a))
+                for a in [j * math.pi / 3 for j in range(6)]
+            ]
+            pygame.draw.polygon(temp_surf, color, points)
+        temp_rect = temp_surf.get_rect(center=center)
+        surface.blit(temp_surf, temp_rect)
+
 class SoftwareButton:
     def __init__(self, center, size=40, color=(100, 150, 255), rotation_deg=0, icon_path=None):
         self.center = center
@@ -129,7 +166,7 @@ class Description:
                     surface.blit(text_surf, text_rect)
                     surface.set_clip(prev_clip)
 
-def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, margin_ratio=0.05, cache={}, mouse_pos=None, mouse_pressed=False):
+def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, margin_ratio=0.05, cache={}, mouse_pos=None, mouse_pressed=False, selected_idx=None):
     surf_w, surf_h = surface.get_width(), surface.get_height()
     spacing = 2
     dx = size * math.sqrt(3) + spacing
@@ -212,10 +249,21 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
             if is_hover and mouse_pos:
                 desc.draw(surface)
             if mouse_pressed:
+                cache['selected_idx'] = i
                 print(f"SoftwareButton {i} clicked!")
         else:
             # Reset animation if not hovered
             if anim['hovered_idx'] == i:
                 anim['hovered_idx'] = None
                 desc.stop()
-    return buttons, hovered_idx
+    # Draw selected fill if a button is selected
+    selected = cache.get('selected')
+    if selected is None or selected.size != size:
+        selected = Selected(size=size, color=(0, 255, 150))
+        cache['selected'] = selected
+    idx = cache.get('selected_idx', None) if selected_idx is None else selected_idx
+    if idx is not None and 0 <= idx < len(buttons):
+        btn = buttons[idx]
+        btn_center_screen = (btn.center[0] + x, btn.center[1] + y)
+        selected.draw(surface, btn_center_screen, rotation_deg=btn.rotation_deg)
+    return buttons, hovered_idx, cache.get('selected_idx', None)

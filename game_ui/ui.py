@@ -91,7 +91,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_SOFTWARE_PANEL:
         mouse_pos = pygame.mouse.get_pos()
         mouse_pressed = pygame.mouse.get_pressed()[0]
-        software_buttons, hovered_software_idx = draw_software_panel(
+        software_buttons, hovered_software_idx, selected_software_idx = draw_software_panel(
             surface, mouse_pos=mouse_pos, mouse_pressed=mouse_pressed
         )
 
