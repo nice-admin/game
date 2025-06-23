@@ -43,13 +43,14 @@ class Selected:
         surface.blit(temp_surf, temp_rect)
 
 class SoftwareButton:
-    def __init__(self, center, size=40, color=(100, 150, 255), rotation_deg=0, icon_path=None):
+    def __init__(self, center, size=40, color=(100, 150, 255), rotation_deg=0, icon_path=None, desc_text=None):
         self.center = center
         self.size = size
         self.color = color
         self.rotation_deg = rotation_deg
         self.rotation_rad = math.radians(rotation_deg)
         self.icon = None
+        self.desc_text = desc_text
         if icon_path:
             try:
                 icon_img = pygame.image.load(resource_path(icon_path)).convert_alpha()
@@ -126,12 +127,15 @@ class Description:
         self.active = False
         self.x = 0
         self.y = 0
+        self.text = ""
 
-    def start(self, x, y):
+    def start(self, x, y, text=None):
         self.start_time = time.time()
         self.active = True
         self.x = x
         self.y = y
+        if text is not None:
+            self.text = text
 
     def stop(self):
         self.active = False
@@ -140,6 +144,9 @@ class Description:
     def update_position(self, x, y):
         self.x = x
         self.y = y
+
+    def update_text(self, text):
+        self.text = text
 
     def draw(self, surface):
         if not self.active or self.start_time is None:
@@ -152,10 +159,9 @@ class Description:
             # Draw text if rectangle is at least 100px wide
             if rect_w > 100:
                 font = pygame.font.SysFont(None, 28)
-                text = "Cinema 4D is versatile something"
+                text = self.text
                 text_surf = font.render(text, True, (255, 255, 255))
                 text_rect = text_surf.get_rect()
-                # 10px from top edge, pad left by 20px
                 text_rect.topleft = (self.x + 20, self.y - self.height + 10)
                 # Only blit if at least part of the text is visible
                 if text_rect.left < self.x + rect_w:
@@ -203,9 +209,9 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
         # Bake static panel (background + buttons, no hover/press)
         panel_surf = pygame.Surface((panel_w, panel_h), pygame.SRCALPHA)
         buttons = [
-            SoftwareButton(abs_btn_centers[0], size, color, rotation_deg=30, icon_path=icon_path),
-            SoftwareButton(abs_btn_centers[1], size, color, rotation_deg=30, icon_path=icon_path),
-            SoftwareButton(abs_btn_centers[2], size, color, rotation_deg=30, icon_path=icon_path),
+            SoftwareButton(abs_btn_centers[0], size, color, rotation_deg=30, icon_path="data/graphics/software_panel/houdini.png", desc_text="Houdini is versatile something"),
+            SoftwareButton(abs_btn_centers[1], size, color, rotation_deg=30, icon_path="data/graphics/software_panel/blender.png", desc_text="Blender is versatile something"),
+            SoftwareButton(abs_btn_centers[2], size, color, rotation_deg=30, icon_path="data/graphics/software_panel/c4d.png", desc_text="Cinema 4D is versatile something"),
         ]
         for btn in buttons:
             btn.draw(panel_surf)
@@ -225,6 +231,7 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
         cache['panel_anim'] = {'hovered_idx': None, 'desc': Description(UI_BG1_COL)}
     anim = cache['panel_anim']
     desc = anim['desc']
+    show_desc = False
     # Draw hover/pressed overlays only if needed
     for i, btn in enumerate(buttons):
         # Adjust mouse_pos to panel-local coordinates
@@ -233,11 +240,11 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
         is_pressed = is_hover and mouse_pressed
         if is_hover or is_pressed:
             # Animation: track hover start
+            desc.update_text(btn.desc_text)
             if anim['hovered_idx'] != i:
                 anim['hovered_idx'] = i
-                desc.start(mouse_pos[0], mouse_pos[1])
+                desc.start(mouse_pos[0], mouse_pos[1], text=btn.desc_text)
             else:
-                # Update position to follow cursor
                 desc.update_position(mouse_pos[0], mouse_pos[1])
             hovered_idx = i
             # Draw overlay at correct screen position
@@ -247,7 +254,7 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
             btn_screen.icon = btn.icon  # reuse loaded icon
             btn_screen.draw(surface, highlight=is_hover, pressed=is_pressed)
             if is_hover and mouse_pos:
-                desc.draw(surface)
+                show_desc = True
             if mouse_pressed:
                 cache['selected_idx'] = i
                 print(f"SoftwareButton {i} clicked!")
@@ -266,4 +273,7 @@ def draw_software_panel(surface, size=SOFTWARE_BUTTON_SIZE, color=UI_BG1_COL, ma
         btn = buttons[idx]
         btn_center_screen = (btn.center[0] + x, btn.center[1] + y)
         selected.draw(surface, btn_center_screen, rotation_deg=btn.rotation_deg)
+    # Draw description on top of everything if active
+    if desc.active:
+        desc.draw(surface)
     return buttons, hovered_idx, cache.get('selected_idx', None)
