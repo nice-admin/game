@@ -23,30 +23,9 @@ def keybinds(event, grid=None, entity_states=None):
             return event.key - pygame.K_1
     return None
 
-def line_build(x0, y0, x1, y1, grid, entity_class):
-    line_entities = []
-    dx = abs(x1 - x0)
-    dy = abs(y1 - y0)
-    sx = 1 if x0 < x1 else -1
-    sy = 1 if y0 < y1 else -1
-    err = dx - dy
-    x, y = x0, y0
-    while True:
-        if 0 <= x < GAME_AREA_WIDTH and 0 <= y < GAME_AREA_HEIGHT and grid[y][x] is None:
-            line_entities.append(entity_class(x, y))
-        if (x, y) == (x1, y1):
-            break
-        e2 = 2 * err
-        if e2 > -dy:
-            err -= dy
-            x += sx
-        if e2 < dx:
-            err += dx
-            y += sy
-    return line_entities
-
-def line_deconstruct(x0, y0, x1, y1, grid):
-    erase_line_coords = []
+def line_action(x0, y0, x1, y1, grid, entity_class=None, build=True):
+    """Generalized line build/deconstruct. If build, returns entities to build; else, returns coords to erase."""
+    result = []
     dx = abs(x1 - x0)
     dy = abs(y1 - y0)
     sx = 1 if x0 < x1 else -1
@@ -55,7 +34,10 @@ def line_deconstruct(x0, y0, x1, y1, grid):
     x, y = x0, y0
     while True:
         if 0 <= x < GAME_AREA_WIDTH and 0 <= y < GAME_AREA_HEIGHT:
-            erase_line_coords.append((x, y))
+            if build and grid[y][x] is None and entity_class:
+                result.append(entity_class(x, y))
+            elif not build:
+                result.append((x, y))
         if (x, y) == (x1, y1):
             break
         e2 = 2 * err
@@ -65,7 +47,7 @@ def line_deconstruct(x0, y0, x1, y1, grid):
         if e2 < dx:
             err += dx
             y += sy
-    return erase_line_coords
+    return result
 
 class CameraDrag:
     def __init__(self):
@@ -137,6 +119,9 @@ class PaintBrush:
         self.erase_button = 3
         self.last_placed = None  # Track last placed top-left cell for snapping
 
+    def _in_bounds(self, gx, gy):
+        return 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT
+
     def handle_event(self, event, selected_entity_type, camera_offset, cell_size, grid):
         from game_core.game_loop import can_place_entity
         screen = pygame.display.get_surface()
@@ -150,7 +135,7 @@ class PaintBrush:
             if event.button == self.button and selected_entity_type is not None:
                 self.active = True
                 self.last_placed = None
-                if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT:
+                if self._in_bounds(gx, gy):
                     entity = selected_entity_type(gx, gy)
                     if can_place_entity(grid, entity, gx, gy):
                         audio.play_build_sound()
@@ -158,7 +143,7 @@ class PaintBrush:
                         return gx, gy, entity, False
             elif event.button == self.erase_button:
                 self.erase_active = True
-                if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT and grid[gy][gx] is not None:
+                if self._in_bounds(gx, gy) and grid[gy][gx] is not None:
                     audio.play_build_sound()
                     return gx, gy, None, True
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -168,7 +153,7 @@ class PaintBrush:
             elif event.button == self.erase_button:
                 self.erase_active = False
         elif event.type == pygame.MOUSEMOTION:
-            if 0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT:
+            if self._in_bounds(gx, gy):
                 if self.active and selected_entity_type is not None:
                     entity = selected_entity_type(gx, gy)
                     if can_place_entity(grid, entity, gx, gy):
@@ -214,14 +199,37 @@ class GameControls:
                 state['selected_item'] = None
                 GameState().current_construction_class = None
 
+    def _handle_panel_click(self, mx, my, panel_btn_rects, state):
+        # Section buttons
+        for idx, button in enumerate(panel_btn_rects.get('section', [])):
+            if button.rect.collidepoint(mx, my):
+                self.selected_section = idx
+                self.selected_item = None
+                state['selected_section'] = self.selected_section
+                state['selected_item'] = self.selected_item
+                GameState().current_construction_class = None
+                return True
+        # Item buttons
+        for idx, button in enumerate(panel_btn_rects.get('item', [])):
+            if button.rect.collidepoint(mx, my):
+                if self.selected_item == idx:
+                    self.selected_item = None
+                    GameState().current_construction_class = None
+                else:
+                    self.selected_item = idx
+                    GameState().current_construction_class = getattr(button, 'entity_class', None)
+                state['selected_item'] = self.selected_item
+                audio.play_construction_panel_selection_sound()
+                return True
+        return False
+
     def handle_line_action(self, event, state, remove_entity, place_entity, gx, gy):
-        """Handle shift+click line build/deconstruct logic."""
         if (pygame.key.get_mods() & pygame.KMOD_SHIFT) and self.line_starting_position is not None and (gx, gy) != self.line_starting_position:
             start = self.line_starting_position
             if event.button == 1:  # Shift + Left Click: Line Build
                 entity_class = GameState().current_construction_class
                 if entity_class is not None:
-                    for e in line_build(start[0], start[1], gx, gy, state['grid'], entity_class):
+                    for e in line_action(start[0], start[1], gx, gy, state['grid'], entity_class, build=True):
                         if hasattr(e, 'load_icon'):
                             e.load_icon()
                         place_entity(state['grid'], state['entity_states'], e)
@@ -230,7 +238,7 @@ class GameControls:
                     self.line_starting_position = (gx, gy)
                     return True
             elif event.button == 3:  # Shift + Right Click: Line Deconstruct
-                for x, y in line_deconstruct(start[0], start[1], gx, gy, state['grid']):
+                for x, y in line_action(start[0], start[1], gx, gy, state['grid'], build=False):
                     if state['grid'][y][x] is not None:
                         remove_entity(state['grid'], state['entity_states'], x, y)
                 self.line_starting_position = (gx, gy)
@@ -238,7 +246,6 @@ class GameControls:
         return False
 
     def handle_event(self, event, state, remove_entity, place_entity):
-        """Main event handler for all game controls."""
         grid_changed = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
@@ -254,7 +261,6 @@ class GameControls:
         if isinstance(idx, int):
             entity_buttons = state.get('panel_btn_rects', {}).get('item', [])
             if 0 <= idx < len(entity_buttons):
-                # If section was just changed, always select the entity
                 if self.just_changed_section:
                     self.selected_item = idx
                     entity_btn = entity_buttons[idx]
@@ -269,102 +275,53 @@ class GameControls:
                         entity_btn = entity_buttons[idx]
                         GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                 state['selected_item'] = self.selected_item
-                # Play selection sound for 1-9 key selection
                 audio.play_construction_panel_selection_sound()
                 return None, grid_changed
-        # PaintBrush drag-to-paint/erase logic
-        paint_brush = self.paint_brush
-        entity_class = GameState().current_construction_class
-        paint_result = paint_brush.handle_event(
-            event,
-            entity_class,
-            state['camera_offset'],
-            state['cell_size'],
-            state['grid']
-        )
+        paint_result = self.paint_brush.handle_event(event, GameState().current_construction_class, state['camera_offset'], state['cell_size'], state['grid'])
         if paint_result:
             gx, gy, entity, erase = paint_result
-            if erase:
-                if state['grid'][gy][gx] is not None:
-                    remove_entity(state['grid'], state['entity_states'], gx, gy)
+            if erase and state['grid'][gy][gx] is not None:
+                remove_entity(state['grid'], state['entity_states'], gx, gy)
+                return None, True
+            elif state['grid'][gy][gx] is None and entity is not None:
+                if getattr(self, '_pickup_mode', False):
+                    place_entity(state['grid'], state['entity_states'], entity)
+                    if hasattr(entity, 'on_built'): entity.on_built(is_move=getattr(self, '_pickup_mode', False))
+                    if hasattr(entity, 'update'): entity.update(state['grid'])
+                    GameState().current_construction_class = None
+                    self._pickup_mode = False
                     return None, True
-            else:
-                if state['grid'][gy][gx] is None and entity is not None:
-                    # Only clear current_construction_class if it was set by pickup feature
-                    if getattr(self, '_pickup_mode', False):
-                        place_entity(state['grid'], state['entity_states'], entity)
-                        if hasattr(entity, 'on_built'):
-                            entity.on_built(is_move=getattr(self, '_pickup_mode', False))
-                        if hasattr(entity, 'update'):
-                            entity.update(state['grid'])
-                        GameState().current_construction_class = None
-                        self._pickup_mode = False
-                        return None, True
-                    else:
-                        place_entity(state['grid'], state['entity_states'], entity)
-                        if hasattr(entity, 'on_built'):
-                            entity.on_built()
-                        if hasattr(entity, 'update'):
-                            entity.update(state['grid'])
-                        return None, True
-        # Section and item button clicks
+                else:
+                    place_entity(state['grid'], state['entity_states'], entity)
+                    if hasattr(entity, 'on_built'): entity.on_built()
+                    if hasattr(entity, 'update'): entity.update(state['grid'])
+                    return None, True
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mx, my = pygame.mouse.get_pos()
             panel_btn_rects = state.get('panel_btn_rects', {})
-            # Section buttons
-            for idx, button in enumerate(panel_btn_rects.get('section', [])):
-                if button.rect.collidepoint(mx, my):
-                    self.selected_section = idx
+            if self._handle_panel_click(mx, my, panel_btn_rects, state): return None, grid_changed
+            if self.left_click_construction(event, state, place_entity): return None, True
+            gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
+            grid = state['grid']
+            entity_states = state['entity_states']
+            if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
+                if GameState().current_construction_class is None and grid[gy][gx] is not None:
+                    entity = grid[gy][gx]
+                    remove_entity(grid, entity_states, gx, gy)
+                    GameState().current_construction_class = type(entity)
                     self.selected_item = None
-                    state['selected_section'] = self.selected_section
-                    state['selected_item'] = self.selected_item
-                    GameState().current_construction_class = None
-                    return None, grid_changed
-            # Item buttons
-            for idx, button in enumerate(panel_btn_rects.get('item', [])):
-                if button.rect.collidepoint(mx, my):
-                    # Deselect if already selected
-                    if self.selected_item == idx:
-                        self.selected_item = None
-                        GameState().current_construction_class = None
-                    else:
-                        self.selected_item = idx
-                        GameState().current_construction_class = getattr(button, 'entity_class', None)
-                    state['selected_item'] = self.selected_item
-                    # Play selection sound
-                    audio.play_construction_panel_selection_sound()
-                    return None, grid_changed
-            # Handle left-click construction
-            if self.left_click_construction(event, state, place_entity):
-                return None, True
-            # --- NEW: Left click on entity to pick up and move ---
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
-                grid = state['grid']
-                entity_states = state['entity_states']
-                if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
-                    # Only if not holding any entity
-                    if GameState().current_construction_class is None and grid[gy][gx] is not None:
-                        entity = grid[gy][gx]
-                        remove_entity(grid, entity_states, gx, gy)
-                        GameState().current_construction_class = type(entity)
-                        self.selected_item = None
-                        state['selected_item'] = None
-                        self._pickup_mode = True  # Mark that next placement should clear
-                        return None, True
-        # Handle right-click deselect
+                    state['selected_item'] = None
+                    self._pickup_mode = True
+                    return None, True
         if self.right_click_deselect(event, state):
             GameState().current_construction_class = None
             return None, grid_changed
-        # Handle right-click deconstruction
         if self.right_click_deconstruction(event, state, remove_entity):
             GameState().current_construction_class = None
             return None, True
-        # Testing layout (leave as is, not migrated)
         testing_layout.handle_testing_layout(event, state['grid'], state['entity_states'], state['GRID_WIDTH'], state['GRID_HEIGHT'])
         global_result = keybinds(event, grid=state['grid'], entity_states=state['entity_states'])
-        if global_result == 'exit' or event.type == pygame.QUIT:
-            return 'exit', grid_changed
+        if global_result == 'exit' or event.type == pygame.QUIT: return 'exit', grid_changed
         if global_result == 'cleared':
             GameState().current_construction_class = None
             return None, True

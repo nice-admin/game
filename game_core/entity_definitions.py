@@ -62,6 +62,12 @@ class Artist(PersonEntity):
     upkeep = 2000
     multiplier = 1 
 
+    @property
+    def special_chance(self):
+        from game_core.game_state import GameState
+        gs = GameState()
+        return 0 if getattr(gs, 'software_choice', 0) == 0 else 1
+
     def on_special_finish(self):
         gs = GameState()
         self.multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
