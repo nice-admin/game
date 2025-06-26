@@ -174,6 +174,7 @@ class GameControls:
         self.camera_drag = CameraDrag()
         self.line_starting_position = None  # Always track last clicked cell
         self.just_changed_section = False  # Track if section was just changed
+        self.pickup_offset = (0, 0)  # Offset from entity origin to mouse when picking up
 
 
     def pipette(self, state):
@@ -285,12 +286,21 @@ class GameControls:
                 return None, True
             elif state['grid'][gy][gx] is None and entity is not None:
                 if getattr(self, '_pickup_mode', False):
-                    place_entity(state['grid'], state['entity_states'], entity)
-                    if hasattr(entity, 'on_built'): entity.on_built(is_move=getattr(self, '_pickup_mode', False))
-                    if hasattr(entity, 'update'): entity.update(state['grid'])
-                    GameState().current_construction_class = None
-                    self._pickup_mode = False
-                    return None, True
+                    # Adjust entity position by pickup_offset
+                    px, py = gx - self.pickup_offset[0], gy - self.pickup_offset[1]
+                    entity.x, entity.y = px, py
+                    from game_core.game_loop import can_place_entity
+                    # Only allow placement if the new area is empty
+                    if can_place_entity(state['grid'], entity, px, py):
+                        place_entity(state['grid'], state['entity_states'], entity)
+                        if hasattr(entity, 'on_built'): entity.on_built(is_move=getattr(self, '_pickup_mode', False))
+                        if hasattr(entity, 'update'): entity.update(state['grid'])
+                        GameState().current_construction_class = None
+                        self._pickup_mode = False
+                        return None, True
+                    else:
+                        # Optionally play error sound here
+                        return None, False
                 else:
                     place_entity(state['grid'], state['entity_states'], entity)
                     if hasattr(entity, 'on_built'): entity.on_built()
@@ -307,6 +317,8 @@ class GameControls:
             if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
                 if GameState().current_construction_class is None and grid[gy][gx] is not None:
                     entity = grid[gy][gx]
+                    # Store pickup offset
+                    self.pickup_offset = (gx - entity.x, gy - entity.y)
                     remove_entity(grid, entity_states, gx, gy)
                     GameState().current_construction_class = type(entity)
                     self.selected_item = None

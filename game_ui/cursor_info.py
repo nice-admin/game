@@ -84,18 +84,15 @@ class EntityInfo:
         if self.detail_money:
             self.detail_money.draw(surface, rect_x, y)
 
-def can_place_entity(entity, grid_x, grid_y, grid):
-    try:
-        return grid is None or not (0 <= grid_y < len(grid) and 0 <= grid_x < len(grid[0])) or grid[grid_y][grid_x] is None
-    except Exception:
-        return True
-
-def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offset, cell_size, GRID_W, GRID_H, grid):
+def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offset, cell_size, GRID_W, GRID_H, grid, pickup_offset=(0, 0)):
     entity_type = GameState().current_construction_class
     if not callable(entity_type): return
     from game_core.entity_definitions import get_icon_surface
+    from game_core.game_loop import can_place_entity  # Use the correct area-aware function
     mx, my = pygame.mouse.get_pos()
-    gx, gy = int((mx - camera_offset[0]) // cell_size), int((my - camera_offset[1]) // cell_size)
+    mouse_gx, mouse_gy = int((mx - camera_offset[0]) // cell_size), int((my - camera_offset[1]) // cell_size)
+    gx = mouse_gx - pickup_offset[0]
+    gy = mouse_gy - pickup_offset[1]
     if not (0 <= gx < GRID_W and 0 <= gy < GRID_H): return
     preview = entity_type(gx, gy)
     icon_path = getattr(preview, '_icon', None)
@@ -117,7 +114,8 @@ def draw_cursor_construction_overlay(surface, selected_entity_type, camera_offse
             draw_cursor_construction_overlay.last_cell = (gx, gy)
         else:
             draw_cursor_construction_overlay.last_cell = None
-        can_place = mouse_held and draw_cursor_construction_overlay.last_cell == (gx, gy) or can_place_entity(preview, gx, gy, grid)
+        # Use area-aware can_place_entity
+        can_place = mouse_held and draw_cursor_construction_overlay.last_cell == (gx, gy) or can_place_entity(grid, preview, gx, gy)
         color = (0,255,0,80) if can_place else (255,0,0,80)
         highlight_w = cell_size * width - margin
         highlight_h = cell_size * height - margin

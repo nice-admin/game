@@ -33,10 +33,13 @@ ALLOW_SOFTWARE_PANEL = 1
 ALLOW_QUEST_PANEL = 1
 ALLOW_SAVE_AND_LOAD = 0
 
-def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None):
-    from game_core.game_state import GameState
+def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None, controls=None):
+
+    pickup_offset = (0, 0)
+    if controls is not None and getattr(controls, '_pickup_mode', False):
+        pickup_offset = getattr(controls, 'pickup_offset', (0, 0))
     if all(v is not None for v in [camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]) and callable(GameState().current_construction_class):
-        draw_cursor_construction_overlay(surface, None, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
+        draw_cursor_construction_overlay(surface, None, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid, pickup_offset=pickup_offset)
     selected_entity_class = None
     if entity_buttons is not None and selected_item is not None and 0 <= selected_item < len(entity_buttons):
         selected_entity_class = entity_buttons[selected_item].entity_class

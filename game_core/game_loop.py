@@ -170,7 +170,7 @@ def run_game():
         gs.game_time_seconds += dt / 1000.0
         gs.game_time_days = int(gs.game_time_seconds // 10) + 1
         timings = {"Frame": frame_ms}
-        render_game(state, screen, background_surface, font, timings, clock)
+        render_game(state, screen, background_surface, font, timings, clock, game_controls)
         frame_count += 1
     # Save game state on exit
     savegame.save_game(state['entity_states'], state['camera_offset'], state['cell_size'])
@@ -216,7 +216,7 @@ def update_game_logic(state, frame_count, update_game_state):
     # No construction/game logic update
     return False
 
-def render_game(state, screen, background_surface, font, timings, clock):
+def render_game(state, screen, background_surface, font, timings, clock, controls):
     screen.fill(BG_OUTSIDE_GRID_COL)
     screen.blit(background_surface, state['camera_offset'])
     min_x = max(0, int(-state['camera_offset'][0] // state['cell_size']))
@@ -258,7 +258,8 @@ def render_game(state, screen, background_surface, font, timings, clock):
         selected_section=state.get('selected_section', 0),
         selected_item=state.get('selected_item', None),
         panel_btn_rects=panel_btn_rects,
-        entity_buttons=entity_buttons
+        entity_buttons=entity_buttons,
+        controls=controls
     )
     state['panel_btn_rects'] = panel_btn_rects
 
