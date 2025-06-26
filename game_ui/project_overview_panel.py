@@ -6,30 +6,29 @@ from game_core.config import *
 from game_core.game_state import GameState
 
 PANEL_WIDTH = 1000
+PROGRESS_BAR_WIDTH = int(PANEL_WIDTH * 0.48)
 PANEL_FOLDED_HEIGHT = 30
 ANIMATION_DURATION = 0.3  # seconds
+
+SHOT_NAME_LEFT_MARGIN = 15
 
 _render_queue_panel_expanded = False
 _render_queue_panel_current_height = PANEL_FOLDED_HEIGHT
 _render_queue_panel_target_height = PANEL_FOLDED_HEIGHT
 _render_queue_panel_anim_start_time = None
 
-# Progress bar visual constants (shared for all progress bars in this panel)
-BAR_HEIGHT = 30
+BAR_HEIGHT = 25
 BAR_ROUNDING = BAR_HEIGHT // 4
-
 RQI_HEIGHT = BAR_HEIGHT
-ITEMS_SPACING = 30  # You may want to make this a function of BAR_HEIGHT, e.g., int(BAR_HEIGHT * 0.2)
-ITEMS_TOP_MARGIN = 50  # Optionally, also make this a function of BAR_HEIGHT
-
-HEADER_TOP_MARGIN = 50  # Top margin for the project headline and budget row
-
+ITEMS_SPACING = 20
+HEADER_TOP_MARGIN = 35
+ITEMS_TOP_MARGIN = HEADER_TOP_MARGIN + 30
+SHOT_NAME_WIDTH = 50
 
 def get_expanded_extra_height():
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_goal', 10)
     return shot_rows * RQI_HEIGHT + max(0, shot_rows - 1) * ITEMS_SPACING + ITEMS_TOP_MARGIN + 40
-
 
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
     global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
@@ -52,7 +51,6 @@ def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
         return True
     return False
 
-
 class BaseItem:
     BAR_HEIGHT = BAR_HEIGHT
     BAR_ROUNDING = BAR_ROUNDING
@@ -63,7 +61,7 @@ class BaseItem:
         self.grad_end_col = grad_end_col
         self.partitions = partitions  # The value the bar represents (e.g., 10 or 100)
 
-    def draw(self, surface, x, y, width, height, font):
+    def draw(self, surface, x, y, width, height, font, draw_name=False):
         bar_width = int(width * 0.9)
         bar_height = self.BAR_HEIGHT
         bar_x = x + (width - bar_width) // 2
@@ -90,15 +88,16 @@ class BaseItem:
                 pygame.draw.rect(mask, (255,255,255,255), (0,0,fill_width,bar_height), border_top_left_radius=border_radius, border_bottom_left_radius=border_radius)
             grad_surf.blit(mask, (0,0), special_flags=pygame.BLEND_RGBA_MULT)
             surface.blit(grad_surf, (bar_x, bar_y))
-        # Draw the name text above the bar, aligned to the left
-        name_text = font.render(self.name, True, TEXT1_COL)
-        name_rect = name_text.get_rect(topleft=(bar_x + 10, bar_y - 4 - name_text.get_height()))
-        surface.blit(name_text, name_rect)
         # Draw progress number in the center of the bar as integer value (0-partitions)
         value = int(self.progress * self.partitions)
         progress_text = font.render(f"{value} / {self.partitions}", True, TEXT1_COL)
         progress_rect = progress_text.get_rect(center=(bar_x + bar_width // 2, bar_y + bar_height // 2))
         surface.blit(progress_text, progress_rect)
+        # Draw the name only if requested (for compatibility)
+        if draw_name:
+            name_text = font.render(self.name, True, TEXT1_COL)
+            name_rect = name_text.get_rect(topleft=(bar_x + 10, bar_y - 4 - name_text.get_height()))
+            surface.blit(name_text, name_rect)
 
 _last_job_id = None
 _last_job_start_render_progress = 0  # Track render_progress at job start
@@ -178,7 +177,6 @@ class ProjectHeadline:
         text_rect = text_surf.get_rect(midtop=(self.width // 2, y))
         surface.blit(text_surf, text_rect)
 
-
 class ProjectBudget:
     FONT_SIZE = 25  # You can adjust this value as needed
     def __init__(self, width, font=None):
@@ -193,7 +191,6 @@ class ProjectBudget:
         text = self.font.render(budget_str, True, TEXT1_COL)
         rect = text.get_rect(midtop=(self.width // 2, y))
         surface.blit(text, rect)
-
 
 def bake_project_overview_panel(font, screen_width, resource_panel_height):
     """Bake the static render queue panel (background, border, title, and RenderQueueItems) into a surface."""
@@ -233,14 +230,14 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     # Draw ProjectHeadline (left) and ProjectBudget (right) on the same row
     project_headline = ProjectHeadline(panel_width, header_font)
     project_budget = ProjectBudget(panel_width, header_font)
-    # Render headline left-aligned
+    # Render headline centered
     headline_surf = project_headline.font.render(project_headline.text, True, TEXT1_COL)
-    headline_rect = headline_surf.get_rect(midleft=(20, HEADER_TOP_MARGIN))
+    headline_rect = headline_surf.get_rect(midtop=(panel_width // 2, HEADER_TOP_MARGIN))
     panel_surface.blit(headline_surf, headline_rect)
-    # Render budget right-aligned
+    # Render budget centered below headline
     budget_str = f"Budget: {CURRENCY_SYMBOL}{getattr(gs, 'job_budget', 0)}"
     budget_surf = project_budget.font.render(budget_str, True, TEXT1_COL)
-    budget_rect = budget_surf.get_rect(midright=(panel_width - 20, HEADER_TOP_MARGIN))
+    budget_rect = budget_surf.get_rect(midtop=(panel_width // 2, headline_rect.bottom + 8))  # 8px gap
     panel_surface.blit(budget_surf, budget_rect)
     # RenderQueueItems with progress
     items = get_progress_items(job_id, shot_rows, render_progress_current)
@@ -267,19 +264,27 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
             grad_end_col=(203, 186, 72),
             partitions=artist_units
         ))
+    # Use PROGRESS_BAR_WIDTH for both bars
+    BAR_WIDTH = PROGRESS_BAR_WIDTH
+    LEFT_BAR_CENTER_X = int(panel_width * 0.31)
+    RIGHT_BAR_CENTER_X = int(panel_width * 0.76)
     for idx in range(len(items)):
-        # Left column: artist progress
         left_item = artist_items[idx]
-        x_left = 0
         y = ITEMS_TOP_MARGIN + idx * (RQI_HEIGHT + ITEMS_SPACING) + 50
-        left_item.draw(panel_surface, x_left, y, col_width, RQI_HEIGHT, header_font)
-        # Right column: render progress (use previous gradient colors, partitions=render_progress_required_per_shot)
+        # Draw shot name at the start of the row, vertically centered
+        shot_name_text = header_font.render(left_item.name, True, TEXT1_COL)
+        shot_name_rect = shot_name_text.get_rect(midleft=(SHOT_NAME_LEFT_MARGIN, y + RQI_HEIGHT // 2))
+        panel_surface.blit(shot_name_text, shot_name_rect)
+        # Draw left bar centered at 35% of panel width
+        left_bar_x = LEFT_BAR_CENTER_X - BAR_WIDTH // 2
+        left_item.draw(panel_surface, left_bar_x, y, BAR_WIDTH, RQI_HEIGHT, header_font, draw_name=False)
+        # Draw right bar centered at 75% of panel width
         right_item = items[idx]
-        right_item.grad_start_col = (69, 79, 95)  # Previous left color
-        right_item.grad_end_col = (0, 187, 133)   # Previous right color
+        right_item.grad_start_col = (69, 79, 95)
+        right_item.grad_end_col = (0, 187, 133)
         right_item.partitions = gs.render_progress_required_per_shot
-        x_right = col_width
-        right_item.draw(panel_surface, x_right, y, col_width, RQI_HEIGHT, header_font)
+        right_bar_x = RIGHT_BAR_CENTER_X - BAR_WIDTH // 2
+        right_item.draw(panel_surface, right_bar_x, y, BAR_WIDTH, RQI_HEIGHT, header_font, draw_name=False)
     # Cache
     _last_baked_panel = panel_surface
     _last_baked_panel_job_id = job_id
