@@ -64,6 +64,9 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
     Leaves one empty space halfway in each line.
     """
     if event.type == pygame.KEYDOWN and event.key == pygame.K_INSERT:
+        # Set gs.software_choice to a random value between 1 and 3
+        gs = GameState()
+        gs.software_choice = random.randint(1, 3)
         n = 40
         LineSpawn.start_y = 8  # Set the starting y position for this test layout
         line_spawns = [

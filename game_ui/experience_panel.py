@@ -32,18 +32,30 @@ class ExperiencePanel:
         bar_margin = 4
         bar_rect = pygame.Rect(x + bar_margin, y + bar_margin, PANEL_WIDTH - 2 * bar_margin, PANEL_HEIGHT - 2 * bar_margin)
         pygame.draw.rect(surface, BAR_BG_COLOR, bar_rect, border_radius=2)
-        # Draw progress segments with perfectly uniform gaps
+        # Draw progress segments with gradient color
         segment_gap = 1
         total_gap = (SEGMENTS - 1) * segment_gap
         segment_width = (bar_rect.width - total_gap) / SEGMENTS
         filled_segments = int(self.progress * SEGMENTS)
+        # Define a less dark base color for the gradient
+        DARK_BAR_COLOR = (BAR_COLOR[0] // 2, BAR_COLOR[1] // 2, BAR_COLOR[2] // 2)
+        def lerp(a, b, t):
+            return int(a + (b - a) * t)
         for i in range(SEGMENTS):
             seg_left_f = bar_rect.x + i * (segment_width + segment_gap)
             seg_right_f = seg_left_f + segment_width
             seg_left = int(round(seg_left_f))
             seg_right = int(round(seg_right_f))
             seg_rect = pygame.Rect(seg_left, bar_rect.y, seg_right - seg_left, bar_rect.height)
-            color = BAR_COLOR if i < filled_segments else BAR_EMPTY_COLOR
+            if i < filled_segments:
+                t = i / max(1, SEGMENTS - 1)
+                color = (
+                    lerp(DARK_BAR_COLOR[0], BAR_COLOR[0], t),
+                    lerp(DARK_BAR_COLOR[1], BAR_COLOR[1], t),
+                    lerp(DARK_BAR_COLOR[2], BAR_COLOR[2], t)
+                )
+            else:
+                color = BAR_EMPTY_COLOR
             pygame.draw.rect(surface, color, seg_rect, border_radius=1)
             
 
@@ -110,8 +122,8 @@ def draw_experience_panel(surface, font=None):
     level = getattr(gs, 'level', 1)
     current_exp = getattr(gs, 'current_exp', 0)
     max_exp = getattr(gs, 'max_exp', 100)
-    total_exp = getattr(gs, 'total_experience', 0)
-    progress = min(1.0, total_exp / max_exp) if max_exp > 0 else 0.0
+    current_lvl_exp = getattr(gs, 'current_lvl_experience', 0)
+    progress = min(1.0, current_lvl_exp / max_exp) if max_exp > 0 else 0.0
     if font is None:
         font = pygame.font.SysFont(None, 28)
     surf_w, surf_h = surface.get_width(), surface.get_height()

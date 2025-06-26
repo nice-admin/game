@@ -152,9 +152,9 @@ class BaseEntity:
                 play_purchase_sound()
             else:
                 play_build_sound()
-        # 10% chance to increase total_experience by 1
-        if hasattr(gs, 'total_experience') and random.random() < 0.1:
-            gs.total_experience += 1
+        # 10% chance to increase current_lvl_experience by 1 (with level up)
+        if hasattr(gs, 'add_experience') and random.random() < 0.1:
+            gs.add_experience(1)
 
     def on_initialized(self):
         self.power_drain = self._intended_power_drain
@@ -393,6 +393,12 @@ class ComputerEntity(SatisfiableEntity):
             gs = GameState()
             if hasattr(gs, 'temperature'):
                 gs.temperature += 0.005 * self.heating_multiplier
+            # Check render progress and set has_special accordingly
+            if hasattr(gs, 'render_progress_current') and hasattr(gs, 'render_progress_allowed'):
+                if gs.render_progress_current == gs.render_progress_allowed:
+                    self.has_special = 0
+                elif gs.render_progress_allowed > gs.render_progress_current:
+                    self.has_special = 1
 
     def on_special_start(self):
         self.power_drain = self.power_drain * 3
@@ -405,7 +411,6 @@ class ComputerEntity(SatisfiableEntity):
         # Increment render_progress_current if not at max
         if gs.render_progress_current < gs.render_progress_allowed:
             gs.render_progress_current += 1
-
 
 class LaptopEntity(SatisfiableEntity):
     is_initialized = 1

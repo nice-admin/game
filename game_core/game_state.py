@@ -162,6 +162,12 @@ class GameState:
         else:
             self.artist_progress_current = self.artist_progress_goal
 
+    def add_experience(self, amount=1):
+        self.current_lvl_experience += amount
+        while self.current_lvl_experience >= 100:
+            self.current_lvl_experience -= 100
+            self.total_level += 1
+
 class EntityStats:
     _instance = None
 
