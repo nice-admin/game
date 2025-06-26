@@ -185,6 +185,7 @@ class Fridge(SatisfiableEntity):
     power_drain = 40
     has_sat_check_bar_hidden = 1
     purchase_cost = 1000
+    satisfaction_check_type = 'outlet'
 
     def satisfaction_check(self, grid):
         return 1
