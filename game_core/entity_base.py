@@ -97,7 +97,8 @@ class BaseEntity:
             rect_size_h = cell_size * height - margin
             x = self.x * cell_size + offset[0] + (cell_size * width - rect_size_w) // 2
             y = self.y * cell_size + offset[1] + (cell_size * height - rect_size_h) // 2
-            pygame.draw.rect(surface, highlight_color, (x, y, rect_size_w, rect_size_h), 3)
+            border_radius = 3
+            pygame.draw.rect(surface, highlight_color, (x, y, rect_size_w, rect_size_h), 3, border_radius=border_radius)
         if not static_only:
             if getattr(self, "has_bar1", 1) and not getattr(self, 'has_sat_check_bar_hidden', 0) and hasattr(self, 'draw_bar1'):
                 self.draw_bar1(surface, offset[0], offset[1], cell_size)
