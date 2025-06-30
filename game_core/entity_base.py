@@ -209,10 +209,23 @@ class SatisfiableEntity(BaseEntity):
                         match = any(isinstance(entity, t) for t in entity_type)
                     else:
                         match = to_type_from_classname(entity.__class__.__name__) == entity_type
-                    # Only count if is_satisfied == 1 (unless a predicate is provided)
                     if match:
-                        dist = abs(entity.x - self.x) + abs(entity.y - self.y)
-                        if dist <= radius:
+                        # Check all tiles occupied by the entity
+                        ex, ey = entity.x, entity.y
+                        ew = getattr(entity, 'width', 1)
+                        eh = getattr(entity, 'height', 1)
+                        found = False
+                        for dx in range(ew):
+                            for dy in range(eh):
+                                tile_x = ex + dx
+                                tile_y = ey + dy
+                                dist = abs(tile_x - self.x) + abs(tile_y - self.y)
+                                if dist <= radius:
+                                    found = True
+                                    break
+                            if found:
+                                break
+                        if found:
                             if predicate is not None:
                                 if predicate(entity):
                                     count += 1

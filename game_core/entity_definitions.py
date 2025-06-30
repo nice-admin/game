@@ -11,7 +11,6 @@ class ComputerT1(ComputerEntity):
     upkeep = 50
     heating_multiplier = 2
 
-
 class ComputerT2(ComputerEntity):
     _icon = resource_path("data/graphics/computer-advanced.png")
     display_name = 'Gaming Computer'
@@ -52,6 +51,7 @@ class TV(BaseEntity):
     power_drain = 40
 
 # region Humans
+
 class Artist(PersonEntity):
     _icon = resource_path("data/graphics/artist.png")
     has_special = 1
@@ -97,7 +97,6 @@ class Artist(PersonEntity):
         super().update(grid)
         self.check_project_manager_proximity(grid)
 
-
 class TechnicalDirector(PersonEntity):
     _icon = resource_path("data/graphics/entities/technical-director.png")
     satisfaction_check_type = 'router'
@@ -124,7 +123,6 @@ class ProjectManager(SatisfiableEntity):
             self.is_satisfied = 0
             self.state = "Mid"
 
-
 class AccountManager(SatisfiableEntity):
     _icon = resource_path("data/graphics/account-manager.png")
     satisfaction_check_type = 'router'
@@ -132,8 +130,8 @@ class AccountManager(SatisfiableEntity):
     satisfaction_check_threshold = 1
     upkeep = 2000
 
-
 # region Utility
+
 class EspressoMachine(UtilityEntity):
     _icon = resource_path("data/graphics/coffee-machine.png")
     purchase_cost = 500
@@ -165,8 +163,6 @@ class AirConditioner(SatisfiableEntity):
         if gs.temperature > 23:
             gs.temperature = max(23, gs.temperature - 0.25)
 
-
-
 class Humidifier(SatisfiableEntity):
     _icon = resource_path("data/graphics/entities/humidifier.png")
     has_special = 0
@@ -186,10 +182,6 @@ class Fridge(SatisfiableEntity):
     has_sat_check_bar_hidden = 1
     purchase_cost = 1000
     satisfaction_check_type = 'outlet'
-
-    def satisfaction_check(self, grid):
-        return 1
-
 
 class Breaker(SatisfiableEntity):
     _icon = resource_path("data/graphics/breaker.png")
