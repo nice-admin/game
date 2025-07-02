@@ -144,9 +144,12 @@ def run_game():
         state['camera_offset'] = game_controls.camera_drag.handle_wsad(state['camera_offset'])
         # --- Update all entities every 2 frames ---
         if frame_count % 2 == 0:
+            # Update each unique entity only once per frame
+            unique_entities = set()
             for row in state['grid']:
                 for entity in row:
-                    if entity:
+                    if entity and entity not in unique_entities:
+                        unique_entities.add(entity)
                         entity.update(state['grid'])
             from game_core.game_state import update_totals_from_grid, EntityStats
             update_totals_from_grid(state['grid'])
