@@ -19,6 +19,7 @@ from game_ui.quest_panel import QuestItem, draw_quest_panel_baked
 import game_ui.quest_panel as quest_panel
 import math
 from game_ui.experience_panel import draw_experience_panel
+from game_ui.zone_panel import draw_zone_panel, set_zone_panel_grid_params
 
 ALLOW_HIDDEN_INFO_PANEL = 1
 ALLOW_RESOURCE_PANEL = 1
@@ -34,7 +35,10 @@ ALLOW_QUEST_PANEL = 1
 ALLOW_SAVE_AND_LOAD = 0
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None, controls=None):
-
+    
+    set_zone_panel_grid_params(camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT)
+    draw_zone_panel(surface)
+    
     pickup_offset = (0, 0)
     if controls is not None and getattr(controls, '_pickup_mode', False):
         pickup_offset = getattr(controls, 'pickup_offset', (0, 0))
@@ -48,6 +52,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if all(v is not None for v in [selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid]):
         draw_cursor_construction_overlay(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     power_outage.draw_overlay(surface)
+
     if ALLOW_RESOURCE_PANEL:
         baked = get_baked_panel(font)
         general_width, general_height = baked['total_width'], baked['total_height']

@@ -14,6 +14,7 @@ from game_ui.project_overview_panel import handle_render_queue_panel_event
 from game_ui.supplies_panel import handle_supplies_panel_event
 from game_ui.ui import draw_entity_hover_label_if_needed
 import random
+from game_ui.zone_panel import handle_zone_panel_event, draw_zones_only
 
 
 # --- Game Grid ---
@@ -112,10 +113,7 @@ def run_game():
                 # Draw 2px border with adjusted color
                 border_col = adjust_color(BASE_COL, white_factor=0.0, exposure=1.3)
                 pygame.draw.rect(background_surface, border_col, rect, width=1, border_radius=3)
-        for row in grid:
-            for entity in row:
-                if entity and hasattr(entity, 'draw'):
-                    entity.draw(background_surface, (0, 0), cell_size, static_only=True)
+    # Do NOT draw static entities here anymore
 
     # Initial bake
     bake_static_entities()
@@ -193,6 +191,8 @@ def handle_events(state, game_controls, remove_entity, place_entity):
     num_sections = 6  # Number of construction panel sections (update if dynamic)
 
     for event in pygame.event.get():
+        # Allow zone panel to handle mouse events for zone creation
+        handle_zone_panel_event(event)
         # Handle music end event for random music playback
         if event.type == pygame.USEREVENT + 1:
             from game_other.audio import play_random_music_wav
@@ -222,6 +222,8 @@ def update_game_logic(state, frame_count, update_game_state):
 def render_game(state, screen, background_surface, font, timings, clock, controls):
     screen.fill(BG_OUTSIDE_GRID_COL)
     screen.blit(background_surface, state['camera_offset'])
+    # Draw zones underneath entities
+    draw_zones_only(screen)
     min_x = max(0, int(-state['camera_offset'][0] // state['cell_size']))
     max_x = min(GAME_AREA_WIDTH, int((-state['camera_offset'][0] + screen.get_width()) // state['cell_size']) + 1)
     min_y = max(0, int(-state['camera_offset'][1] // state['cell_size']))
