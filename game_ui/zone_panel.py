@@ -107,7 +107,7 @@ def _clamp_zone_end(start, end):
     return (sx + dx, sy + dy)
 
 def handle_zone_panel_event(event: pygame.event.Event):
-    """Handles events for the zone panel button, zone creation, and zone removal. Returns True if button clicked."""
+    """Handles events for the zone panel button, zone creation, and zone removal. Returns True if button clicked or zone event handled."""
     global _zone_button, _zone_creation_active, _zone_start, _zone_end, _zones
     # First, check if the button was clicked and consume the event if so
     if _zone_button is not None and _zone_button.handle_event(event):
@@ -130,14 +130,15 @@ def handle_zone_panel_event(event: pygame.event.Event):
             rect = pygame.Rect(x, y, w, h)
             if rect.collidepoint(mx, my):
                 del _zones[i]
-                return False
+                return True
     if _zone_creation_active:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             # Prevent starting zone creation if mouse is over the button
             if _zone_button is not None and _zone_button.rect.collidepoint(event.pos):
-                return False
+                return True
             _zone_start = _screen_to_grid(event.pos)
             _zone_end = _zone_start
+            return True  # Consume event so entity pickup doesn't happen
         elif event.type == pygame.MOUSEMOTION and _zone_start:
             raw_end = _screen_to_grid(event.pos)
             _zone_end = _clamp_zone_end(_zone_start, raw_end)
@@ -160,6 +161,7 @@ def handle_zone_panel_event(event: pygame.event.Event):
             _zone_creation_active = True
             _zone_start = None
             _zone_end = None
+            return True
         return False
     return False
 

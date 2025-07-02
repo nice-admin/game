@@ -14,7 +14,7 @@ from game_ui.project_overview_panel import handle_render_queue_panel_event
 from game_ui.supplies_panel import handle_supplies_panel_event
 from game_ui.ui import draw_entity_hover_label_if_needed
 import random
-from game_ui.zone_panel import handle_zone_panel_event, draw_zones_only
+from game_ui.zone_panel import handle_zone_panel_event, draw_zones_only, _zone_creation_active
 
 
 # --- Game Grid ---
@@ -192,7 +192,13 @@ def handle_events(state, game_controls, remove_entity, place_entity):
 
     for event in pygame.event.get():
         # Allow zone panel to handle mouse events for zone creation
-        handle_zone_panel_event(event)
+        zone_event_handled = handle_zone_panel_event(event)
+        # If the zone panel handled the event, skip further processing
+        if zone_event_handled:
+            continue
+        # If zone mode is active, skip all entity/game controls for this event
+        if _zone_creation_active:
+            continue
         # Handle music end event for random music playback
         if event.type == pygame.USEREVENT + 1:
             from game_other.audio import play_random_music_wav

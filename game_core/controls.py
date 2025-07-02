@@ -6,6 +6,7 @@ from game_core.game_state import GameState
 import game_other.testing_layout as testing_layout
 from game_ui.hidden_info_panel import handle_panel_toggle_event
 from game_ui.profiler_panel import handle_profiler_panel_toggle
+from game_ui.zone_panel import _zone_creation_active
 
 def keybinds(event, grid=None, entity_states=None):
     if event.type == pygame.KEYDOWN:
@@ -247,6 +248,9 @@ class GameControls:
         return False
 
     def handle_event(self, event, state, remove_entity, place_entity):
+        # Block all entity/game controls if zone mode is active
+        if _zone_creation_active:
+            return None, False
         grid_changed = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             gx, gy = mouse_to_grid(state['camera_offset'], state['cell_size'])
