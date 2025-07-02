@@ -36,9 +36,6 @@ ALLOW_SAVE_AND_LOAD = 0
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None, controls=None):
     
-    set_zone_panel_grid_params(camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT)
-    draw_zone_panel(surface)
-    
     pickup_offset = (0, 0)
     if controls is not None and getattr(controls, '_pickup_mode', False):
         pickup_offset = getattr(controls, 'pickup_offset', (0, 0))
@@ -108,6 +105,10 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_HIDDEN_INFO_PANEL:
         draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
+        
+    set_zone_panel_grid_params(camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT)
+    draw_zone_panel(surface)
+
 
 def draw_entity_hover_label_if_needed(screen, font):
     import pygame

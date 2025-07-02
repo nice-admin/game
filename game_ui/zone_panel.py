@@ -54,8 +54,8 @@ _zone_end = None    # type: Optional[tuple]
 _zones = []         # List of (x, y, w, h)
 
 ZONE_MIN_W, ZONE_MIN_H = 2, 1
-ZONE_MAX_W, ZONE_MAX_H = 10, 10
-ZONE_COLOR = (128, 0, 200, 40)  # Transparent purple
+ZONE_MAX_W, ZONE_MAX_H = 15, 15
+ZONE_COLOR = (255, 0, 255, 40)  # Transparent purple
 
 # These must be set from the main game for correct snapping
 _zone_panel_camera_offset = (0, 0)
@@ -107,10 +107,35 @@ def _clamp_zone_end(start, end):
     return (sx + dx, sy + dy)
 
 def handle_zone_panel_event(event: pygame.event.Event):
-    """Handles events for the zone panel button and zone creation. Returns True if button clicked."""
+    """Handles events for the zone panel button, zone creation, and zone removal. Returns True if button clicked."""
     global _zone_button, _zone_creation_active, _zone_start, _zone_end, _zones
+    # First, check if the button was clicked and consume the event if so
+    if _zone_button is not None and _zone_button.handle_event(event):
+        if _zone_creation_active:
+            _zone_creation_active = False
+            _zone_start = None
+            _zone_end = None
+        else:
+            _zone_creation_active = True
+            _zone_start = None
+            _zone_end = None
+        return True  # Do not process further for this event
+    # Only allow right-click zone deletion in zone mode
+    if _zone_creation_active and event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+        mx, my = event.pos
+        for i, (zx, zy, zw, zh) in enumerate(_zones):
+            x, y = _grid_to_screen(zx, zy)
+            w = zw * _zone_panel_cell_size
+            h = zh * _zone_panel_cell_size
+            rect = pygame.Rect(x, y, w, h)
+            if rect.collidepoint(mx, my):
+                del _zones[i]
+                return False
     if _zone_creation_active:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            # Prevent starting zone creation if mouse is over the button
+            if _zone_button is not None and _zone_button.rect.collidepoint(event.pos):
+                return False
             _zone_start = _screen_to_grid(event.pos)
             _zone_end = _zone_start
         elif event.type == pygame.MOUSEMOTION and _zone_start:
@@ -131,16 +156,11 @@ def handle_zone_panel_event(event: pygame.event.Event):
             if top + h > _zone_panel_grid_height:
                 h = _zone_panel_grid_height - top
             _zones.append((left, top, w, h))
-            _zone_creation_active = False
+            # Stay in zone creation mode for continuous drawing
+            _zone_creation_active = True
             _zone_start = None
             _zone_end = None
         return False
-    # Not in zone creation mode: check button
-    if _zone_button is not None and _zone_button.handle_event(event):
-        _zone_creation_active = True
-        _zone_start = None
-        _zone_end = None
-        return True
     return False
 
 def draw_zone_panel(surface: pygame.Surface):
