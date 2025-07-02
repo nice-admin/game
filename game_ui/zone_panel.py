@@ -217,16 +217,18 @@ def draw_zones_only(surface: pygame.Surface):
         zone_surf.fill(ZONE_COLOR)
         surface.blit(zone_surf, (x, y))
 
+def format_zone_info(zone):
+    zone_id, left, top, w, h, zone_type = zone
+    start = (left, top)
+    end = (left + w - 1, top + h - 1)
+    return f"Zone ID: {zone_id}  Type: {zone_type}  Start: {start}  End: {end}"
+
 def draw_zone_info_overlay(surface: pygame.Surface):
     """Draws info about all zones in the center of the screen."""
     zones = zone_state.get_zones()
     if not zones:
         return
-    info_lines = []
-    for zone_id, left, top, w, h, zone_type in zones:
-        start = (left, top)
-        end = (left + w - 1, top + h - 1)
-        info_lines.append(f"Zone ID: {zone_id}  Type: {zone_type}  Start: {start}  End: {end}")
+    info_lines = [format_zone_info(z) for z in zones]
     font = pygame.font.SysFont(None, 32)
     width = max(font.size(line)[0] for line in info_lines) + 40
     height = len(info_lines) * font.get_height() + 30
@@ -241,8 +243,8 @@ def draw_zone_info_overlay(surface: pygame.Surface):
 
 def _zone_overlaps_existing(left, top, w, h):
     """Returns True if the proposed zone overlaps any existing zone."""
-    for _, ex_left, ex_top, ex_w, ex_h, _ in zone_state.get_zones():
-        if (left < ex_left + ex_w and left + w > ex_left and
-            top < ex_top + ex_h and top + h > ex_top):
-            return True
-    return False
+    return any(
+        left < ex_left + ex_w and left + w > ex_left and
+        top < ex_top + ex_h and top + h > ex_top
+        for _, ex_left, ex_top, ex_w, ex_h, _ in zone_state.get_zones()
+    )
