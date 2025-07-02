@@ -1,5 +1,6 @@
 import pygame
 from typing import Optional
+from game_core.zone_state import zone_state
 
 ZONE_BUTTON_COLOR = (80, 180, 255)
 ZONE_BUTTON_HOVER_COLOR = (120, 220, 255)
@@ -51,9 +52,8 @@ _zone_button: Optional[ZoneButton] = None
 _zone_creation_active = False
 _zone_start = None  # type: Optional[tuple]
 _zone_end = None    # type: Optional[tuple]
-_zones = []         # List of (x, y, w, h)
 
-ZONE_MIN_W, ZONE_MIN_H = 2, 1
+ZONE_MIN_W, ZONE_MIN_H = 1, 1
 ZONE_MAX_W, ZONE_MAX_H = 15, 15
 ZONE_COLOR = (255, 0, 255, 40)  # Transparent purple
 
@@ -106,9 +106,14 @@ def _clamp_zone_end(start, end):
         dy = (ZONE_MIN_H - 1) if dy >= 0 else -(ZONE_MIN_H - 1)
     return (sx + dx, sy + dy)
 
+current_zone_type = "zone_render"  # Default zone type
+
+# --- NEW CODE ---
+_zone_id_counter = 1  # For unique zone IDs
+_last_created_zone = None  # Store last created zone for UI
+
 def handle_zone_panel_event(event: pygame.event.Event):
-    """Handles events for the zone panel button, zone creation, and zone removal. Returns True if button clicked or zone event handled."""
-    global _zone_button, _zone_creation_active, _zone_start, _zone_end, _zones
+    global _zone_button, _zone_creation_active, _zone_start, _zone_end, current_zone_type, _zone_id_counter, _last_created_zone
     # First, check if the button was clicked and consume the event if so
     if _zone_button is not None and _zone_button.handle_event(event):
         if _zone_creation_active:
@@ -123,13 +128,13 @@ def handle_zone_panel_event(event: pygame.event.Event):
     # Only allow right-click zone deletion in zone mode
     if _zone_creation_active and event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
         mx, my = event.pos
-        for i, (zx, zy, zw, zh) in enumerate(_zones):
+        for i, (zone_id, zx, zy, zw, zh, zone_type) in enumerate(zone_state.get_zones()):
             x, y = _grid_to_screen(zx, zy)
             w = zw * _zone_panel_cell_size
             h = zh * _zone_panel_cell_size
             rect = pygame.Rect(x, y, w, h)
             if rect.collidepoint(mx, my):
-                del _zones[i]
+                zone_state.remove_zone_by_id(zone_id)
                 return True
     if _zone_creation_active:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -156,7 +161,13 @@ def handle_zone_panel_event(event: pygame.event.Event):
                 w = _zone_panel_grid_width - left
             if top + h > _zone_panel_grid_height:
                 h = _zone_panel_grid_height - top
-            _zones.append((left, top, w, h))
+            # Prevent overlap with existing zones
+            if not _zone_overlaps_existing(left, top, w, h):
+                zone_id = _zone_id_counter
+                _zone_id_counter += 1
+                zone = (zone_id, left, top, w, h, current_zone_type)
+                zone_state.add_zone(zone)
+                _last_created_zone = zone
             # Stay in zone creation mode for continuous drawing
             _zone_creation_active = True
             _zone_start = None
@@ -180,14 +191,14 @@ def draw_zone_panel(surface: pygame.Surface):
 
 def draw_zones_only(surface: pygame.Surface):
     """Draws only the zone rectangles (not the button or UI)."""
-    global _zones, _zone_creation_active, _zone_start, _zone_end
+    global _zone_creation_active, _zone_start, _zone_end
     # Draw existing zones
-    for zx, zy, zw, zh in _zones:
+    for zone_id, zx, zy, zw, zh, zone_type in zone_state.get_zones():
         x, y = _grid_to_screen(zx, zy)
         w = zw * _zone_panel_cell_size
         h = zh * _zone_panel_cell_size
         zone_surf = pygame.Surface((w, h), pygame.SRCALPHA)
-        zone_surf.fill(ZONE_COLOR)
+        zone_surf.fill(ZONE_COLOR)  # In the future, use zone_type to pick color
         surface.blit(zone_surf, (x, y))
     # Draw zone being created
     if _zone_creation_active and _zone_start and _zone_end:
@@ -205,3 +216,33 @@ def draw_zones_only(surface: pygame.Surface):
         zone_surf = pygame.Surface((w * _zone_panel_cell_size, h * _zone_panel_cell_size), pygame.SRCALPHA)
         zone_surf.fill(ZONE_COLOR)
         surface.blit(zone_surf, (x, y))
+
+def draw_zone_info_overlay(surface: pygame.Surface):
+    """Draws info about all zones in the center of the screen."""
+    zones = zone_state.get_zones()
+    if not zones:
+        return
+    info_lines = []
+    for zone_id, left, top, w, h, zone_type in zones:
+        start = (left, top)
+        end = (left + w - 1, top + h - 1)
+        info_lines.append(f"Zone ID: {zone_id}  Type: {zone_type}  Start: {start}  End: {end}")
+    font = pygame.font.SysFont(None, 32)
+    width = max(font.size(line)[0] for line in info_lines) + 40
+    height = len(info_lines) * font.get_height() + 30
+    surf = pygame.Surface((width, height), pygame.SRCALPHA)
+    surf.fill((30, 30, 30, 220))
+    for i, line in enumerate(info_lines):
+        text = font.render(line, True, (255, 255, 255))
+        surf.blit(text, (20, 15 + i * font.get_height()))
+    x = (surface.get_width() - width) // 2
+    y = (surface.get_height() - height) // 2
+    surface.blit(surf, (x, y))
+
+def _zone_overlaps_existing(left, top, w, h):
+    """Returns True if the proposed zone overlaps any existing zone."""
+    for _, ex_left, ex_top, ex_w, ex_h, _ in zone_state.get_zones():
+        if (left < ex_left + ex_w and left + w > ex_left and
+            top < ex_top + ex_h and top + h > ex_top):
+            return True
+    return False

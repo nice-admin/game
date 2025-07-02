@@ -19,7 +19,7 @@ from game_ui.quest_panel import QuestItem, draw_quest_panel_baked
 import game_ui.quest_panel as quest_panel
 import math
 from game_ui.experience_panel import draw_experience_panel
-from game_ui.zone_panel import draw_zone_panel, set_zone_panel_grid_params
+from game_ui.zone_panel import draw_zone_panel, set_zone_panel_grid_params, draw_zone_info_overlay
 
 ALLOW_HIDDEN_INFO_PANEL = 1
 ALLOW_RESOURCE_PANEL = 1
@@ -108,6 +108,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         
     set_zone_panel_grid_params(camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT)
     draw_zone_panel(surface)
+    draw_zone_info_overlay(surface)
 
 
 def draw_entity_hover_label_if_needed(screen, font):
