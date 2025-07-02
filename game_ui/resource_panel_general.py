@@ -27,6 +27,15 @@ RESOURCE_PANEL_CELLS = {
         "icon": resource_path("data/graphics/resource_panel/temperature.png"),
         "value_getter": lambda gs: round(gs.temperature, 1),
         "format": lambda v, gs: f"{v} °C",
+        "color": lambda v, gs: (
+            (0, 255, 0) if v <= 26 else
+            (255, 0, 0) if v >= 30 else
+            (
+                int((v-26)/(30-26)*255),
+                int((1-(v-26)/(30-26))*255),
+                0
+            )
+        ),
     },
     (1, 4): {
         "key": "power_drain",
