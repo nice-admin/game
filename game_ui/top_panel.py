@@ -1,13 +1,13 @@
 import pygame
 import pygame.freetype
 import random
-from game_core.config import UI_BG1_COL, resource_path
+from game_core.config import UI_BG1_COL, resource_path, adjust_color
 from game_core.game_state import gs
 
 ICON_PATH = resource_path("data/graphics/top_panel/day.png")
 
 class BasicCell:
-    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None):
+    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None, progress_min=0.0, progress_max=1.0):
         self.width = int(screen_width * 0.06)
         self.height = int(screen_height * 0.04)
         self.x = 0
@@ -21,6 +21,8 @@ class BasicCell:
         self.key = key
         self.font = font or pygame.font.SysFont(None, 20)
         self.progress = progress  # Value between 0.0 and 1.0 or None
+        self.progress_min = progress_min
+        self.progress_max = progress_max
         # Always use the default icon unless overridden
         icon_path = icon_path if icon_path is not None else ICON_PATH
         if icon_path:
@@ -47,7 +49,7 @@ class BasicCell:
         if self.icon:
             self._static_surface.blit(self.icon, (icon_x, icon_y))
         label_text = self.label if self.label is not None else ""
-        large_font = pygame.font.SysFont(None, 25)
+        large_font = pygame.font.SysFont(None, 22)
         label_surface = large_font.render(label_text, True, (255, 255, 255))
         label_x = icon_x + (self.icon_size if self.icon else 0) + 8
         label_y = icon_y
@@ -62,7 +64,7 @@ class BasicCell:
         last_value_str = str(self._last_value) if self._last_value is not None else None
         if value_str != last_value_str:
             if self.value is not None:
-                value_font = pygame.font.SysFont(None, 20)
+                value_font = pygame.font.SysFont(None, 28)
                 self._value_surface = value_font.render(value_str, True, (200, 220, 255))
             else:
                 self._value_surface = None
@@ -70,7 +72,7 @@ class BasicCell:
 
     def _render_progress(self):
         # Only re-render progress bar if it changed
-        if self.progress != self._last_progress:
+        if self.progress != self._last_progress or self.progress_min != getattr(self, '_last_progress_min', None) or self.progress_max != getattr(self, '_last_progress_max', None):
             if self.progress is not None:
                 bar_width = int(self.width * 0.9)
                 bar_height = int(self.height * 0.1)
@@ -78,20 +80,29 @@ class BasicCell:
                 bar_y = int(self.height * 0.95) - bar_height
                 surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
                 pygame.draw.rect(surf, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=3)
-                fill_width = int(bar_width * max(0.0, min(1.0, self.progress)))
+                # Normalize progress to min/max
+                norm = (self.progress - self.progress_min) / (self.progress_max - self.progress_min) if self.progress_max != self.progress_min else 0.0
+                norm = max(0.0, min(1.0, norm))
+                fill_width = int(bar_width * norm)
                 if fill_width > 0:
                     pygame.draw.rect(surf, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=3)
                 self._progress_surface = surf
             else:
                 self._progress_surface = None
             self._last_progress = self.progress
+            self._last_progress_min = self.progress_min
+            self._last_progress_max = self.progress_max
 
-    def update(self, value=None, progress=None):
+    def update(self, value=None, progress=None, progress_min=None, progress_max=None):
         # Call this to update value/progress and re-render only if changed
         if value is not None:
             self.value = value
         if progress is not None:
             self.progress = progress
+        if progress_min is not None:
+            self.progress_min = progress_min
+        if progress_max is not None:
+            self.progress_max = progress_max
         self._render_value()
         self._render_progress()
 
@@ -108,16 +119,56 @@ class BasicCell:
             surface.blit(self._progress_surface, (self.rect.x, self.rect.y))
 
 
-SECTION1 = [
-    {"id": 0, "label": "Day", "icon": resource_path("data/graphics/top_panel/day.png"), "value": lambda: gs.game_time_days},
-    {"id": 1, "label": "Air temp", "icon": resource_path("data/graphics/top_panel/temperature.png"), "value": lambda: gs.temperature},
-    {"id": 2, "label": "Power drain"},
-    {"id": 3, "label": "Breaker limit"},
-    {"id": 4, "label": "Employees"},
-    {"id": 5, "label": "Happiness"},
-    {"id": 6, "label": "Money"},
-    {"id": 7, "label": "Monthly expenses"},
-    {"id": 8, "label": "Office quality"},
+DATA = [
+    {
+        "id": 0,
+        "label": "Day",
+        "icon": resource_path("data/graphics/top_panel/day.png"),
+        "value": lambda: gs.game_time_days,
+    },
+    {
+        "id": 1,
+        "label": "Air temp",
+        "icon": resource_path("data/graphics/top_panel/temperature.png"),
+        "value": lambda: gs.temperature,
+        "bar_min": 15,
+        "bar_max": 35,
+    },
+    {
+        "id": 2,
+        "label": "Power drain",
+        "value": lambda: gs.total_power_drain,
+    },
+    {
+        "id": 3,
+        "label": "Breaker limit",
+        "value": lambda: gs.total_breaker_strength,
+    },
+    {
+        "id": 4,
+        "label": "Employees",
+        "value": lambda: gs.total_employees,
+    },
+    {
+        "id": 5,
+        "label": "Happiness",
+        "value": 10,
+    },
+    {
+        "id": 6,
+        "label": "Money",
+        "value": lambda: gs.total_money,
+    },
+    {
+        "id": 7,
+        "label": "Monthly expenses",
+        "value": lambda: gs.total_upkeep,
+    },
+    {
+        "id": 8,
+        "label": "Office quality",
+        "value": lambda: gs.office_quality,
+    },
 ]
 
 class TopPanel:
@@ -130,7 +181,7 @@ class TopPanel:
         self.num_shortcells = num_shortcells or 7
         self.screen_width, self.screen_height = surface.get_width(), surface.get_height()
         self.cell_progresses = cell_progresses or [0.45 for _ in range(self.num_cells)]
-        self.cell_defs = cell_defs or SECTION1
+        self.cell_defs = cell_defs or DATA
         self.cells = []
         self._init_cells()
 
@@ -140,6 +191,10 @@ class TopPanel:
             cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
             value_func = cell_def.get("value")
             value = value_func() if callable(value_func) else value_func
+            bar_min = cell_def.get("bar_min", 0.0)
+            bar_max = cell_def.get("bar_max", 1.0)
+            # Use value as progress if bar_min/bar_max are set
+            progress = value if cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None else (self.cell_progresses[i] if i < len(self.cell_progresses) else None)
             cell = BasicCell(
                 self.screen_width, self.screen_height,
                 color=self.cell_color,
@@ -148,7 +203,9 @@ class TopPanel:
                 value=value,
                 key=cell_def.get("key"),
                 font=self.font,
-                progress=self.cell_progresses[i] if i < len(self.cell_progresses) else None
+                progress=progress,
+                progress_min=bar_min,
+                progress_max=bar_max
             )
             cell.rect.x = i * (cell.width + self.cell_gap)
             cell.rect.y = 0
@@ -160,12 +217,19 @@ class TopPanel:
             cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
             value_func = cell_def.get("value")
             value = value_func() if callable(value_func) else value_func
-            progress = self.cell_progresses[i] if i < len(self.cell_progresses) else None
-            cell.update(value=value, progress=progress)
+            bar_min = cell_def.get("bar_min", cell.progress_min)
+            bar_max = cell_def.get("bar_max", cell.progress_max)
+            # Use value as progress if bar_min/bar_max are set, else use cell_progresses
+            progress = value if cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None else (self.cell_progresses[i] if i < len(self.cell_progresses) else None)
+            cell.update(value=value, progress=progress, progress_min=bar_min, progress_max=bar_max)
 
     def draw(self, target_surface=None):
         if target_surface is None:
             target_surface = self.surface
+        # Draw a big adjusted color rectangle as the background for the entire top panel
+        bg_height = int(self.screen_height * 0.043)
+        bg_col = adjust_color(UI_BG1_COL, white_factor=0.0, exposure=1.4)
+        pygame.draw.rect(target_surface, bg_col, (0, 0, self.screen_width, bg_height))
         for cell in self.cells:
             cell.draw(target_surface)
 
