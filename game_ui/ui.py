@@ -77,7 +77,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     # Draw the top panel cells (always visible, like other UI elements)
     if not hasattr(draw_all_panels, '_top_panel'):
         draw_all_panels._top_panel = TopPanel(surface)
-        draw_all_panels._top_panel.bake_static()
     draw_all_panels._top_panel.draw(surface)
 
     overview_panel_x = 0

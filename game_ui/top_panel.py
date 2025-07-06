@@ -7,12 +7,6 @@ from game_core.game_state import gs
 ICON_PATH = resource_path("data/graphics/top_panel/day.png")
 
 class BasicCell:
-    """
-    A simple rectangular cell drawn at the top left of the screen.
-    The cell is 3% of the screen width and 2% of the screen height.
-    Optionally displays an icon and a label in the top left corner.
-    Now also supports a value text below the label.
-    """
     def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None):
         self.width = int(screen_width * 0.06)
         self.height = int(screen_height * 0.04)
@@ -69,23 +63,6 @@ class BasicCell:
             if fill_width > 0:
                 pygame.draw.rect(surface, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=3)
 
-class WideCell(BasicCell):
-    """
-    A larger cell, 8% of the screen width, other properties derived from BasicCell.
-    """
-    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, key=None, icon_size=None, font=None, progress=None):
-        super().__init__(screen_width, screen_height, color, icon_path, label, key, icon_size, font, progress)
-        self.width = int(screen_width * 0.08)
-        self.rect.width = self.width
-
-class ShortCell(BasicCell):
-    """
-    A smaller cell, 4% of the screen width, other properties derived from BasicCell.
-    """
-    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, key=None, icon_size=None, font=None, progress=None):
-        super().__init__(screen_width, screen_height, color, icon_path, label, key, icon_size, font, progress)
-        self.width = int(screen_width * 0.04)
-        self.rect.width = self.width
 
 SECTION1 = [
     {"id": 0, "label": "Day", "icon": resource_path("data/graphics/top_panel/day.png"), "value": lambda: gs.game_time_days},
@@ -99,28 +76,8 @@ SECTION1 = [
     {"id": 8, "label": "Office quality"},
 ]
 
-SECTION2 = [
-    {"id": 0, "label": "Day"},
-    {"id": 1, "label": "Air temp"},
-    {"id": 2, "label": "Power drain"},
-    {"id": 3, "label": "Breaker limit"},
-    {"id": 4, "label": "Employees"},
-    {"id": 5, "label": "Happiness"},
-    {"id": 6, "label": "Money"},
-    {"id": 7, "label": "Monthly expenses"},
-    {"id": 8, "label": "Office quality"},
-]
-
 class TopPanel:
-    """
-    Efficient top panel UI: bakes static elements, only redraws dynamic ones (progress bars).
-    Usage:
-        panel = TopPanel(surface, ...)
-        panel.bake_static()
-        panel.draw(surface)  # draws static + dynamic
-        panel.update_progress(cell_idx, new_value)  # only redraws changed bar
-    """
-    def __init__(self, surface, num_cells=5, cell_color=None, cell_gap=4, cell_defs=None, widecell_defs=None, shortcell_defs=None, font=None, cell_progresses=None, num_shortcells=7):
+    def __init__(self, surface, num_cells=16, cell_color=None, cell_gap=4, cell_defs=None, widecell_defs=None, shortcell_defs=None, font=None, cell_progresses=None, num_shortcells=7):
         self.surface = surface
         self.num_cells = num_cells or 5
         self.cell_color = cell_color
@@ -130,141 +87,30 @@ class TopPanel:
         self.screen_width, self.screen_height = surface.get_width(), surface.get_height()
         self.cell_progresses = cell_progresses or [0.45 for _ in range(self.num_cells)]
         self.cell_defs = cell_defs or SECTION1
-        self.widecell_defs = widecell_defs or SECTION2
-        self.shortcell_defs = shortcell_defs or [{} for _ in range(self.num_shortcells)]
         self.cells = []
-        self.static_surface = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
-        self._baked = False
-        self.dynamic_value_funcs = []  # Stores value lambdas for dynamic cells
-        self.last_dynamic_values = []  # Stores last values for dynamic cells
 
-    def bake_static(self):
-        """Draw all static UI (background, icons, labels) to static_surface."""
-        self.static_surface.fill((0,0,0,0))  # transparent
+    def draw(self, target_surface=None):
+        if target_surface is None:
+            target_surface = self.surface
         x_offset = 0
         self.cells = []
-        self.dynamic_value_funcs = []
-        self.last_dynamic_values = []
-        # BasicCells
         for i in range(self.num_cells):
             cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
             value_func = cell_def.get("value")
-            if callable(value_func):
-                value = value_func()
-                self.dynamic_value_funcs.append(value_func)
-                self.last_dynamic_values.append(value)
-            else:
-                value = value_func
-                self.dynamic_value_funcs.append(None)
-                self.last_dynamic_values.append(value)
+            value = value_func() if callable(value_func) else value_func
             cell = BasicCell(
                 self.screen_width, self.screen_height,
                 color=self.cell_color,
                 icon_path=cell_def.get("icon"),
                 label=cell_def.get("label"),
-                value=None,  # Only static parts here
+                value=value,
                 key=cell_def.get("key"),
                 font=self.font,
-                progress=None  # don't draw progress bar here
+                progress=self.cell_progresses[i] if i < len(self.cell_progresses) else None
             )
             cell.rect.x = x_offset
             cell.rect.y = 0
-            cell.draw(self.static_surface)
+            cell.draw(target_surface)
             self.cells.append(cell)
             x_offset += cell.width + self.cell_gap
-        # WideCells
-        for i in range(self.num_cells):
-            cell_def = self.widecell_defs[i] if i < len(self.widecell_defs) else {}
-            cell = WideCell(
-                self.screen_width, self.screen_height,
-                color=self.cell_color,
-                icon_path=cell_def.get("icon"),
-                label=cell_def.get("label"),
-                key=cell_def.get("key"),
-                font=self.font,
-                progress=None
-            )
-            cell.rect.x = x_offset
-            cell.rect.y = 0
-            cell.draw(self.static_surface)
-            self.cells.append(cell)
-            x_offset += cell.width + self.cell_gap
-        # ShortCells
-        for i in range(self.num_shortcells):
-            cell_def = self.shortcell_defs[i] if i < len(self.shortcell_defs) else {}
-            cell = ShortCell(
-                self.screen_width, self.screen_height,
-                color=self.cell_color,
-                icon_path=cell_def.get("icon"),
-                label=cell_def.get("label"),
-                key=cell_def.get("key"),
-                font=self.font,
-                progress=None
-            )
-            cell.rect.x = x_offset
-            cell.rect.y = 0
-            cell.draw(self.static_surface)
-            self.cells.append(cell)
-            x_offset += cell.width + self.cell_gap
-        self._baked = True
-
-    def _draw_dynamic_value(self, surface, cell, value):
-        # Redraw the entire cell with the updated value (background, icon, label, value, progress bar)
-        # Temporarily set the cell's value for drawing
-        prev_value = cell.value
-        cell.value = value
-        cell.draw(surface)
-        cell.value = prev_value  # Restore original value (if needed)
-
-    def draw(self, target_surface=None):
-        """Blit static UI, then draw all dynamic values and progress bars on top."""
-        if not self._baked:
-            self.bake_static()
-        if target_surface is None:
-            target_surface = self.surface
-        target_surface.blit(self.static_surface, (0,0))
-        # Draw dynamic value text and progress bars
-        for idx, cell in enumerate(self.cells):
-            # Only draw dynamic value for cells that have a tracked value
-            if idx < len(self.last_dynamic_values):
-                value = self.last_dynamic_values[idx]
-                self._draw_dynamic_value(target_surface, cell, value)
-            progress = self.cell_progresses[idx] if idx < len(self.cell_progresses) else None
-            if progress is not None:
-                self._draw_progress_bar(target_surface, cell, progress)
-
-    def _draw_progress_bar(self, surface, cell, progress):
-        # Copied from BasicCell.draw, but only draws the progress bar
-        bar_width = int(cell.width * 0.9)
-        bar_height = int(cell.height * 0.1)
-        bar_x = cell.rect.x + (cell.width - bar_width) // 2
-        bar_y = cell.rect.y + int(cell.height * 0.95) - bar_height
-        pygame.draw.rect(surface, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=3)
-        fill_width = int(bar_width * max(0.0, min(1.0, progress)))
-        if fill_width > 0:
-            pygame.draw.rect(surface, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=3)
-
-    def update_progress(self, idx, new_value, target_surface=None):
-        """Update a single progress bar and redraw only its region."""
-        if idx < 0 or idx >= len(self.cells):
-            return
-        self.cell_progresses[idx] = new_value
-        cell = self.cells[idx]
-        if target_surface is None:
-            target_surface = self.surface
-        # Redraw just the progress bar region
-        self._draw_progress_bar(target_surface, cell, new_value)
-        pygame.display.update(cell.rect)
-
-    def update_dynamic_cells(self):
-        """Check for changes in dynamic cell values and update only changed value cells."""
-        for idx, value_func in enumerate(self.dynamic_value_funcs):
-            if value_func is not None:
-                current_value = value_func()
-                if current_value != self.last_dynamic_values[idx]:
-                    self.last_dynamic_values[idx] = current_value
-                    cell = self.cells[idx]
-                    self._draw_dynamic_value(self.surface, cell, current_value)
-                    pygame.display.update(cell.rect)
-        # No need to update for cells beyond dynamic_value_funcs
 
