@@ -25,6 +25,8 @@ HEADER_TOP_MARGIN = 35
 ITEMS_TOP_MARGIN = HEADER_TOP_MARGIN + 30
 SHOT_NAME_WIDTH = 50
 
+PANEL_TOP_MARGIN = 65
+
 def get_expanded_extra_height():
     gs = GameState()
     shot_rows = getattr(gs, 'total_shots_goal', 10)
@@ -33,7 +35,7 @@ def get_expanded_extra_height():
 def handle_render_queue_panel_event(event, screen_width, resource_panel_height):
     global _render_queue_panel_expanded, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
     panel_x = (screen_width - PANEL_WIDTH) // 2
-    panel_y = 58
+    panel_y = PANEL_TOP_MARGIN
     panel_rect = pygame.Rect(panel_x, panel_y, PANEL_WIDTH, _render_queue_panel_current_height)
     gs = GameState()
     # If job_id changed while expanded, update expanded area
@@ -196,7 +198,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
     """Bake the static render queue panel (background, border, title, and RenderQueueItems) into a surface."""
     global _last_baked_panel, _last_baked_panel_job_id, _last_baked_panel_shot_rows, _last_baked_panel_width, _last_baked_panel_height
     panel_x = (screen_width - PANEL_WIDTH) // 2
-    panel_y = 58
+    panel_y = PANEL_TOP_MARGIN
     panel_height = _render_queue_panel_current_height
     panel_width = PANEL_WIDTH
     gs = GameState()
@@ -298,7 +300,7 @@ def bake_project_overview_panel(font, screen_width, resource_panel_height):
 def draw_project_overview_panel(surface, font, screen_width, resource_panel_height, render_queue_items=None):
     global _render_queue_panel_expanded, _render_queue_panel_current_height, _render_queue_panel_target_height, _render_queue_panel_anim_start_time, _last_baked_panel_job_id
     panel_x = (screen_width - PANEL_WIDTH) // 2
-    panel_y = 58
+    panel_y = PANEL_TOP_MARGIN
     gs = GameState()
     # Update expansion/height if job_id changed while expanded
     if _render_queue_panel_expanded and _last_baked_panel_job_id != gs.job_id:

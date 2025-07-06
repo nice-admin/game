@@ -99,12 +99,12 @@ RESOURCE_PANEL_CELLS = {
             5: "Heavenly"
         }.get(int(v), str(v)),
         "color": lambda v, gs: {
-            0: (255, 0, 0),         # Red
-            1: (255, 100, 0),       # Orange
-            2: (255, 220, 0),       # Yellow
-            3: (120, 200, 60),      # Light Green
-            4: (100, 230, 0),         # Green
-            5: (0, 255, 0)        # Gold
+            0: (255, 0, 0),
+            1: (255, 100, 0),
+            2: (255, 220, 0),
+            3: (120, 200, 60),
+            4: (100, 230, 0),
+            5: (0, 255, 0)
         }.get(int(v), (255,255,255)),
     },
     # Add more as needed

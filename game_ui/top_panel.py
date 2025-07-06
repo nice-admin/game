@@ -1,15 +1,102 @@
 import pygame
 import pygame.freetype
 import random
-from game_core.config import UI_BG1_COL, resource_path, adjust_color
+from game_core.config import UI_BG1_COL, resource_path, adjust_color, CURRENCY_SYMBOL, FONT1
 from game_core.game_state import gs
 
 ICON_PATH = resource_path("data/graphics/top_panel/day.png")
 
+# Helper to resolve icon paths by filename
+ICON_DIR = "data/graphics/top_panel/"
+def get_icon_path(filename):
+    return resource_path(ICON_DIR + filename)
+
+DATA = [
+    {
+        "id": 0,
+        "label": "Day",
+        "icon": get_icon_path("day.png"),
+        "value": lambda: gs.game_time_days,
+    },
+    {
+        "id": 6,
+        "label": "Money",
+        "icon": get_icon_path("money.png"),
+        "value": lambda: gs.total_money,
+        "prefix": CURRENCY_SYMBOL,
+    },
+    {
+        "id": 7,
+        "label": "Monthly expenses",
+        "icon": get_icon_path("expenses.png"),
+        "value": lambda: gs.total_upkeep,
+        "prefix": f"-{CURRENCY_SYMBOL}",
+    },
+    {
+        "id": 4,
+        "label": "Employees",
+        "icon": get_icon_path("employees.png"),
+        "value": lambda: gs.total_employees,
+    },
+    {
+        "id": 5,
+        "label": "Happiness",
+        "icon": get_icon_path("happiness.png"),
+        "value": 10,
+    },
+    {
+        "id": 1,
+        "label": "Air temp",
+        "icon": get_icon_path("temperature.png"),
+        "value": lambda: gs.temperature,
+        "bar_min": 15,
+        "bar_max": 35,
+        "suffix": "°C",
+        "decimals": 1,
+    },
+    {
+        "id": 2,
+        "label": "Power drain",
+        "value": lambda: gs.total_power_drain / 1000,
+        "icon": get_icon_path("power-drain.png"),
+        "suffix": " KW",
+        "decimals": 1,
+    },
+    {
+        "id": 3,
+        "label": "Breaker limit",
+        "value": lambda: int(gs.total_breaker_strength // 1000),
+        "icon": get_icon_path("breaker-limit.png"),
+        "suffix": " KW",
+    },
+    {
+        "id": 8,
+        "label": "Office quality",
+        "icon": get_icon_path("office-quality.png"),
+        "value": lambda: [
+            "Hellhole",
+            "Irritating",
+            "Average",
+            "Good",
+            "Excellent",
+            "Heavenly",
+        ][int(gs.office_quality)] if 0 <= int(gs.office_quality) <= 5 else str(gs.office_quality),
+        "color": lambda: [
+            (255, 0, 0),
+            (255, 100, 0),
+            (255, 220, 0),
+            (120, 200, 60),
+            (100, 230, 0),
+            (0, 255, 0),
+        ][int(gs.office_quality)] if 0 <= int(gs.office_quality) <= 5 else (200, 220, 255),
+    },
+]
+
 class BasicCell:
+    CONTENT_TOP_MARGIN = 2  # px
     def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None, progress_min=0.0, progress_max=1.0):
-        self.width = int(screen_width * 0.06)
-        self.height = int(screen_height * 0.04)
+        self.width = int(screen_width * 0.0755)
+        self.height = int(screen_height * 0.045)
         self.x = 0
         self.y = 0
         self.color = color if color is not None else UI_BG1_COL
@@ -19,7 +106,10 @@ class BasicCell:
         self.label = label
         self.value = value  # New: value text to display below label
         self.key = key
-        self.font = font or pygame.font.SysFont(None, 20)
+        # Use FONT1 for all text, but retain the original font sizes
+        self.font = pygame.font.Font(FONT1, 20)
+        self.large_font = pygame.font.Font(FONT1, 16)
+        self.value_font = pygame.font.Font(FONT1, 20)
         self.progress = progress  # Value between 0.0 and 1.0 or None
         self.progress_min = progress_min
         self.progress_max = progress_max
@@ -37,6 +127,7 @@ class BasicCell:
         self._value_surface = None   # Cached value surface
         self._last_progress = None   # Last rendered progress
         self._progress_surface = None
+        self._office_quality_color = None
         self._render_static()
         self._render_value()  # Initial value render
 
@@ -45,14 +136,14 @@ class BasicCell:
         self._static_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
         pygame.draw.rect(self._static_surface, self.color, (0, 0, self.width, self.height))
         icon_x = 5
-        icon_y = 5
+        icon_y = 5 + self.CONTENT_TOP_MARGIN
         if self.icon:
             self._static_surface.blit(self.icon, (icon_x, icon_y))
         label_text = self.label if self.label is not None else ""
-        large_font = pygame.font.SysFont(None, 22)
-        label_surface = large_font.render(label_text, True, (255, 255, 255))
+        label_col = adjust_color(self.color, white_factor=0.0, exposure=4)
+        label_surface = self.large_font.render(label_text, True, label_col)
         label_x = icon_x + (self.icon_size if self.icon else 0) + 8
-        label_y = icon_y
+        label_y = icon_y + self.CONTENT_TOP_MARGIN
         self._static_surface.blit(label_surface, (label_x, label_y))
         self._label_x = label_x
         self._label_y = label_y
@@ -60,32 +151,60 @@ class BasicCell:
 
     def _render_value(self):
         # Only re-render value if it changed (compare as string for robustness)
-        value_str = str(self.value) if self.value is not None else None
+        display_value = self.value
+        # Always convert to float if decimals is set and value is int
+        decimals = None
+        for cell_def in DATA:
+            if cell_def.get('label') == self.label:
+                decimals = cell_def.get('decimals', None)
+                break
+        if decimals is not None:
+            try:
+                display_value = float(display_value)
+                display_value = f"{display_value:.{decimals}f}"
+            except Exception:
+                pass
+        # Use prefix/suffix from data if present
+        prefix = ''
+        suffix = ''
+        color = (200, 220, 255)
+        for cell_def in DATA:
+            if cell_def.get('label') == self.label:
+                prefix = cell_def.get('prefix', '')
+                suffix = cell_def.get('suffix', '')
+                color_func = cell_def.get('color', None)
+                if color_func is not None and callable(color_func):
+                    color = color_func()
+                break
+        if prefix and display_value is not None:
+            display_value = f"{prefix}{display_value}"
+        if suffix and display_value is not None:
+            display_value = f"{display_value}{suffix}"
+        value_str = str(display_value) if display_value is not None else None
         last_value_str = str(self._last_value) if self._last_value is not None else None
         if value_str != last_value_str:
-            if self.value is not None:
-                value_font = pygame.font.SysFont(None, 28)
-                self._value_surface = value_font.render(value_str, True, (200, 220, 255))
+            if display_value is not None:
+                self._value_surface = self.value_font.render(value_str, True, color)
             else:
                 self._value_surface = None
-            self._last_value = self.value
+            self._last_value = display_value
 
     def _render_progress(self):
         # Only re-render progress bar if it changed
         if self.progress != self._last_progress or self.progress_min != getattr(self, '_last_progress_min', None) or self.progress_max != getattr(self, '_last_progress_max', None):
             if self.progress is not None:
-                bar_width = int(self.width * 0.9)
-                bar_height = int(self.height * 0.1)
+                bar_width = int(self.width * 0.95)
+                bar_height = int(self.height * 0.15)
                 bar_x = (self.width - bar_width) // 2
                 bar_y = int(self.height * 0.95) - bar_height
                 surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-                pygame.draw.rect(surf, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=3)
+                pygame.draw.rect(surf, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=1)
                 # Normalize progress to min/max
                 norm = (self.progress - self.progress_min) / (self.progress_max - self.progress_min) if self.progress_max != self.progress_min else 0.0
                 norm = max(0.0, min(1.0, norm))
                 fill_width = int(bar_width * norm)
                 if fill_width > 0:
-                    pygame.draw.rect(surf, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=3)
+                    pygame.draw.rect(surf, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=2)
                 self._progress_surface = surf
             else:
                 self._progress_surface = None
@@ -119,60 +238,8 @@ class BasicCell:
             surface.blit(self._progress_surface, (self.rect.x, self.rect.y))
 
 
-DATA = [
-    {
-        "id": 0,
-        "label": "Day",
-        "icon": resource_path("data/graphics/top_panel/day.png"),
-        "value": lambda: gs.game_time_days,
-    },
-    {
-        "id": 1,
-        "label": "Air temp",
-        "icon": resource_path("data/graphics/top_panel/temperature.png"),
-        "value": lambda: gs.temperature,
-        "bar_min": 15,
-        "bar_max": 35,
-    },
-    {
-        "id": 2,
-        "label": "Power drain",
-        "value": lambda: gs.total_power_drain,
-    },
-    {
-        "id": 3,
-        "label": "Breaker limit",
-        "value": lambda: gs.total_breaker_strength,
-    },
-    {
-        "id": 4,
-        "label": "Employees",
-        "value": lambda: gs.total_employees,
-    },
-    {
-        "id": 5,
-        "label": "Happiness",
-        "value": 10,
-    },
-    {
-        "id": 6,
-        "label": "Money",
-        "value": lambda: gs.total_money,
-    },
-    {
-        "id": 7,
-        "label": "Monthly expenses",
-        "value": lambda: gs.total_upkeep,
-    },
-    {
-        "id": 8,
-        "label": "Office quality",
-        "value": lambda: gs.office_quality,
-    },
-]
-
 class TopPanel:
-    def __init__(self, surface, num_cells=16, cell_color=None, cell_gap=4, cell_defs=None, widecell_defs=None, shortcell_defs=None, font=None, cell_progresses=None, num_shortcells=7):
+    def __init__(self, surface, num_cells=13, cell_color=None, cell_gap=4, cell_defs=None, widecell_defs=None, shortcell_defs=None, font=None, cell_progresses=None, num_shortcells=7):
         self.surface = surface
         self.num_cells = num_cells or 5
         self.cell_color = cell_color
