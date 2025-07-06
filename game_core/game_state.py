@@ -208,3 +208,5 @@ def get_totals_dict():
 def update_totals_from_grid(grid):
     GameState().update_totals_from_grid(grid)
     GameState().update_totals_from_grid(grid)
+
+gs = GameState()

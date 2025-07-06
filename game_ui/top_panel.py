@@ -2,6 +2,7 @@ import pygame
 import pygame.freetype
 import random
 from game_core.config import UI_BG1_COL, resource_path
+from game_core.game_state import gs
 
 ICON_PATH = resource_path("data/graphics/top_panel/day.png")
 
@@ -10,8 +11,9 @@ class BasicCell:
     A simple rectangular cell drawn at the top left of the screen.
     The cell is 3% of the screen width and 2% of the screen height.
     Optionally displays an icon and a label in the top left corner.
+    Now also supports a value text below the label.
     """
-    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, key=None, icon_size=None, font=None, progress=None):
+    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None):
         self.width = int(screen_width * 0.06)
         self.height = int(screen_height * 0.04)
         self.x = 0
@@ -21,6 +23,7 @@ class BasicCell:
         self.icon = None
         self.icon_size = 35
         self.label = label
+        self.value = value  # New: value text to display below label
         self.key = key
         self.font = font or pygame.font.SysFont(None, 20)
         self.progress = progress  # Value between 0.0 and 1.0 or None
@@ -46,6 +49,13 @@ class BasicCell:
         label_x = icon_x + (self.icon_size if self.icon else 0) + 8
         label_y = icon_y  # Align label Y with icon Y
         surface.blit(label_surface, (label_x, label_y))
+        # Draw value text below label, if present
+        if self.value is not None:
+            value_font = pygame.font.SysFont(None, 20)
+            value_surface = value_font.render(str(self.value), True, (200, 220, 255))
+            value_x = label_x
+            value_y = label_y + label_surface.get_height() + 2
+            surface.blit(value_surface, (value_x, value_y))
         # Draw progress bar if defined
         if self.progress is not None:
             bar_width = int(self.width * 0.9)
@@ -78,8 +88,8 @@ class ShortCell(BasicCell):
         self.rect.width = self.width
 
 SECTION1 = [
-    {"id": 0, "label": "Day", "icon": resource_path("data/graphics/top_panel/day.png")},
-    {"id": 1, "label": "Air temp", "icon": resource_path("data/graphics/top_panel/temperature.png")},
+    {"id": 0, "label": "Day", "icon": resource_path("data/graphics/top_panel/day.png"), "value": lambda: gs.game_time_days},
+    {"id": 1, "label": "Air temp", "icon": resource_path("data/graphics/top_panel/temperature.png"), "value": lambda: gs.temperature},
     {"id": 2, "label": "Power drain"},
     {"id": 3, "label": "Breaker limit"},
     {"id": 4, "label": "Employees"},
@@ -125,20 +135,34 @@ class TopPanel:
         self.cells = []
         self.static_surface = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
         self._baked = False
+        self.dynamic_value_funcs = []  # Stores value lambdas for dynamic cells
+        self.last_dynamic_values = []  # Stores last values for dynamic cells
 
     def bake_static(self):
         """Draw all static UI (background, icons, labels) to static_surface."""
         self.static_surface.fill((0,0,0,0))  # transparent
         x_offset = 0
         self.cells = []
+        self.dynamic_value_funcs = []
+        self.last_dynamic_values = []
         # BasicCells
         for i in range(self.num_cells):
             cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
+            value_func = cell_def.get("value")
+            if callable(value_func):
+                value = value_func()
+                self.dynamic_value_funcs.append(value_func)
+                self.last_dynamic_values.append(value)
+            else:
+                value = value_func
+                self.dynamic_value_funcs.append(None)
+                self.last_dynamic_values.append(value)
             cell = BasicCell(
                 self.screen_width, self.screen_height,
                 color=self.cell_color,
                 icon_path=cell_def.get("icon"),
                 label=cell_def.get("label"),
+                value=None,  # Only static parts here
                 key=cell_def.get("key"),
                 font=self.font,
                 progress=None  # don't draw progress bar here
@@ -184,15 +208,27 @@ class TopPanel:
             x_offset += cell.width + self.cell_gap
         self._baked = True
 
+    def _draw_dynamic_value(self, surface, cell, value):
+        # Redraw the entire cell with the updated value (background, icon, label, value, progress bar)
+        # Temporarily set the cell's value for drawing
+        prev_value = cell.value
+        cell.value = value
+        cell.draw(surface)
+        cell.value = prev_value  # Restore original value (if needed)
+
     def draw(self, target_surface=None):
-        """Blit static UI, then draw all progress bars (dynamic) on top."""
+        """Blit static UI, then draw all dynamic values and progress bars on top."""
         if not self._baked:
             self.bake_static()
         if target_surface is None:
             target_surface = self.surface
         target_surface.blit(self.static_surface, (0,0))
-        # Draw progress bars only (dynamic)
+        # Draw dynamic value text and progress bars
         for idx, cell in enumerate(self.cells):
+            # Only draw dynamic value for cells that have a tracked value
+            if idx < len(self.last_dynamic_values):
+                value = self.last_dynamic_values[idx]
+                self._draw_dynamic_value(target_surface, cell, value)
             progress = self.cell_progresses[idx] if idx < len(self.cell_progresses) else None
             if progress is not None:
                 self._draw_progress_bar(target_surface, cell, progress)
@@ -219,4 +255,16 @@ class TopPanel:
         # Redraw just the progress bar region
         self._draw_progress_bar(target_surface, cell, new_value)
         pygame.display.update(cell.rect)
+
+    def update_dynamic_cells(self):
+        """Check for changes in dynamic cell values and update only changed value cells."""
+        for idx, value_func in enumerate(self.dynamic_value_funcs):
+            if value_func is not None:
+                current_value = value_func()
+                if current_value != self.last_dynamic_values[idx]:
+                    self.last_dynamic_values[idx] = current_value
+                    cell = self.cells[idx]
+                    self._draw_dynamic_value(self.surface, cell, current_value)
+                    pygame.display.update(cell.rect)
+        # No need to update for cells beyond dynamic_value_funcs
 
