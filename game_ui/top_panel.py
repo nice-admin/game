@@ -11,6 +11,8 @@ ICON_DIR = "data/graphics/top_panel/"
 def get_icon_path(filename):
     return resource_path(ICON_DIR + filename)
 
+DEFAULT_GREEN = (75, 230, 50)
+
 DATA = [
     {
         "id": 0,
@@ -50,9 +52,11 @@ DATA = [
         "icon": get_icon_path("temperature.png"),
         "value": lambda: gs.temperature,
         "bar_min": 15,
-        "bar_max": 35,
+        "bar_max": 32,
         "suffix": "°C",
         "decimals": 1,
+        "has_bar": True,
+        "color": lambda: interpolate_temp_color(getattr(gs, 'temperature', 23)),
     },
     {
         "id": 2,
@@ -61,6 +65,9 @@ DATA = [
         "icon": get_icon_path("power-drain.png"),
         "suffix": " KW",
         "decimals": 1,
+        "bar_min": 0,
+        "bar_max": lambda: gs.total_breaker_strength / 1000,
+        "has_bar": True,
     },
     {
         "id": 3,
@@ -92,27 +99,66 @@ DATA = [
     },
 ]
 
+def interpolate_temp_color(t):
+    t = max(15, min(32, float(t or 23)))
+    # Use bright blue, green, red
+    blue = (0, 180, 255)
+    green = DEFAULT_GREEN
+    red = (255, 60, 60)
+    if t <= 23:
+        # Blue to green
+        f = (t - 15) / 8
+        r = int(blue[0] + (green[0] - blue[0]) * f)
+        g = int(blue[1] + (green[1] - blue[1]) * f)
+        b = int(blue[2] + (green[2] - blue[2]) * f)
+        return (r, g, b)
+    else:
+        # Green to red
+        f = (t - 23) / 12
+        r = int(green[0] + (red[0] - green[0]) * f)
+        g = int(green[1] + (red[1] - green[1]) * f)
+        b = int(green[2] + (red[2] - green[2]) * f)
+        return (r, g, b)
+
+def interpolate_power_color(norm):
+    # norm: 0.0 to 1.0 (progress bar fill percent)
+    # Use bright green and bright red for interpolation
+    green = DEFAULT_GREEN
+    red = (255, 60, 60)
+    if norm < 0.6:
+        return green
+    else:
+        f = (norm - 0.6) / 0.4
+        f = max(0.0, min(1.0, f))
+        r = int(green[0] + (red[0] - green[0]) * f)
+        g = int(green[1] + (red[1] - green[1]) * f)
+        b = int(green[2] + (red[2] - green[2]) * f)
+        return (r, g, b)
+
 class BasicCell:
     CONTENT_TOP_MARGIN = 2  # px
-    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None, progress_min=0.0, progress_max=1.0):
+    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None, progress_min=0.0, progress_max=1.0, has_bar=False):
         self.width = int(screen_width * 0.0755)
-        self.height = int(screen_height * 0.045)
+        self.height = int(screen_height * 0.04)
         self.x = 0
         self.y = 0
         self.color = color if color is not None else UI_BG1_COL
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
         self.icon = None
-        self.icon_size = 35
+        # Icon size logic: larger if no bar
+        self.icon_size = 32 if has_bar else 40
         self.label = label
         self.value = value  # New: value text to display below label
         self.key = key
         # Use FONT1 for all text, but retain the original font sizes
         self.font = pygame.font.Font(FONT1, 20)
         self.large_font = pygame.font.Font(FONT1, 16)
-        self.value_font = pygame.font.Font(FONT1, 20)
+        # Value font: larger if no bar
+        self.value_font = pygame.font.Font(FONT1, 18 if has_bar else 22)
         self.progress = progress  # Value between 0.0 and 1.0 or None
         self.progress_min = progress_min
         self.progress_max = progress_max
+        self.has_bar = has_bar
         # Always use the default icon unless overridden
         icon_path = icon_path if icon_path is not None else ICON_PATH
         if icon_path:
@@ -203,8 +249,22 @@ class BasicCell:
                 norm = (self.progress - self.progress_min) / (self.progress_max - self.progress_min) if self.progress_max != self.progress_min else 0.0
                 norm = max(0.0, min(1.0, norm))
                 fill_width = int(bar_width * norm)
+                # Use the same color function as the value text for Air temp, otherwise use DEFAULT_GREEN or override
+                fill_color = DEFAULT_GREEN
+                if self.label == "Air temp":
+                    fill_color = interpolate_temp_color(self.value)
+                elif self.label == "Power drain":
+                    fill_color = interpolate_power_color(norm)
+                else:
+                    # Check for color override in DATA
+                    for cell_def in DATA:
+                        if cell_def.get('label') == self.label:
+                            color_func = cell_def.get('color', None)
+                            if color_func is not None and callable(color_func):
+                                fill_color = color_func()
+                            break
                 if fill_width > 0:
-                    pygame.draw.rect(surf, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=2)
+                    pygame.draw.rect(surf, fill_color, (bar_x, bar_y, fill_width, bar_height), border_radius=2)
                 self._progress_surface = surf
             else:
                 self._progress_surface = None
@@ -212,7 +272,7 @@ class BasicCell:
             self._last_progress_min = self.progress_min
             self._last_progress_max = self.progress_max
 
-    def update(self, value=None, progress=None, progress_min=None, progress_max=None):
+    def update(self, value=None, progress=None, progress_min=None, progress_max=None, has_bar=None):
         # Call this to update value/progress and re-render only if changed
         if value is not None:
             self.value = value
@@ -222,6 +282,19 @@ class BasicCell:
             self.progress_min = progress_min
         if progress_max is not None:
             self.progress_max = progress_max
+        if has_bar is not None and has_bar != self.has_bar:
+            # If has_bar changes, update icon and value font sizes
+            self.has_bar = has_bar
+            self.icon_size = 35 if has_bar else 45
+            self.value_font = pygame.font.Font(FONT1, 22 if has_bar else 26)
+            # Re-load icon at new size
+            if self.icon is not None:
+                try:
+                    icon_img = pygame.image.load(self.icon_path)
+                    self.icon = pygame.transform.smoothscale(icon_img, (self.icon_size, self.icon_size))
+                except Exception:
+                    self.icon = None
+            self._render_static()
         self._render_value()
         self._render_progress()
 
@@ -231,10 +304,10 @@ class BasicCell:
         # Draw value text below label, if present
         if self._value_surface is not None:
             value_x = self.rect.x + self._label_x
-            value_y = self.rect.y + self._label_y + self._label_height + 2
+            value_y = self.rect.y + self._label_y + self._label_height
             surface.blit(self._value_surface, (value_x, value_y))
-        # Draw progress bar if defined
-        if self.progress is not None and self._progress_surface is not None:
+        # Draw progress bar if defined and allowed
+        if self.has_bar and self.progress is not None and self._progress_surface is not None:
             surface.blit(self._progress_surface, (self.rect.x, self.rect.y))
 
 
@@ -258,10 +331,16 @@ class TopPanel:
             cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
             value_func = cell_def.get("value")
             value = value_func() if callable(value_func) else value_func
+            # Evaluate bar_min and bar_max if they are callables
             bar_min = cell_def.get("bar_min", 0.0)
+            if callable(bar_min):
+                bar_min = bar_min()
             bar_max = cell_def.get("bar_max", 1.0)
+            if callable(bar_max):
+                bar_max = bar_max()
+            has_bar = cell_def.get("has_bar", False)
             # Use value as progress if bar_min/bar_max are set
-            progress = value if cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None else (self.cell_progresses[i] if i < len(self.cell_progresses) else None)
+            progress = value if (cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None) and has_bar else (self.cell_progresses[i] if i < len(self.cell_progresses) and has_bar else None)
             cell = BasicCell(
                 self.screen_width, self.screen_height,
                 color=self.cell_color,
@@ -272,7 +351,8 @@ class TopPanel:
                 font=self.font,
                 progress=progress,
                 progress_min=bar_min,
-                progress_max=bar_max
+                progress_max=bar_max,
+                has_bar=has_bar
             )
             cell.rect.x = i * (cell.width + self.cell_gap)
             cell.rect.y = 0
@@ -284,11 +364,17 @@ class TopPanel:
             cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
             value_func = cell_def.get("value")
             value = value_func() if callable(value_func) else value_func
+            # Evaluate bar_min and bar_max if they are callables
             bar_min = cell_def.get("bar_min", cell.progress_min)
+            if callable(bar_min):
+                bar_min = bar_min()
             bar_max = cell_def.get("bar_max", cell.progress_max)
-            # Use value as progress if bar_min/bar_max are set, else use cell_progresses
-            progress = value if cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None else (self.cell_progresses[i] if i < len(self.cell_progresses) else None)
-            cell.update(value=value, progress=progress, progress_min=bar_min, progress_max=bar_max)
+            if callable(bar_max):
+                bar_max = bar_max()
+            has_bar = cell_def.get("has_bar", False)
+            # Use value as progress if bar_min/bar_max are set and has_bar is True, else use cell_progresses
+            progress = value if (cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None) and has_bar else (self.cell_progresses[i] if i < len(self.cell_progresses) and has_bar else None)
+            cell.update(value=value, progress=progress, progress_min=bar_min, progress_max=bar_max, has_bar=has_bar)
 
     def draw(self, target_surface=None):
         if target_surface is None:
