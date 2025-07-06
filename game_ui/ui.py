@@ -20,9 +20,10 @@ import game_ui.quest_panel as quest_panel
 import math
 from game_ui.experience_panel import draw_experience_panel
 from game_ui.zone_panel import draw_zone_panel, set_zone_panel_grid_params, draw_zone_info_overlay
+from game_ui.top_panel import draw_top_panel
 
 ALLOW_HIDDEN_INFO_PANEL = 1
-ALLOW_RESOURCE_PANEL = 1
+ALLOW_RESOURCE_PANEL = 0
 ALLOW_ALERTS_PANEL = 0
 ALLOW_GRID_OVERVIEW_PANEL = 0
 ALLOW_ARROW_POINTER = 0
@@ -73,6 +74,9 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
             panel_btn_rects['section'] = section_btn_rects
             panel_btn_rects['item'] = item_btn_rects
 
+    # Draw the top panel cells (always visible, like other UI elements)
+    draw_top_panel(surface)
+
     overview_panel_x = 0
     overview_panel_y = surface.get_height() - OVERVIEW_PANEL_HEIGHT
     if ALLOW_GRID_OVERVIEW_PANEL:
@@ -105,7 +109,8 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_HIDDEN_INFO_PANEL:
         draw_hidden_info_panel(surface, font, hovered_entity=hovered_entity)
         draw_profiler_panel(surface, clock, font, draw_call_count, tick_count, timings)
-        
+    
+    
     set_zone_panel_grid_params(camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT)
     draw_zone_panel(surface)
     draw_zone_info_overlay(surface)
