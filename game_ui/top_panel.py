@@ -101,95 +101,122 @@ SECTION2 = [
     {"id": 8, "label": "Office quality"},
 ]
 
-def draw_top_panel(
-    surface,
-    num_cells=5,
-    cell_color=None,
-    cell_gap=4,
-    cell_defs=None,
-    widecell_defs=None,
-    shortcell_defs=None,
-    font=None,
-    cell_progresses=None,
-    num_shortcells=7
-):
+class TopPanel:
     """
-    Draws a row of BasicCell instances, then WideCell instances, then ShortCell instances at the top of the screen, left-aligned.
-    Each cell is separated by cell_gap pixels.
-    Optionally, pass lists of cell definition dicts for each cell type.
-    Optionally, pass a list of progress values (0.0-1.0) for each BasicCell via cell_progresses.
+    Efficient top panel UI: bakes static elements, only redraws dynamic ones (progress bars).
+    Usage:
+        panel = TopPanel(surface, ...)
+        panel.bake_static()
+        panel.draw(surface)  # draws static + dynamic
+        panel.update_progress(cell_idx, new_value)  # only redraws changed bar
     """
-    # Default values for num_cells, cell_gap, etc. can be set here if not provided
-    if num_cells is None:
-        num_cells = 5
-    if cell_gap is None:
-        cell_gap = 4
-    if num_shortcells is None:
-        num_shortcells = 5
-    screen_width, screen_height = surface.get_width(), surface.get_height()
-    cells = []
-    x_offset = 0
-    # Set all progress bars to 45%
-    cell_progresses = [0.45 for _ in range(num_cells)]
-    # Use section arrays for cell content
-    if cell_defs is None:
-        cell_defs = SECTION1
-    if widecell_defs is None:
-        widecell_defs = SECTION2
-    # Draw BasicCells
-    for i in range(num_cells):
-        cell_def = cell_defs[i] if i < len(cell_defs) else {}
-        progress = cell_progresses[i] if i < len(cell_progresses) else None
-        cell = BasicCell(
-            screen_width, screen_height,
-            color=cell_color,
-            icon_path=cell_def.get("icon"),
-            label=cell_def.get("label"),
-            key=cell_def.get("key"),
-            font=font,
-            progress=progress
-        )
-        cell.rect.x = x_offset
-        cell.rect.y = 0
-        cell.draw(surface)
-        cells.append(cell)
-        x_offset += cell.width + cell_gap
-    # Draw WideCells
-    for i in range(num_cells):
-        cell_def = widecell_defs[i] if i < len(widecell_defs) else {}
-        progress = cell_progresses[i] if i < len(cell_progresses) else None
-        cell = WideCell(
-            screen_width, screen_height,
-            color=cell_color,
-            icon_path=cell_def.get("icon"),
-            label=cell_def.get("label"),
-            key=cell_def.get("key"),
-            font=font,
-            progress=progress
-        )
-        cell.rect.x = x_offset
-        cell.rect.y = 0
-        cell.draw(surface)
-        cells.append(cell)
-        x_offset += cell.width + cell_gap
-    # Draw ShortCells
-    if shortcell_defs is None:
-        shortcell_defs = [{} for _ in range(num_shortcells)]
-    for i in range(num_shortcells):
-        cell_def = shortcell_defs[i] if i < len(shortcell_defs) else {}
-        cell = ShortCell(
-            screen_width, screen_height,
-            color=cell_color,
-            icon_path=cell_def.get("icon"),
-            label=cell_def.get("label"),
-            key=cell_def.get("key"),
-            font=font,
-            progress=None
-        )
-        cell.rect.x = x_offset
-        cell.rect.y = 0
-        cell.draw(surface)
-        cells.append(cell)
-        x_offset += cell.width + cell_gap
-    return cells, cell_progresses
+    def __init__(self, surface, num_cells=5, cell_color=None, cell_gap=4, cell_defs=None, widecell_defs=None, shortcell_defs=None, font=None, cell_progresses=None, num_shortcells=7):
+        self.surface = surface
+        self.num_cells = num_cells or 5
+        self.cell_color = cell_color
+        self.cell_gap = cell_gap or 4
+        self.font = font
+        self.num_shortcells = num_shortcells or 7
+        self.screen_width, self.screen_height = surface.get_width(), surface.get_height()
+        self.cell_progresses = cell_progresses or [0.45 for _ in range(self.num_cells)]
+        self.cell_defs = cell_defs or SECTION1
+        self.widecell_defs = widecell_defs or SECTION2
+        self.shortcell_defs = shortcell_defs or [{} for _ in range(self.num_shortcells)]
+        self.cells = []
+        self.static_surface = pygame.Surface((self.screen_width, self.screen_height), pygame.SRCALPHA)
+        self._baked = False
+
+    def bake_static(self):
+        """Draw all static UI (background, icons, labels) to static_surface."""
+        self.static_surface.fill((0,0,0,0))  # transparent
+        x_offset = 0
+        self.cells = []
+        # BasicCells
+        for i in range(self.num_cells):
+            cell_def = self.cell_defs[i] if i < len(self.cell_defs) else {}
+            cell = BasicCell(
+                self.screen_width, self.screen_height,
+                color=self.cell_color,
+                icon_path=cell_def.get("icon"),
+                label=cell_def.get("label"),
+                key=cell_def.get("key"),
+                font=self.font,
+                progress=None  # don't draw progress bar here
+            )
+            cell.rect.x = x_offset
+            cell.rect.y = 0
+            cell.draw(self.static_surface)
+            self.cells.append(cell)
+            x_offset += cell.width + self.cell_gap
+        # WideCells
+        for i in range(self.num_cells):
+            cell_def = self.widecell_defs[i] if i < len(self.widecell_defs) else {}
+            cell = WideCell(
+                self.screen_width, self.screen_height,
+                color=self.cell_color,
+                icon_path=cell_def.get("icon"),
+                label=cell_def.get("label"),
+                key=cell_def.get("key"),
+                font=self.font,
+                progress=None
+            )
+            cell.rect.x = x_offset
+            cell.rect.y = 0
+            cell.draw(self.static_surface)
+            self.cells.append(cell)
+            x_offset += cell.width + self.cell_gap
+        # ShortCells
+        for i in range(self.num_shortcells):
+            cell_def = self.shortcell_defs[i] if i < len(self.shortcell_defs) else {}
+            cell = ShortCell(
+                self.screen_width, self.screen_height,
+                color=self.cell_color,
+                icon_path=cell_def.get("icon"),
+                label=cell_def.get("label"),
+                key=cell_def.get("key"),
+                font=self.font,
+                progress=None
+            )
+            cell.rect.x = x_offset
+            cell.rect.y = 0
+            cell.draw(self.static_surface)
+            self.cells.append(cell)
+            x_offset += cell.width + self.cell_gap
+        self._baked = True
+
+    def draw(self, target_surface=None):
+        """Blit static UI, then draw all progress bars (dynamic) on top."""
+        if not self._baked:
+            self.bake_static()
+        if target_surface is None:
+            target_surface = self.surface
+        target_surface.blit(self.static_surface, (0,0))
+        # Draw progress bars only (dynamic)
+        for idx, cell in enumerate(self.cells):
+            progress = self.cell_progresses[idx] if idx < len(self.cell_progresses) else None
+            if progress is not None:
+                self._draw_progress_bar(target_surface, cell, progress)
+
+    def _draw_progress_bar(self, surface, cell, progress):
+        # Copied from BasicCell.draw, but only draws the progress bar
+        bar_width = int(cell.width * 0.9)
+        bar_height = int(cell.height * 0.1)
+        bar_x = cell.rect.x + (cell.width - bar_width) // 2
+        bar_y = cell.rect.y + int(cell.height * 0.95) - bar_height
+        pygame.draw.rect(surface, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=3)
+        fill_width = int(bar_width * max(0.0, min(1.0, progress)))
+        if fill_width > 0:
+            pygame.draw.rect(surface, (120, 200, 80), (bar_x, bar_y, fill_width, bar_height), border_radius=3)
+
+    def update_progress(self, idx, new_value, target_surface=None):
+        """Update a single progress bar and redraw only its region."""
+        if idx < 0 or idx >= len(self.cells):
+            return
+        self.cell_progresses[idx] = new_value
+        cell = self.cells[idx]
+        if target_surface is None:
+            target_surface = self.surface
+        # Redraw just the progress bar region
+        self._draw_progress_bar(target_surface, cell, new_value)
+        pygame.display.update(cell.rect)
 
