@@ -41,7 +41,7 @@ class BasicCell:
             surface.blit(self.icon, (icon_x, icon_y))
         # Draw label next to the icon, white and larger, aligned with icon Y
         label_text = self.label if self.label is not None else ""
-        large_font = pygame.font.SysFont(None, 28)
+        large_font = pygame.font.SysFont(None, 25)
         label_surface = large_font.render(label_text, True, (255, 255, 255))
         label_x = icon_x + (self.icon_size if self.icon else 0) + 8
         label_y = icon_y  # Align label Y with icon Y
@@ -68,38 +68,64 @@ class WideCell(BasicCell):
         self.width = int(screen_width * 0.08)
         self.rect.width = self.width
 
-# Example cell definitions
+class ShortCell(BasicCell):
+    """
+    A smaller cell, 4% of the screen width, other properties derived from BasicCell.
+    """
+    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, key=None, icon_size=None, font=None, progress=None):
+        super().__init__(screen_width, screen_height, color, icon_path, label, key, icon_size, font, progress)
+        self.width = int(screen_width * 0.04)
+        self.rect.width = self.width
+
 SECTION1 = [
     {"id": 0, "label": "Day", "icon": resource_path("data/graphics/top_panel/day.png")},
     {"id": 1, "label": "Air temp", "icon": resource_path("data/graphics/top_panel/temperature.png")},
-    {"id": 2, "label": "Power\ndrain"},
-    {"id": 3, "label": "Breaker\nlimit"},
+    {"id": 2, "label": "Power drain"},
+    {"id": 3, "label": "Breaker limit"},
     {"id": 4, "label": "Employees"},
     {"id": 5, "label": "Happiness"},
     {"id": 6, "label": "Money"},
-    {"id": 7, "label": "Monthly\nexpenses"},
-    {"id": 8, "label": "Office\nquality"},
+    {"id": 7, "label": "Monthly expenses"},
+    {"id": 8, "label": "Office quality"},
 ]
 
 SECTION2 = [
     {"id": 0, "label": "Day"},
     {"id": 1, "label": "Air temp"},
-    {"id": 2, "label": "Power\ndrain"},
-    {"id": 3, "label": "Breaker\nlimit"},
+    {"id": 2, "label": "Power drain"},
+    {"id": 3, "label": "Breaker limit"},
     {"id": 4, "label": "Employees"},
     {"id": 5, "label": "Happiness"},
     {"id": 6, "label": "Money"},
-    {"id": 7, "label": "Monthly\nexpenses"},
-    {"id": 8, "label": "Office\nquality"},
+    {"id": 7, "label": "Monthly expenses"},
+    {"id": 8, "label": "Office quality"},
 ]
 
-def draw_top_panel(surface, num_cells=5, cell_color=None, cell_gap=4, cell_defs=None, widecell_defs=None, font=None, cell_progresses=None):
+def draw_top_panel(
+    surface,
+    num_cells=5,
+    cell_color=None,
+    cell_gap=4,
+    cell_defs=None,
+    widecell_defs=None,
+    shortcell_defs=None,
+    font=None,
+    cell_progresses=None,
+    num_shortcells=7
+):
     """
-    Draws a row of BasicCell instances followed by WideCell instances at the top of the screen, left-aligned.
+    Draws a row of BasicCell instances, then WideCell instances, then ShortCell instances at the top of the screen, left-aligned.
     Each cell is separated by cell_gap pixels.
     Optionally, pass lists of cell definition dicts for each cell type.
     Optionally, pass a list of progress values (0.0-1.0) for each BasicCell via cell_progresses.
     """
+    # Default values for num_cells, cell_gap, etc. can be set here if not provided
+    if num_cells is None:
+        num_cells = 5
+    if cell_gap is None:
+        cell_gap = 4
+    if num_shortcells is None:
+        num_shortcells = 5
     screen_width, screen_height = surface.get_width(), surface.get_height()
     cells = []
     x_offset = 0
@@ -146,9 +172,24 @@ def draw_top_panel(surface, num_cells=5, cell_color=None, cell_gap=4, cell_defs=
         cell.draw(surface)
         cells.append(cell)
         x_offset += cell.width + cell_gap
+    # Draw ShortCells
+    if shortcell_defs is None:
+        shortcell_defs = [{} for _ in range(num_shortcells)]
+    for i in range(num_shortcells):
+        cell_def = shortcell_defs[i] if i < len(shortcell_defs) else {}
+        cell = ShortCell(
+            screen_width, screen_height,
+            color=cell_color,
+            icon_path=cell_def.get("icon"),
+            label=cell_def.get("label"),
+            key=cell_def.get("key"),
+            font=font,
+            progress=None
+        )
+        cell.rect.x = x_offset
+        cell.rect.y = 0
+        cell.draw(surface)
+        cells.append(cell)
+        x_offset += cell.width + cell_gap
     return cells, cell_progresses
 
-
-# Example usage (to be called from your main UI loop):
-# cell = BasicCell(surface.get_width(), surface.get_height())
-# cell.draw(surface)
