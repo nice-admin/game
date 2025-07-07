@@ -18,7 +18,7 @@ from game_ui.software_panel import draw_software_panel
 from game_ui.quest_panel import QuestItem, draw_quest_panel_baked
 import game_ui.quest_panel as quest_panel
 import math
-from game_ui.experience_panel import draw_experience_panel
+from game_ui.experience_panel import draw_experience_panel, PANEL_HEIGHT as EXPERIENCE_PANEL_HEIGHT
 from game_ui.zone_panel import draw_zone_panel, set_zone_panel_grid_params, draw_zone_info_overlay
 from game_ui.top_panel import TopPanel
 
@@ -68,7 +68,7 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_supplies_panel(surface)
     if ALLOW_CONSTRUCTION_PANEL:
         section_btn_rects, item_btn_rects = draw_construction_panel(
-            surface, selected_section=selected_section, selected_item=selected_item, font=font, extend_below=0
+            surface, selected_section=selected_section, selected_item=selected_item, font=font, extend_below=EXPERIENCE_PANEL_HEIGHT-25
         )
         if panel_btn_rects is not None:
             panel_btn_rects['section'] = section_btn_rects

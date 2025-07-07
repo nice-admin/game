@@ -11,6 +11,8 @@ ZONE_BUTTON_WIDTH = 40
 ZONE_BUTTON_HEIGHT = ZONE_BUTTON_WIDTH
 ZONE_BUTTON_RADIUS = 5
 ZONE_BUTTON_IMAGE_PATH = resource_path("data/graphics/tool_panel/zone.png")
+BUTTON_X = 0.749
+BUTTON_Y = 0.84
 
 class ZoneButton:
     WIDTH = ZONE_BUTTON_WIDTH
@@ -196,8 +198,8 @@ def handle_zone_panel_event(event: pygame.event.Event):
 def draw_zone_panel(surface: pygame.Surface):
     """Draws the zone panel button at 10% from bottom and 20% from right (no zone rectangles)."""
     global _zone_button
-    btn_x = int(surface.get_width() * 0.749)
-    btn_y = int(surface.get_height() * 0.84)
+    btn_x = int(surface.get_width() * BUTTON_X)
+    btn_y = int(surface.get_height() * BUTTON_Y)
     btn_center = (btn_x, btn_y)
     if _zone_button is None:
         _zone_button = ZoneButton(btn_center)
