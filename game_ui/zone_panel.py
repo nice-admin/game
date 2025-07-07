@@ -9,64 +9,56 @@ ZONE_BUTTON_BORDER_COLOR = (40, 60, 90)
 ZONE_BUTTON_TEXT_COLOR = (255, 255, 255)
 ZONE_BUTTON_WIDTH = 40
 ZONE_BUTTON_HEIGHT = ZONE_BUTTON_WIDTH
-ZONE_BUTTON_RADIUS = 16
+ZONE_BUTTON_RADIUS = 5
 ZONE_BUTTON_IMAGE_PATH = resource_path("data/graphics/tool_panel/zone.png")
 
 class ZoneButton:
     WIDTH = ZONE_BUTTON_WIDTH
     HEIGHT = ZONE_BUTTON_HEIGHT
-    def __init__(self, center_pos, text=None):
+    def __init__(self, center_pos):
         self.rect = pygame.Rect(0, 0, self.WIDTH, self.HEIGHT)
         self.rect.center = center_pos
-        self.text = None  # No text by default
-        self.font = pygame.font.SysFont(None, 36)
         self.tooltip_font = pygame.font.SysFont(None, 24)
         self.color = ZONE_BUTTON_COLOR
         self.hover_color = ZONE_BUTTON_HOVER_COLOR
         self.border_color = ZONE_BUTTON_BORDER_COLOR
-        self.text_color = ZONE_BUTTON_TEXT_COLOR
         self.clicked = False
-        # Load the button image
         try:
-            self.image = pygame.image.load(ZONE_BUTTON_IMAGE_PATH).convert_alpha()
-            self.image = pygame.transform.smoothscale(self.image, (self.WIDTH, self.HEIGHT))
+            self.image = pygame.transform.smoothscale(
+                pygame.image.load(ZONE_BUTTON_IMAGE_PATH).convert_alpha(),
+                (self.WIDTH, self.HEIGHT))
         except Exception as e:
             print(f"Failed to load button image: {e}")
             self.image = None
 
-    def draw(self, surface: pygame.Surface):
+    def draw(self, surface: pygame.Surface, active=False):
         mouse_pos = pygame.mouse.get_pos()
         is_hovered = self.rect.collidepoint(mouse_pos)
-        # Draw the image if available, else fallback to color
         if self.image:
             surface.blit(self.image, self.rect)
         else:
-            color = self.hover_color if is_hovered else self.color
-            pygame.draw.rect(surface, color, self.rect, border_radius=ZONE_BUTTON_RADIUS)
-        # Draw border
-        pygame.draw.rect(surface, self.border_color, self.rect, 3, border_radius=ZONE_BUTTON_RADIUS)
-        # Draw tooltip if hovered
+            pygame.draw.rect(surface, self.hover_color if is_hovered else self.color, self.rect, border_radius=ZONE_BUTTON_RADIUS)
+        # Draw border: green if active, else normal
+        if active:
+            pygame.draw.rect(surface, (0,255,0), self.rect, 4, border_radius=ZONE_BUTTON_RADIUS)
+        else:
+            pygame.draw.rect(surface, self.border_color, self.rect, 3, border_radius=ZONE_BUTTON_RADIUS)
         if is_hovered:
-            tooltip_text = "Zone tool"
-            tooltip_surf = self.tooltip_font.render(tooltip_text, True, (255,255,255))
+            tooltip = self.tooltip_font.render("Zone tool", True, (255,255,255))
             padding = 8
-            tw, th = tooltip_surf.get_size()
+            tw, th = tooltip.get_size()
             tooltip_rect = pygame.Rect(mouse_pos[0]+16, mouse_pos[1]-th//2, tw+padding*2, th+padding)
-            # Draw background
             pygame.draw.rect(surface, (30,30,30,230), tooltip_rect, border_radius=6)
-            # Draw border
             pygame.draw.rect(surface, (80,180,255), tooltip_rect, 2, border_radius=6)
-            # Draw text
-            surface.blit(tooltip_surf, (tooltip_rect.x+padding, tooltip_rect.y+padding//2))
+            surface.blit(tooltip, (tooltip_rect.x+padding, tooltip_rect.y+padding//2))
 
     def handle_event(self, event: pygame.event.Event) -> bool:
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.rect.collidepoint(event.pos):
-                self.clicked = True
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.rect.collidepoint(event.pos):
+            self.clicked = True
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self.clicked and self.rect.collidepoint(event.pos):
                 self.clicked = False
-                return True  # Button was clicked
+                return True
             self.clicked = False
         return False
 
@@ -204,15 +196,14 @@ def handle_zone_panel_event(event: pygame.event.Event):
 def draw_zone_panel(surface: pygame.Surface):
     """Draws the zone panel button at 10% from bottom and 20% from right (no zone rectangles)."""
     global _zone_button
-    # Place button 10% from bottom, 20% from right
-    btn_x = int(surface.get_width() * 0.749)  # 20% from right
-    btn_y = int(surface.get_height() * 0.84)  # 10% from bottom
+    btn_x = int(surface.get_width() * 0.749)
+    btn_y = int(surface.get_height() * 0.84)
     btn_center = (btn_x, btn_y)
     if _zone_button is None:
         _zone_button = ZoneButton(btn_center)
     else:
         _zone_button.rect.center = btn_center
-    _zone_button.draw(surface)
+    _zone_button.draw(surface, active=_zone_creation_active)
 
 def draw_zones_only(surface: pygame.Surface):
     """Draws only the zone rectangles (not the button or UI)."""
@@ -249,21 +240,21 @@ def format_zone_info(zone):
     return f"Zone ID: {zone_id}  Type: {zone_type}  Start: {start}  End: {end}"
 
 def draw_zone_info_overlay(surface: pygame.Surface):
-    """Draws info about all zones in the center of the screen."""
+    """Draws info about all zones aligned to the right, starting 15% from the top edge of the screen."""
     zones = zone_state.get_zones()
     if not zones:
         return
     info_lines = [format_zone_info(z) for z in zones]
-    font = pygame.font.SysFont(None, 32)
+    font = pygame.font.SysFont(None, 25)
     width = max(font.size(line)[0] for line in info_lines) + 40
     height = len(info_lines) * font.get_height() + 30
     surf = pygame.Surface((width, height), pygame.SRCALPHA)
-    surf.fill((30, 30, 30, 220))
     for i, line in enumerate(info_lines):
         text = font.render(line, True, (255, 255, 255))
         surf.blit(text, (20, 15 + i * font.get_height()))
-    x = (surface.get_width() - width) // 2
-    y = (surface.get_height() - height) // 2
+    # Align to right, 15% from top
+    x = surface.get_width() - width  # 20px from right edge
+    y = int(surface.get_height() * 0.15)
     surface.blit(surf, (x, y))
 
 def _zone_overlaps_existing(left, top, w, h):
