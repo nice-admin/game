@@ -1,38 +1,63 @@
 import pygame
 from typing import Optional
 from game_core.zone_state import zone_state
+from game_core.config import resource_path
 
 ZONE_BUTTON_COLOR = (80, 180, 255)
 ZONE_BUTTON_HOVER_COLOR = (120, 220, 255)
 ZONE_BUTTON_BORDER_COLOR = (40, 60, 90)
 ZONE_BUTTON_TEXT_COLOR = (255, 255, 255)
-ZONE_BUTTON_WIDTH = 200
-ZONE_BUTTON_HEIGHT = 100
+ZONE_BUTTON_WIDTH = 40
+ZONE_BUTTON_HEIGHT = ZONE_BUTTON_WIDTH
 ZONE_BUTTON_RADIUS = 16
+ZONE_BUTTON_IMAGE_PATH = resource_path("data/graphics/tool_panel/zone.png")
 
 class ZoneButton:
     WIDTH = ZONE_BUTTON_WIDTH
     HEIGHT = ZONE_BUTTON_HEIGHT
-    def __init__(self, center_pos, text="ZoneButton"):
+    def __init__(self, center_pos, text=None):
         self.rect = pygame.Rect(0, 0, self.WIDTH, self.HEIGHT)
         self.rect.center = center_pos
-        self.text = text
+        self.text = None  # No text by default
         self.font = pygame.font.SysFont(None, 36)
+        self.tooltip_font = pygame.font.SysFont(None, 24)
         self.color = ZONE_BUTTON_COLOR
         self.hover_color = ZONE_BUTTON_HOVER_COLOR
         self.border_color = ZONE_BUTTON_BORDER_COLOR
         self.text_color = ZONE_BUTTON_TEXT_COLOR
         self.clicked = False
+        # Load the button image
+        try:
+            self.image = pygame.image.load(ZONE_BUTTON_IMAGE_PATH).convert_alpha()
+            self.image = pygame.transform.smoothscale(self.image, (self.WIDTH, self.HEIGHT))
+        except Exception as e:
+            print(f"Failed to load button image: {e}")
+            self.image = None
 
     def draw(self, surface: pygame.Surface):
         mouse_pos = pygame.mouse.get_pos()
         is_hovered = self.rect.collidepoint(mouse_pos)
-        color = self.hover_color if is_hovered else self.color
-        pygame.draw.rect(surface, color, self.rect, border_radius=ZONE_BUTTON_RADIUS)
+        # Draw the image if available, else fallback to color
+        if self.image:
+            surface.blit(self.image, self.rect)
+        else:
+            color = self.hover_color if is_hovered else self.color
+            pygame.draw.rect(surface, color, self.rect, border_radius=ZONE_BUTTON_RADIUS)
+        # Draw border
         pygame.draw.rect(surface, self.border_color, self.rect, 3, border_radius=ZONE_BUTTON_RADIUS)
-        text_surf = self.font.render(self.text, True, self.text_color)
-        text_rect = text_surf.get_rect(center=self.rect.center)
-        surface.blit(text_surf, text_rect)
+        # Draw tooltip if hovered
+        if is_hovered:
+            tooltip_text = "Zone tool"
+            tooltip_surf = self.tooltip_font.render(tooltip_text, True, (255,255,255))
+            padding = 8
+            tw, th = tooltip_surf.get_size()
+            tooltip_rect = pygame.Rect(mouse_pos[0]+16, mouse_pos[1]-th//2, tw+padding*2, th+padding)
+            # Draw background
+            pygame.draw.rect(surface, (30,30,30,230), tooltip_rect, border_radius=6)
+            # Draw border
+            pygame.draw.rect(surface, (80,180,255), tooltip_rect, 2, border_radius=6)
+            # Draw text
+            surface.blit(tooltip_surf, (tooltip_rect.x+padding, tooltip_rect.y+padding//2))
 
     def handle_event(self, event: pygame.event.Event) -> bool:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -180,8 +205,8 @@ def draw_zone_panel(surface: pygame.Surface):
     """Draws the zone panel button at 10% from bottom and 20% from right (no zone rectangles)."""
     global _zone_button
     # Place button 10% from bottom, 20% from right
-    btn_x = int(surface.get_width() * 0.8)  # 20% from right
-    btn_y = int(surface.get_height() * 0.9)  # 10% from bottom
+    btn_x = int(surface.get_width() * 0.749)  # 20% from right
+    btn_y = int(surface.get_height() * 0.84)  # 10% from bottom
     btn_center = (btn_x, btn_y)
     if _zone_button is None:
         _zone_button = ZoneButton(btn_center)
