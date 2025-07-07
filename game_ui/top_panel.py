@@ -13,6 +13,14 @@ def get_icon_path(filename):
 
 DEFAULT_GREEN = (75, 230, 50)
 
+# Track the maximum money ever reached
+max_money_ever = [0]
+
+def update_max_money(current):
+    if current > max_money_ever[0]:
+        max_money_ever[0] = current
+    return max_money_ever[0]
+
 DATA = [
     {
         "id": 0,
@@ -26,6 +34,11 @@ DATA = [
         "icon": get_icon_path("money.png"),
         "value": lambda: gs.total_money,
         "prefix": CURRENCY_SYMBOL,
+        "has_bar": True,
+        "bar_min": 0,
+        "bar_max": lambda: update_max_money(gs.total_money),
+        "progress": lambda: gs.total_money,
+        "color": lambda: DEFAULT_GREEN,
     },
     {
         "id": 7,
@@ -33,6 +46,11 @@ DATA = [
         "icon": get_icon_path("expenses.png"),
         "value": lambda: gs.total_upkeep,
         "prefix": f"-{CURRENCY_SYMBOL}",
+        "has_bar": True,
+        "bar_min": 0,
+        "bar_max": lambda: gs.total_money * 1.2 if gs.total_money > 0 else 1,
+        "progress": lambda: min(gs.total_upkeep, gs.total_money * 1.2 if gs.total_money > 0 else 1),
+        "color": lambda: interpolate_expenses_color(gs.total_upkeep, gs.total_money),
     },
     {
         "id": 4,
@@ -96,6 +114,13 @@ DATA = [
             (100, 230, 0),
             (0, 255, 0),
         ][int(gs.office_quality)] if 0 <= int(gs.office_quality) <= 5 else (200, 220, 255),
+        "has_bar": True,
+        "bar_min": 0,
+        "bar_max": 100,
+        # Custom progress calculation based on breakpoints
+        "progress": lambda: (
+            [10, 25, 40, 55, 70, 100][int(gs.office_quality)] if 0 <= int(gs.office_quality) <= 5 else float(getattr(gs, 'office_quality', 0))
+        ),
     },
 ]
 
@@ -122,17 +147,52 @@ def interpolate_temp_color(t):
 
 def interpolate_power_color(norm):
     # norm: 0.0 to 1.0 (progress bar fill percent)
-    # Use bright green and bright red for interpolation
+    # Use bright green, yellow, and bright red for interpolation
     green = DEFAULT_GREEN
+    yellow = (255, 220, 0)
     red = (255, 60, 60)
     if norm < 0.6:
         return green
+    elif norm < 0.8:
+        # Green to yellow
+        f = (norm - 0.6) / 0.2
+        r = int(green[0] + (yellow[0] - green[0]) * f)
+        g = int(green[1] + (yellow[1] - green[1]) * f)
+        b = int(green[2] + (yellow[2] - green[2]) * f)
+        return (r, g, b)
     else:
-        f = (norm - 0.6) / 0.4
+        # Yellow to red
+        f = (norm - 0.8) / 0.2
         f = max(0.0, min(1.0, f))
-        r = int(green[0] + (red[0] - green[0]) * f)
-        g = int(green[1] + (red[1] - green[1]) * f)
-        b = int(green[2] + (red[2] - green[2]) * f)
+        r = int(yellow[0] + (red[0] - yellow[0]) * f)
+        g = int(yellow[1] + (red[1] - yellow[1]) * f)
+        b = int(yellow[2] + (red[2] - yellow[2]) * f)
+        return (r, g, b)
+
+def interpolate_expenses_color(upkeep, money):
+    # Green if upkeep <= 0.65 money, yellow in the middle, red if upkeep >= money
+    if money <= 0:
+        return (255, 60, 60)  # Red if no money
+    norm = upkeep / money
+    norm = max(0.0, min(1.0, norm))
+    green = (75, 230, 50)
+    yellow = (255, 220, 0)
+    red = (255, 60, 60)
+    green_zone = 0.65
+    if norm <= green_zone:
+        # Green to yellow
+        f = norm / green_zone
+        r = int(green[0] + (yellow[0] - green[0]) * f)
+        g = int(green[1] + (yellow[1] - green[1]) * f)
+        b = int(green[2] + (yellow[2] - green[2]) * f)
+        return (r, g, b)
+    else:
+        # Yellow to red
+        f = (norm - green_zone) / (1 - green_zone)
+        f = max(0.0, min(1.0, f))
+        r = int(yellow[0] + (red[0] - yellow[0]) * f)
+        g = int(yellow[1] + (red[1] - yellow[1]) * f)
+        b = int(yellow[2] + (red[2] - yellow[2]) * f)
         return (r, g, b)
 
 class BasicCell:
@@ -339,8 +399,12 @@ class TopPanel:
             if callable(bar_max):
                 bar_max = bar_max()
             has_bar = cell_def.get("has_bar", False)
-            # Use value as progress if bar_min/bar_max are set
-            progress = value if (cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None) and has_bar else (self.cell_progresses[i] if i < len(self.cell_progresses) and has_bar else None)
+            # Use explicit progress if present, else fallback
+            progress_func = cell_def.get("progress", None)
+            if progress_func is not None:
+                progress = progress_func() if callable(progress_func) else progress_func
+            else:
+                progress = value if (cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None) and has_bar else (self.cell_progresses[i] if i < len(self.cell_progresses) and has_bar else None)
             cell = BasicCell(
                 self.screen_width, self.screen_height,
                 color=self.cell_color,
@@ -372,8 +436,12 @@ class TopPanel:
             if callable(bar_max):
                 bar_max = bar_max()
             has_bar = cell_def.get("has_bar", False)
-            # Use value as progress if bar_min/bar_max are set and has_bar is True, else use cell_progresses
-            progress = value if (cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None) and has_bar else (self.cell_progresses[i] if i < len(self.cell_progresses) and has_bar else None)
+            # Use explicit progress if present, else fallback
+            progress_func = cell_def.get("progress", None)
+            if progress_func is not None:
+                progress = progress_func() if callable(progress_func) else progress_func
+            else:
+                progress = value if (cell_def.get("bar_min") is not None or cell_def.get("bar_max") is not None) and has_bar else (self.cell_progresses[i] if i < len(self.cell_progresses) and has_bar else None)
             cell.update(value=value, progress=progress, progress_min=bar_min, progress_max=bar_max, has_bar=has_bar)
 
     def draw(self, target_surface=None):

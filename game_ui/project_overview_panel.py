@@ -25,7 +25,7 @@ HEADER_TOP_MARGIN = 35
 ITEMS_TOP_MARGIN = HEADER_TOP_MARGIN + 30
 SHOT_NAME_WIDTH = 50
 
-PANEL_TOP_MARGIN = 65
+PANEL_TOP_MARGIN = 60
 
 def get_expanded_extra_height():
     gs = GameState()
