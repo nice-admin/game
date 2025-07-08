@@ -115,9 +115,11 @@ class EntityButton:
         if entity_class is not None:
             self.icon_path = getattr(entity_class, '_icon', None)
             self.purchase_cost = getattr(entity_class, 'purchase_cost', None)
+            self.is_locked = not bool(getattr(entity_class, 'unlocked', 0))
         else:
             self.icon_path = None
             self.purchase_cost = None
+            self.is_locked = False
 
     def _draw_gradient(self, surface):
         grad_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
@@ -199,6 +201,16 @@ class EntityButton:
             cost_surf = entity_font.render(f"{CURRENCY_SYMBOL}{self.purchase_cost}", True, col)
             cost_rect = cost_surf.get_rect(center=(self.rect.centerx, self.rect.bottom + 20 - self.LABEL_BOTTOM_MARGIN))
             surface.blit(cost_surf, cost_rect)
+        # Draw lock overlay if locked
+        if self.is_locked:
+            lock_overlay = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+            lock_overlay.fill((0, 0, 0, 120))  # semi-transparent black
+            surface.blit(lock_overlay, self.rect)
+            # Draw a lock icon or text
+            lock_font = pygame.font.Font(FONT1, 32)
+            lock_text = lock_font.render("🔒", True, (200, 200, 200))
+            lock_rect = lock_text.get_rect(center=self.rect.center)
+            surface.blit(lock_text, lock_rect)
 
 class Background:
     DEFAULT_COLOR = adjust_color(BASE_COL, white_factor=0.0, exposure=1)
@@ -398,7 +410,7 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
 
 def get_entity_button_hover(entity_buttons, mouse_pos):
     for btn in entity_buttons:
-        if btn.entity_class is not None and btn.rect.collidepoint(mouse_pos):
+        if btn.entity_class is not None and not getattr(btn, 'is_locked', False) and btn.rect.collidepoint(mouse_pos):
             return btn.entity_class, btn.rect
     return None, None
 

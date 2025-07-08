@@ -6,6 +6,7 @@ import game_other.audio
 import pygame
 from game_ui.project_overview_panel import expand_render_queue_panel
 import game_ui.quest_panel as quest_panel
+from game_core.entity_base import BaseEntity
 
 class GamePlayEvent:
     def trigger(self):
@@ -268,8 +269,10 @@ class LevelUp:
             return subclasses
         for cls in all_subclasses(BaseEntity):
             unlock_level = getattr(cls, 'unlock_level', None)
-            if unlock_level is not None and unlock_level == current_level:
+            if unlock_level is not None and unlock_level <= current_level:
                 cls.unlocked = 1
+            else:
+                cls.unlocked = 0
 
 RANDOM_GAMEPLAY_EVENTS = [
     InternetOutage(),
@@ -301,6 +304,8 @@ def start_random_gameplay_events():
     thread.start()
 
 def start_deterministic_gameplay_events():
+    # Ensure entities are unlocked for the current level at game start
+    LevelUp.unlock_entities_for_level()
     def deterministic_event_loop():
         time.sleep(2)  # Wait 2 seconds at game start
         counter = 0

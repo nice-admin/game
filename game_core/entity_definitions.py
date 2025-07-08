@@ -15,6 +15,7 @@ class ComputerT2(ComputerEntity):
     _icon = resource_path("data/graphics/computer-advanced.png")
     display_name = 'Gaming Computer'
     tier = 2
+    unlock_level = 2
     power_drain = 400
     upkeep = 100
     heating_multiplier = 1
