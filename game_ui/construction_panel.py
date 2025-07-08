@@ -120,6 +120,8 @@ class EntityButton:
             self.icon_path = None
             self.purchase_cost = None
             self.is_locked = False
+        # Disabled if locked or no entity_class
+        self.disabled = self.is_locked or self.entity_class is None
 
     def _draw_gradient(self, surface):
         grad_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
@@ -371,7 +373,6 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
     for i, entity_class in enumerate(entity_classes_out):
         btn_x = entity_btns_x_offset + i * (item_btn_w + BUTTON_SPACING)
         btn_rect = pygame.Rect(btn_x, entity_btns_y, item_btn_w, item_btn_h - 4)
-        # Only allow selection if entity_class is not None
         selected = (selected_item is not None and i == selected_item and entity_class is not None)
         entity_button = EntityButton(
             btn_rect,  # Do NOT move(x, y) here!
@@ -410,16 +411,19 @@ def draw_construction_panel(surface, selected_section=0, selected_item=None, fon
 
 def get_entity_button_hover(entity_buttons, mouse_pos):
     for btn in entity_buttons:
-        if btn.entity_class is not None and not getattr(btn, 'is_locked', False) and btn.rect.collidepoint(mouse_pos):
-            return btn.entity_class, btn.rect
-    return None, None
+        if btn.entity_class is not None and btn.rect.collidepoint(mouse_pos):
+            return btn.entity_class, btn.rect, getattr(btn, 'disabled', False)
+    return None, None, False
 
-def draw_entity_hover_label(surface, entity_class, mouse_pos, font=None):
+def draw_entity_hover_label(surface, entity_class, mouse_pos, font=None, is_locked=False):
     if entity_class is None:
         return
     display_name = getattr(entity_class, 'display_name', entity_class.__name__)
+    label = display_name
+    if is_locked:
+        label += ' (Locked)'
     font = pygame.font.Font(FONT1, 20)
-    text_surf = font.render(display_name, True, (255,255,255))
+    text_surf = font.render(label, True, (255,255,255))
     text_rect = text_surf.get_rect()
     # Expand the background rect more for padding
     bg_rect = text_rect.inflate(24, 14)  # Wider and taller for more padding

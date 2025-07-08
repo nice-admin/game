@@ -127,7 +127,7 @@ def draw_entity_hover_label_if_needed(screen, font):
         entity_buttons = getattr(construction_panel, '_baked_panel_cache', {}).get('entity_buttons', None)
         if entity_buttons:
             mouse_pos = pygame.mouse.get_pos()
-            entity_class, _ = get_entity_button_hover(entity_buttons, mouse_pos)
-            draw_entity_hover_label(screen, entity_class, mouse_pos, font)
+            entity_class, _, is_locked = get_entity_button_hover(entity_buttons, mouse_pos)
+            draw_entity_hover_label(screen, entity_class, mouse_pos, font, is_locked=is_locked)
     except Exception:
         pass

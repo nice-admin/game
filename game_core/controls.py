@@ -214,6 +214,8 @@ class GameControls:
         # Item buttons
         for idx, button in enumerate(panel_btn_rects.get('item', [])):
             if button.rect.collidepoint(mx, my):
+                if getattr(button, 'disabled', False):
+                    return False
                 if self.selected_item == idx:
                     self.selected_item = None
                     GameState().current_construction_class = None
@@ -266,9 +268,14 @@ class GameControls:
         if isinstance(idx, int):
             entity_buttons = state.get('panel_btn_rects', {}).get('item', [])
             if 0 <= idx < len(entity_buttons):
+                entity_btn = entity_buttons[idx]
+                if getattr(entity_btn, 'disabled', False):
+                    # Play error sound if available
+                    if hasattr(audio, 'play_error_sound'):
+                        audio.play_error_sound()
+                    return None, grid_changed
                 if self.just_changed_section:
                     self.selected_item = idx
-                    entity_btn = entity_buttons[idx]
                     GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                     self.just_changed_section = False
                 else:
@@ -277,7 +284,6 @@ class GameControls:
                         GameState().current_construction_class = None
                     else:
                         self.selected_item = idx
-                        entity_btn = entity_buttons[idx]
                         GameState().current_construction_class = getattr(entity_btn, 'entity_class', None)
                 state['selected_item'] = self.selected_item
                 audio.play_construction_panel_selection_sound()

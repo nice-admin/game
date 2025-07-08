@@ -42,6 +42,7 @@ class BasicMonitor(MonitorEntity):
 class AdvancedMonitor(MonitorEntity):
     _icon = resource_path("data/graphics/advanced-monitor.png")
     tier = 2
+    unlock_level = 2
     upkeep = 40
     power_drain = 40
 
@@ -103,6 +104,7 @@ class TechnicalDirector(PersonEntity):
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
+    unlock_level = 2
     upkeep = 2000
 
 class ProjectManager(PersonEntity):
@@ -154,6 +156,7 @@ class AirConditioner(SatisfiableEntity):
     has_special = 0
     power_drain = 100
     has_sat_check_bar_hidden = 1
+    unlock_level = 2
     purchase_cost = 5000
 
     def on_sat_check_finish(self):
@@ -170,6 +173,7 @@ class Humidifier(SatisfiableEntity):
     power_drain = 20
     has_sat_check_bar_hidden = 1
     purchase_cost = 500
+    unlock_level = 2
 
     def satisfaction_check(self, grid):
         return 1
