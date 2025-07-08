@@ -38,6 +38,7 @@ class BaseEntity:
     tier = 1
     width = 1  # Default entity width (in grid cells)
     height = 1  # Default entity height (in grid cells)
+    unlock_level = 10
     
     power_drain = 0  # Intended power drain when initialized (override in subclasses)
     _intended_power_drain = None  # Store intended value for restoration

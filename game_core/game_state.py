@@ -27,7 +27,8 @@ class GameState:
         self.total_broken_entities = 0
         self.total_experience = 0
         self.current_lvl_experience = 0
-        self.total_level = 1
+        self.experience_per_level = 100
+        self.current_level = 1
         self.is_internet_online = 1
         self.is_wifi_online = 1
         self.is_nas_online = 1
@@ -164,9 +165,11 @@ class GameState:
 
     def add_experience(self, amount=1):
         self.current_lvl_experience += amount
-        while self.current_lvl_experience >= 100:
-            self.current_lvl_experience -= 100
-            self.total_level += 1
+        from game_core.gameplay_events import LevelUp
+        while self.current_lvl_experience >= self.experience_per_level:
+            self.current_lvl_experience -= self.experience_per_level
+            self.current_level += 1
+            LevelUp.unlock_entities_for_level()
 
 class EntityStats:
     _instance = None

@@ -256,6 +256,21 @@ class DeterministQuestArrived:
     def trigger(self):
         quest_panel.active_quests = self.active_quests
 
+class LevelUp:
+    @staticmethod
+    def unlock_entities_for_level():
+        gs = GameState()
+        current_level = getattr(gs, 'current_level', 1)
+        def all_subclasses(cls):
+            subclasses = set(cls.__subclasses__())
+            for subclass in cls.__subclasses__():
+                subclasses.update(all_subclasses(subclass))
+            return subclasses
+        for cls in all_subclasses(BaseEntity):
+            unlock_level = getattr(cls, 'unlock_level', None)
+            if unlock_level is not None and unlock_level == current_level:
+                cls.unlocked = 1
+
 RANDOM_GAMEPLAY_EVENTS = [
     InternetOutage(),
     # NasCrashed(),
