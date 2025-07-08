@@ -5,6 +5,7 @@ import time
 from .config import *
 from game_core.game_state import GameState, EntityStats
 from game_other.audio import *
+from game_core.zone_state import zone_state
 
 # --- ICON CACHE ---
 _ICON_CACHE = {}
@@ -394,7 +395,7 @@ class UtilityEntity(BaseEntity):
 class ComputerEntity(SatisfiableEntity):
     satisfaction_check_type = 'outlet'
     has_special = 1
-    special_chance = 0.5
+    special_chance = 1
     power_drain = 0
     satisfaction_check_gamestate = 'is_nas_online'
     heating_multiplier = 1
@@ -408,18 +409,33 @@ class ComputerEntity(SatisfiableEntity):
             gs = GameState()
             if hasattr(gs, 'temperature'):
                 gs.temperature += 0.005 * self.heating_multiplier
-            # Check render progress and set has_special accordingly
-            if hasattr(gs, 'render_progress_current') and hasattr(gs, 'render_progress_allowed'):
-                if gs.render_progress_current == gs.render_progress_allowed:
-                    self.has_special = 0
-                elif gs.render_progress_allowed > gs.render_progress_current:
-                    self.has_special = 1
+            # --- ZONE RENDER LOGIC ---
+            zones = [z for z in zone_state.get_zones() if z[-1] == 'zone_render']
+            in_zone = False
+            for zone in zones:
+                _, zx, zy, zw, zh, _ = zone
+                if zx <= self.x < zx + zw and zy <= self.y < zy + zh:
+                    in_zone = True
+                    break
+            if zones:
+                self.has_special = 1 if in_zone else 0
+            else:
+                if hasattr(gs, 'render_progress_current') and hasattr(gs, 'render_progress_allowed'):
+                    if gs.render_progress_current == gs.render_progress_allowed:
+                        self.has_special = 0
+                    elif gs.render_progress_allowed > gs.render_progress_current:
+                        self.has_special = 1
+        # --- ENSURE POWER DRAIN IS CORRECT ---
+        if self.has_special == 1 and self.special is not None:
+            self.power_drain = self._intended_power_drain * 3
+        else:
+            self.power_drain = self._intended_power_drain
 
     def on_special_start(self):
         self.power_drain = self.power_drain * 3
 
     def on_special_finish(self):
-        self.power_drain = self.power_drain / 3
+        self.power_drain = self._intended_power_drain
         gs = GameState()
         if hasattr(gs, 'temperature'):
             gs.temperature += 0.02 * self.heating_multiplier

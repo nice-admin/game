@@ -46,12 +46,11 @@ class ZoneButton:
         else:
             pygame.draw.rect(surface, self.border_color, self.rect, 3, border_radius=ZONE_BUTTON_RADIUS)
         if is_hovered:
-            tooltip = self.tooltip_font.render("Zone tool", True, (255,255,255))
+            tooltip = self.tooltip_font.render("Render Zone Tool", True, (255,255,255))
             padding = 8
             tw, th = tooltip.get_size()
             tooltip_rect = pygame.Rect(mouse_pos[0]+16, mouse_pos[1]-th//2, tw+padding*2, th+padding)
             pygame.draw.rect(surface, (30,30,30,230), tooltip_rect, border_radius=6)
-            pygame.draw.rect(surface, (80,180,255), tooltip_rect, 2, border_radius=6)
             surface.blit(tooltip, (tooltip_rect.x+padding, tooltip_rect.y+padding//2))
 
     def handle_event(self, event: pygame.event.Event) -> bool:
