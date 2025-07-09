@@ -8,7 +8,7 @@ BG_COLOR = UI_BG1_COL
 BAR_COLOR = (160, 49, 197)
 BAR_BG_COLOR = (60, 60, 70)
 BORDER_RADIUS = 1
-BAR_EMPTY_COLOR = adjust_color(BASE_COL, white_factor=0, exposure=2)
+BAR_EMPTY_COLOR = adjust_color(BASE_COL, white_factor=0, exposure=1.4)
 BASE_COLOR = (0, 200, 0)
 BAR_SPACING = 0  # Space between bar segments
 

@@ -8,7 +8,7 @@ import inspect
 class LineSpawn:
     start_y = 0  # Class variable to define the starting y position for all lines
 
-    def __init__(self, entity_cls, y_position, vertical_spread=0.0, on_entity_placed=None, probability=1.0):
+    def __init__(self, entity_cls, y_position, vertical_spread=0.0, on_entity_placed=None, probability=0.2):
         self.entity_cls = entity_cls
         self.y_position = LineSpawn.start_y + y_position  # Use class variable for offset
         self.vertical_spread = vertical_spread  # 0.0 = no spread, 1.0 = up to 1 row below
@@ -74,7 +74,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
             LineSpawn(Outlet, 6, on_entity_placed=on_entity_placed),
             LineSpawn(ComputerEntity, 7, on_entity_placed=on_entity_placed),
             LineSpawn(MonitorEntity, 8, on_entity_placed=on_entity_placed),
-            LineSpawn(Artist, 9, vertical_spread=0.5, on_entity_placed=on_entity_placed),
+            LineSpawn(Artist, 9, on_entity_placed=on_entity_placed),
             LineSpawn(ProjectManager, 11, on_entity_placed=on_entity_placed, probability=0.3),
             LineSpawn(LaptopEntity, 12, on_entity_placed=on_entity_placed, probability=0.3),
             LineSpawn(ComputerEntity, 16, on_entity_placed=on_entity_placed),
@@ -94,7 +94,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
         class_list.append(AirConditioner)
         class_list.append(Router)
         class_list.append(EspressoMachine)
-        RandomSpawn(class_list, probability=0.01, on_entity_placed=on_entity_placed).spawn(grid, entity_states, GRID_WIDTH, GRID_HEIGHT)
+        RandomSpawn(class_list, probability=0.001, on_entity_placed=on_entity_placed).spawn(grid, entity_states, GRID_WIDTH, GRID_HEIGHT)
         x_start = (GRID_WIDTH - n) // 2
         y_pm = LineSpawn.start_y + 11  # 2 rows below the base Artist row (start_y + 9)
         for i in range(n):
@@ -106,7 +106,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
         print(f"Spawned 5x{n-1} Breakers (y={LineSpawn.start_y}-{{LineSpawn.start_y+4}}), {n-1} Outlets (y={LineSpawn.start_y+6}), {n-1} Computers, {n-1} Monitors, {n-1} Artists (spread), {n-1} + {n-1} extra Computers, and up to {int((n-1)*0.3)} ProjectManagers.")
 
 class RandomSpawn:
-    def __init__(self, entity_classes, probability=0.01, on_entity_placed=None):
+    def __init__(self, entity_classes, probability, on_entity_placed=None):
         self.entity_classes = entity_classes  # List of entity classes to choose from
         self.probability = probability        # Chance to spawn on each tile
         self.on_entity_placed = on_entity_placed

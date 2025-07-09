@@ -60,9 +60,31 @@ DATA = [
     },
     {
         "id": 5,
-        "label": "Happiness",
-        "icon": get_icon_path("happiness.png"),
-        "value": 10,
+        "label": "Mood",
+        "icon": get_icon_path("mood.png"),
+        "value_colorization": 1,
+        "value": lambda: (
+            "No employees" if gs.total_employees <= 0 else (
+                (lambda avg: (
+                    "Very Bad" if avg <= 2 else
+                    "Bad" if avg <= 4 else
+                    "Average" if avg <= 6 else
+                    "Good" if avg <= 8 else
+                    "Amazing"
+                ))(gs.total_happiness / max(gs.total_employees, 1))
+            )
+        ),
+        "has_bar": True,
+        "bar_min": 0,
+        "bar_max": lambda: max(gs.total_employees, 1),
+        "progress": lambda: gs.total_happiness,
+        "color": lambda: (
+            (lambda norm: (
+                interpolate_progress_bar_color(norm)
+            ))(
+                min(1.0, max(0.0, (gs.total_happiness / max(gs.total_employees, 1)) / 1.0)) if gs.total_employees > 0 else 0.0
+            ) if gs.total_employees > 0 else (200, 220, 255)
+        ),
     },
     {
         "id": 1,
@@ -195,9 +217,34 @@ def interpolate_expenses_color(upkeep, money):
         b = int(yellow[2] + (red[2] - yellow[2]) * f)
         return (r, g, b)
 
+def interpolate_progress_bar_color(norm):
+    # norm: 0.0 to 1.0
+    # Red, orange, yellow, green, bright green
+    colors = [
+        (255, 0, 0),      # Very Bad
+        (255, 100, 0),    # Bad
+        (255, 220, 0),    # Average
+        (120, 200, 60),   # Good
+        (100, 230, 0),    # Excellent
+        (0, 255, 0),      # Heavenly
+    ]
+    if norm <= 0:
+        return colors[0]
+    elif norm >= 1:
+        return colors[-1]
+    n = len(colors) - 1
+    idx = int(norm * n)
+    frac = (norm * n) - idx
+    c1 = colors[idx]
+    c2 = colors[min(idx + 1, n)]
+    r = int(c1[0] + (c2[0] - c1[0]) * frac)
+    g = int(c1[1] + (c2[1] - c1[1]) * frac)
+    b = int(c1[2] + (c2[2] - c1[2]) * frac)
+    return (r, g, b)
+
 class BasicCell:
     CONTENT_TOP_MARGIN = 2  # px
-    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None, progress_min=0.0, progress_max=1.0, has_bar=False):
+    def __init__(self, screen_width, screen_height, color=None, icon_path=None, label=None, value=None, key=None, icon_size=None, font=None, progress=None, progress_min=0.0, progress_max=1.0, has_bar=False, value_colorization=0):
         self.width = int(screen_width * 0.0755)
         self.height = int(screen_height * 0.04)
         self.x = 0
@@ -219,6 +266,7 @@ class BasicCell:
         self.progress_min = progress_min
         self.progress_max = progress_max
         self.has_bar = has_bar
+        self.value_colorization = value_colorization
         # Always use the default icon unless overridden
         icon_path = icon_path if icon_path is not None else ICON_PATH
         if icon_path:
@@ -258,11 +306,19 @@ class BasicCell:
     def _render_value(self):
         # Only re-render value if it changed (compare as string for robustness)
         display_value = self.value
-        # Always convert to float if decimals is set and value is int
         decimals = None
+        value_colorization = self.value_colorization
+        color = (200, 220, 255)
+        prefix = ''
+        suffix = ''
+        color_func = None
         for cell_def in DATA:
             if cell_def.get('label') == self.label:
                 decimals = cell_def.get('decimals', None)
+                value_colorization = cell_def.get('value_colorization', self.value_colorization)
+                prefix = cell_def.get('prefix', '')
+                suffix = cell_def.get('suffix', '')
+                color_func = cell_def.get('color', None)
                 break
         if decimals is not None:
             try:
@@ -270,30 +326,29 @@ class BasicCell:
                 display_value = f"{display_value:.{decimals}f}"
             except Exception:
                 pass
-        # Use prefix/suffix from data if present
-        prefix = ''
-        suffix = ''
-        color = (200, 220, 255)
-        for cell_def in DATA:
-            if cell_def.get('label') == self.label:
-                prefix = cell_def.get('prefix', '')
-                suffix = cell_def.get('suffix', '')
-                color_func = cell_def.get('color', None)
-                if color_func is not None and callable(color_func):
-                    color = color_func()
-                break
+        # Use color_func for value text if value_colorization is set
+        if value_colorization == 1 and color_func is not None and callable(color_func):
+            color = color_func()
+        elif value_colorization == 1:
+            # fallback: use progress bar color logic if no color_func
+            norm = (self.progress - self.progress_min) / (self.progress_max - self.progress_min) if self.progress_max != self.progress_min else 0.0
+            norm = max(0.0, min(1.0, norm))
+            color = interpolate_progress_bar_color(norm)
+        elif color_func is not None and callable(color_func):
+            color = color_func()
         if prefix and display_value is not None:
             display_value = f"{prefix}{display_value}"
         if suffix and display_value is not None:
             display_value = f"{display_value}{suffix}"
         value_str = str(display_value) if display_value is not None else None
         last_value_str = str(self._last_value) if self._last_value is not None else None
-        if value_str != last_value_str:
+        if value_str != last_value_str or getattr(self, '_last_value_color', None) != color:
             if display_value is not None:
                 self._value_surface = self.value_font.render(value_str, True, color)
             else:
                 self._value_surface = None
             self._last_value = display_value
+            self._last_value_color = color
 
     def _render_progress(self):
         # Only re-render progress bar if it changed
@@ -305,24 +360,19 @@ class BasicCell:
                 bar_y = int(self.height * 0.95) - bar_height
                 surf = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
                 pygame.draw.rect(surf, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height), border_radius=1)
-                # Normalize progress to min/max
-                norm = (self.progress - self.progress_min) / (self.progress_max - self.progress_min) if self.progress_max != self.progress_min else 0.0
-                norm = max(0.0, min(1.0, norm))
-                fill_width = int(bar_width * norm)
-                # Use the same color function as the value text for Air temp, otherwise use DEFAULT_GREEN or override
+                # Use color_func for progress bar if present
+                color_func = None
+                for cell_def in DATA:
+                    if cell_def.get('label') == self.label:
+                        color_func = cell_def.get('color', None)
+                        break
                 fill_color = DEFAULT_GREEN
-                if self.label == "Air temp":
-                    fill_color = interpolate_temp_color(self.value)
-                elif self.label == "Power drain":
-                    fill_color = interpolate_power_color(norm)
-                else:
-                    # Check for color override in DATA
-                    for cell_def in DATA:
-                        if cell_def.get('label') == self.label:
-                            color_func = cell_def.get('color', None)
-                            if color_func is not None and callable(color_func):
-                                fill_color = color_func()
-                            break
+                if color_func is not None and callable(color_func):
+                    fill_color = color_func()
+                fill_width = int(bar_width * ((self.progress - self.progress_min) / (self.progress_max - self.progress_min)) if self.progress_max != self.progress_min else 0.0)
+                # Ensure a minimum fill width for Happiness if > 0
+                if self.label == "Happiness" and fill_width > 0 and fill_width < 3:
+                    fill_width = 3
                 if fill_width > 0:
                     pygame.draw.rect(surf, fill_color, (bar_x, bar_y, fill_width, bar_height), border_radius=2)
                 self._progress_surface = surf
@@ -399,6 +449,7 @@ class TopPanel:
             if callable(bar_max):
                 bar_max = bar_max()
             has_bar = cell_def.get("has_bar", False)
+            value_colorization = cell_def.get("value_colorization", 0)
             # Use explicit progress if present, else fallback
             progress_func = cell_def.get("progress", None)
             if progress_func is not None:
@@ -416,7 +467,8 @@ class TopPanel:
                 progress=progress,
                 progress_min=bar_min,
                 progress_max=bar_max,
-                has_bar=has_bar
+                has_bar=has_bar,
+                value_colorization=value_colorization
             )
             cell.rect.x = i * (cell.width + self.cell_gap)
             cell.rect.y = 0

@@ -26,6 +26,7 @@ class GameState:
         self.total_risky_entities = 0
         self.total_broken_entities = 0
         self.total_experience = 0
+        self.total_happiness = 1
         self.current_lvl_experience = 0
         self.experience_per_level = 100
         self.current_level = 1
