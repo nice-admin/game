@@ -129,14 +129,24 @@ class GameState:
                         pass
         return total
 
+    def count_happiness(self, grid):
+        total = 0
+        from game_core.entity_definitions import PersonEntity
+        for row in grid:
+            for entity in row:
+                if isinstance(entity, PersonEntity):
+                    total += getattr(entity, 'happiness', 0)
+        return total
+
     def update_totals_from_grid(self, grid):
         self.total_employees = self.count_employees(grid)
         self.total_power_drain = self.count_power_drain(grid)
         self.total_breaker_strength = self.count_breaker_strength(grid)
         self.total_risky_entities = self.count_risky_entities(grid)
         self.total_broken_entities = self.count_broken_entities(grid)
-        self.total_upkeep = self.count_upkeep(grid) + 100
+        self.total_upkeep = self.count_upkeep(grid)
         self.total_decoration = self.count_decoration(grid)
+        self.total_happiness = self.count_happiness(grid)
         from game_core.gameplay_events import power_outage
         power_outage.trigger()
 

@@ -15,6 +15,7 @@ from game_ui.supplies_panel import handle_supplies_panel_event
 from game_ui.ui import draw_entity_hover_label_if_needed
 import random
 from game_ui.zone_panel import handle_zone_panel_event, draw_zones_only, _zone_creation_active
+from game_core.game_state import update_totals_from_grid, EntityStats
 
 
 # --- Game Grid ---
@@ -149,7 +150,6 @@ def run_game():
                     if entity and entity not in unique_entities:
                         unique_entities.add(entity)
                         entity.update(state['grid'])
-            from game_core.game_state import update_totals_from_grid, EntityStats
             update_totals_from_grid(state['grid'])
             EntityStats().update_from_grid(state['grid'])
         dt = clock.tick(FPS)

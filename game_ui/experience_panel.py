@@ -2,7 +2,7 @@ import pygame
 from game_core.config import BASE_COL, UI_BG1_COL, adjust_color
 from game_core.game_state import GameState
 
-PANEL_HEIGHT = 45
+PANEL_HEIGHT = 35
 SEGMENTS = 100
 BG_COLOR = UI_BG1_COL
 BAR_COLOR = (160, 49, 197)

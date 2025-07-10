@@ -38,7 +38,7 @@ DATA = [
         "bar_min": 0,
         "bar_max": lambda: update_max_money(gs.total_money),
         "progress": lambda: gs.total_money,
-        "color": lambda: DEFAULT_GREEN,
+        "color": lambda: interpolate_progress_bar_color(gs.total_money / max(update_max_money(gs.total_money), 1)),
     },
     {
         "id": 7,
@@ -50,7 +50,7 @@ DATA = [
         "bar_min": 0,
         "bar_max": lambda: gs.total_money * 1.2 if gs.total_money > 0 else 1,
         "progress": lambda: min(gs.total_upkeep, gs.total_money * 1.2 if gs.total_money > 0 else 1),
-        "color": lambda: interpolate_expenses_color(gs.total_upkeep, gs.total_money),
+        "color": lambda: adjust_color(UI_BG1_COL, white_factor=0, exposure=3) if gs.total_upkeep == 0 else interpolate_expenses_color(gs.total_upkeep, gs.total_money),
     },
     {
         "id": 4,
@@ -64,7 +64,7 @@ DATA = [
         "icon": get_icon_path("mood.png"),
         "value_colorization": 1,
         "value": lambda: (
-            "No employees" if gs.total_employees <= 0 else (
+            "None" if gs.total_employees <= 0 else (
                 (lambda avg: (
                     "Very Bad" if avg <= 2 else
                     "Bad" if avg <= 4 else
@@ -76,15 +76,9 @@ DATA = [
         ),
         "has_bar": True,
         "bar_min": 0,
-        "bar_max": lambda: max(gs.total_employees, 1),
-        "progress": lambda: gs.total_happiness,
-        "color": lambda: (
-            (lambda norm: (
-                interpolate_progress_bar_color(norm)
-            ))(
-                min(1.0, max(0.0, (gs.total_happiness / max(gs.total_employees, 1)) / 1.0)) if gs.total_employees > 0 else 0.0
-            ) if gs.total_employees > 0 else (200, 220, 255)
-        ),
+        "bar_max": lambda: max(gs.total_employees * 10, 1),
+        "progress": lambda: gs.total_happiness if gs.total_employees > 0 else 0,
+        "color": lambda: adjust_color(UI_BG1_COL, white_factor=0, exposure=3) if gs.total_employees <= 0 else interpolate_progress_bar_color(min(1.0, max(0.0, (gs.total_happiness / max(gs.total_employees * 10, 1))))),
     },
     {
         "id": 1,
@@ -108,6 +102,14 @@ DATA = [
         "bar_min": 0,
         "bar_max": lambda: gs.total_breaker_strength / 1000,
         "has_bar": True,
+        "value_colorization": 1,
+        "color": lambda: (
+            adjust_color(UI_BG1_COL, white_factor=0, exposure=3)
+            if gs.total_power_drain == 0
+            else interpolate_power_color(
+                min(1.0, max(0.0, (gs.total_power_drain / max(gs.total_breaker_strength, 1))))
+            )
+        ),
     },
     {
         "id": 3,
