@@ -45,7 +45,7 @@ def create_grid():
     grid = [[None for _ in range(GAME_AREA_WIDTH)] for _ in range(GAME_AREA_HEIGHT)]
     rooms = generate_rooms(GAME_AREA_WIDTH, GAME_AREA_HEIGHT)
     # Use same logic as construct_floor_plan to select filled rooms
-    num_filled = max(1, len(rooms) // 4)
+    num_filled = max(1, len(rooms) // 3)
     filled_rooms = set(random.sample(range(len(rooms)), num_filled))
     for idx, room in enumerate(rooms):
         x, y, w, h = room
@@ -95,6 +95,9 @@ def create_grid():
     for i, r1 in enumerate(rooms):
         for j, r2 in enumerate(rooms):
             if i >= j:
+                continue
+            # Skip separating wall if both rooms are filled
+            if i in filled_rooms and j in filled_rooms:
                 continue
             direction, wall_coord = rooms_are_neighbors(r1, r2)
             if direction == 'vertical':

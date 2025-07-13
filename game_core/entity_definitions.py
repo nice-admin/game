@@ -130,7 +130,7 @@ class Artist(PersonEntity):
         gs.increment_current_artist_progress(multiplier=self.multiplier)
         gs.calculate_render_progress_allowed()
         # 10% chance to add 1 to current_lvl_experience (with level up)
-        if random.random() < 0.1:
+        if random.random() < 0.5:
             gs.add_experience(1)
 
     def check_project_manager_proximity(self, grid):

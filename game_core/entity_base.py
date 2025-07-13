@@ -435,7 +435,7 @@ class ComputerEntity(SatisfiableEntity):
         # Increment render_progress_current if not at max
         if gs.render_progress_current < gs.render_progress_allowed:
             gs.render_progress_current += 1
-        if random.random() < 0.1:
+        if random.random() < 0.5:
             gs.add_experience(1)       
 
 class LaptopEntity(SatisfiableEntity):
