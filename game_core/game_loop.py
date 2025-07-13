@@ -16,6 +16,7 @@ from game_ui.ui import draw_entity_hover_label_if_needed
 import random
 from game_ui.zone_panel import handle_zone_panel_event, draw_zones_only, _zone_creation_active
 from game_core.game_state import update_totals_from_grid, EntityStats
+from game_core.floor_plan import construct_floor_plan
 
 
 # --- Game Grid ---
@@ -71,7 +72,10 @@ def run_game():
     game_core.gameplay_events.start_random_gameplay_events()
     game_core.gameplay_events.start_deterministic_gameplay_events()
 
+
     grid = create_grid()
+    construct_floor_plan(grid)
+
     # Load game state if available
     entity_states, camera_offset, _ = savegame.load_game(grid)
     cell_size = CELL_SIZE  # Always use config value, ignore saved value

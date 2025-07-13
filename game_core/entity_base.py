@@ -360,16 +360,6 @@ class SatisfiableEntity(BaseEntity):
                 return
         # If all conditions passed, mark as satisfied
         self.is_satisfied = 1
-        # Roll for special bar if applicable
-        if getattr(self, 'has_special', 0):
-            if getattr(self, 'special', None) is None and getattr(self, 'special_timer', None) is None:
-                if random.random() < getattr(self, 'special_chance', 0.1):
-                    self.special = 0.0
-                    self.special_timer = 0
-                    self.on_special_start()
-                else:
-                    self.special = None
-                    self.special_timer = None
 
     def on_sat_check_finish(self):
         pass
@@ -378,10 +368,7 @@ class SatisfiableEntity(BaseEntity):
         pass
 
     def on_special_start(self):
-        # Only multiply if not already multiplied (avoid stacking)
-        if self.power_drain == self._intended_power_drain:
-            self.power_drain = self._intended_power_drain * 3
-        # If already multiplied, do nothing
+        pass
 
 # region Custom classes
 
@@ -401,7 +388,7 @@ class ComputerEntity(SatisfiableEntity):
     decoration = -5
 
     def on_spawn(self):
-        self.is_rendering = 1 if self.special is not None else 0
+        self.is_rendering = 0
 
     def on_sat_check_finish(self):
         if self.is_satisfied == 1:
@@ -424,23 +411,24 @@ class ComputerEntity(SatisfiableEntity):
                         self.has_special = 0
                     elif gs.render_progress_allowed > gs.render_progress_current:
                         self.has_special = 1
-        # --- ENSURE POWER DRAIN IS CORRECT ---
-        if self.has_special == 1 and self.special is not None:
-            self.power_drain = self._intended_power_drain * 3
-        else:
-            self.power_drain = self._intended_power_drain
+            
 
     def on_special_start(self):
-        self.power_drain = self.power_drain * 3
+        if self.power_drain == self._intended_power_drain:
+            self.power_drain = self._intended_power_drain * 3
+        self.is_rendering = 1
 
     def on_special_finish(self):
         self.power_drain = self._intended_power_drain
+        self.is_rendering = 0
         gs = GameState()
         if hasattr(gs, 'temperature'):
             gs.temperature += 0.02 * self.heating_multiplier
         # Increment render_progress_current if not at max
         if gs.render_progress_current < gs.render_progress_allowed:
             gs.render_progress_current += 1
+        if random.random() < 0.1:
+            gs.add_experience(1)       
 
 class LaptopEntity(SatisfiableEntity):
     is_initialized = 1

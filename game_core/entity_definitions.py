@@ -1,7 +1,27 @@
+
 from .entity_base import *
 import random
+from game_core.game_state import gs
 from game_other.audio import play_breaker_break_sound
 from game_core.config import resource_path
+
+# --- FloorTile entity for floor plan ---
+class Wall(BaseEntity):
+    _icon = None  # No icon, just color
+    width = 1
+    height = 1
+    color = (120, 120, 120)  # Grey
+    display_name = "Wall"
+    interactable = False  # Prevent interaction/pickup
+
+    def draw(self, surface, cam_offset, cell_size, static_only=False):
+        x = self.x * cell_size + cam_offset[0]
+        y = self.y * cell_size + cam_offset[1]
+        rect = pygame.Rect(x, y, cell_size, cell_size)
+        pygame.draw.rect(surface, self.color, rect)
+
+    # No pickup or interaction allowed
+
 
 # region Tech
 class ComputerT1(ComputerEntity):
@@ -64,12 +84,22 @@ class Artist(PersonEntity):
 
     @property
     def special_chance(self):
-        from game_core.game_state import GameState
-        gs = GameState()
         return 0 if getattr(gs, 'software_choice', 0) == 0 else 1
 
+    def on_sat_check_finish(self):
+        artist_progress_current = getattr(gs, 'artist_progress_current', None)
+        artist_progress_goal = getattr(gs, 'artist_progress_goal', None)
+        if artist_progress_current != artist_progress_goal:
+            if getattr(self, 'special', None) is None and getattr(self, 'special_timer', None) is None:
+                if random.random() < getattr(self, 'special_chance', 0.1):
+                    self.special = 0.0
+                    self.special_timer = 0
+                    self.on_special_start()
+                else:
+                    self.special = None
+                    self.special_timer = None
+
     def on_special_finish(self):
-        gs = GameState()
         self.multiplier = 2 if getattr(self, 'has_project_manager', 0) else 1
         if getattr(self, 'has_coffee', 0):
             self.multiplier += 1
@@ -78,7 +108,7 @@ class Artist(PersonEntity):
         gs.increment_current_artist_progress(multiplier=self.multiplier)
         gs.calculate_render_progress_allowed()
         # 10% chance to add 1 to current_lvl_experience (with level up)
-        if hasattr(gs, 'add_experience') and random.random() < 0.1:
+        if random.random() < 0.1:
             gs.add_experience(1)
 
     def check_project_manager_proximity(self, grid):

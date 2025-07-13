@@ -185,6 +185,12 @@ class GameControls:
         if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
             entity = grid[gy][gx]
             if entity is not None:
+                # Prevent pipette for non-interactable entities
+                if hasattr(entity, 'interactable') and not getattr(entity, 'interactable', True):
+                    self.selected_item = None
+                    state['selected_item'] = None
+                    GameState().current_construction_class = None
+                    return
                 panel_btn_rects = state.get('panel_btn_rects', {})
                 entity_buttons = panel_btn_rects.get('item', [])
                 for idx, button in enumerate(entity_buttons):
@@ -327,6 +333,9 @@ class GameControls:
             if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
                 if GameState().current_construction_class is None and grid[gy][gx] is not None:
                     entity = grid[gy][gx]
+                    # Prevent pickup if entity is not interactable
+                    if hasattr(entity, 'interactable') and not getattr(entity, 'interactable', True):
+                        return None, grid_changed
                     # Store pickup offset
                     self.pickup_offset = (gx - entity.x, gy - entity.y)
                     remove_entity(grid, entity_states, gx, gy)
