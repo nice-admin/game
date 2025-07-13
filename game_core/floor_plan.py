@@ -1,6 +1,6 @@
 import random
 from game_core.config import GAME_AREA_WIDTH, GAME_AREA_HEIGHT
-from game_core.entity_definitions import Wall, HighlightedWall
+from game_core.entity_definitions import Wall
 
 def generate_rooms(area_width, area_height, min_room_size=6, max_room_size=16):
     """
@@ -40,8 +40,16 @@ def construct_floor_plan(grid):
     Fills the grid with FloorTile entities for each room.
     """
     rooms = generate_rooms(GAME_AREA_WIDTH, GAME_AREA_HEIGHT)
-    for room in rooms:
+    # Randomly select some rooms to fill completely with walls
+    num_filled = max(1, len(rooms) // 4)  # About 1/6th of rooms
+    filled_rooms = set(random.sample(range(len(rooms)), num_filled))
+    for idx, room in enumerate(rooms):
         x, y, w, h = room
+        if idx in filled_rooms:
+            for gx in range(x, x + w):
+                for gy in range(y, y + h):
+                    grid[gy][gx] = Wall(x=gx, y=gy)
+            continue
         # Draw bottom walls
         for gx in range(x, x + w):
             gy = y + h - 1
@@ -109,7 +117,7 @@ def construct_floor_plan(grid):
         for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
             nx, ny = gx+dx, gy+dy
             if 0 <= nx < GAME_AREA_WIDTH and 0 <= ny < GAME_AREA_HEIGHT:
-                if isinstance(grid[ny][nx], (Wall, HighlightedWall)):
+                if isinstance(grid[ny][nx], (Wall)):
                     count += 1
         return count
 
@@ -148,6 +156,7 @@ def construct_floor_plan(grid):
         segments.append(segment)
 
     # For each segment, make a hole in the middle (only if segment length > 1)
+    from game_core.entity_definitions import Door
     for segment in segments:
         if not segment:
             continue
@@ -157,4 +166,4 @@ def construct_floor_plan(grid):
         segment_sorted = sorted(segment)
         mid_idx = len(segment_sorted) // 2
         hx, hy = segment_sorted[mid_idx]
-        grid[hy][hx] = None  # Remove wall to create hole
+        grid[hy][hx] = Door(x=hx, y=hy)  # Place a Door entity

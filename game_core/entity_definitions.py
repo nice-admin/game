@@ -5,32 +5,44 @@ from game_core.game_state import gs
 from game_other.audio import play_breaker_break_sound
 from game_core.config import resource_path
 
-# --- FloorTile entity for floor plan ---
-class Wall(BaseEntity):
-    _icon = None  # No icon, just color
+# region Floor Plan
+class Door(BaseEntity):
+    _icon = resource_path("data/graphics/entities/door.png")
     width = 1
     height = 1
-    color = (120, 120, 120)  # Grey
+    display_name = "Door"
+    interactable = False  # Doors can be interacted with
+
+    def draw(self, surface, cam_offset, cell_size, static_only=False):
+        # Use icon only, no color fill
+        if self._icon:
+            from game_core.entity_base import get_icon_surface
+            icon_surface = get_icon_surface(self._icon)
+            if icon_surface:
+                x = self.x * cell_size + cam_offset[0]
+                y = self.y * cell_size + cam_offset[1]
+                icon = pygame.transform.smoothscale(icon_surface, (cell_size, cell_size))
+                surface.blit(icon, (x, y))
+        
+class Wall(BaseEntity):
+    _icon = resource_path("data/graphics/entities/wall.png")
+    width = 1
+    height = 1
     display_name = "Wall"
     interactable = False  # Prevent interaction/pickup
 
     def draw(self, surface, cam_offset, cell_size, static_only=False):
-        x = self.x * cell_size + cam_offset[0]
-        y = self.y * cell_size + cam_offset[1]
-        rect = pygame.Rect(x, y, cell_size, cell_size)
-        pygame.draw.rect(surface, self.color, rect)
+        # Use icon only, no color fill
+        if self._icon:
+            from game_core.entity_base import get_icon_surface
+            icon_surface = get_icon_surface(self._icon)
+            if icon_surface:
+                x = self.x * cell_size + cam_offset[0]
+                y = self.y * cell_size + cam_offset[1]
+                icon = pygame.transform.smoothscale(icon_surface, (cell_size, cell_size))
+                surface.blit(icon, (x, y))
 
-    # No pickup or interaction allowed
 
-# HighlightedWall visually distinct wall for room separation
-class HighlightedWall(Wall):
-    color = (255, 200, 60)  # Yellowish for visual distinction
-    display_name = "Highlighted Wall"
-    def draw(self, surface, cam_offset, cell_size, static_only=False):
-        x = self.x * cell_size + cam_offset[0]
-        y = self.y * cell_size + cam_offset[1]
-        rect = pygame.Rect(x, y, cell_size, cell_size)
-        pygame.draw.rect(surface, self.color, rect)
 
 
 # region Tech
