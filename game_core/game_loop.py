@@ -16,46 +16,7 @@ from game_ui.ui import draw_entity_hover_label_if_needed
 import random
 from game_ui.zone_panel import handle_zone_panel_event, draw_zones_only, _zone_creation_active
 from game_core.game_state import update_totals_from_grid, EntityStats
-from game_core.floor_plan import construct_floor_plan
-
-
-# --- Game Grid ---
-def create_grid():
-    return [[None for _ in range(GAME_AREA_WIDTH)] for _ in range(GAME_AREA_HEIGHT)]
-
-def can_place_entity(grid, entity, x, y):
-    width = getattr(entity, 'width', 1)
-    height = getattr(entity, 'height', 1)
-    for dx in range(width):
-        for dy in range(height):
-            gx, gy = x + dx, y + dy
-            if not (0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT):
-                return False
-            if grid[gy][gx] is not None:
-                return False
-    return True
-
-def place_entity(grid, entity_states, entity):
-    gx, gy = entity.x, entity.y
-    width = getattr(entity, 'width', 1)
-    height = getattr(entity, 'height', 1)
-    for dx in range(width):
-        for dy in range(height):
-            grid[gy + dy][gx + dx] = entity
-    entity_states.add_entity(entity)
-
-def remove_entity(grid, entity_states, gx, gy):
-    entity = grid[gy][gx]
-    if entity is not None:
-        width = getattr(entity, 'width', 1)
-        height = getattr(entity, 'height', 1)
-        ex, ey = entity.x, entity.y
-        for dx in range(width):
-            for dy in range(height):
-                if 0 <= ey + dy < GAME_AREA_HEIGHT and 0 <= ex + dx < GAME_AREA_WIDTH:
-                    if grid[ey + dy][ex + dx] == entity:
-                        grid[ey + dy][ex + dx] = None
-        entity_states.remove_entity_at(gx, gy)
+from game_core.grid_creator import create_grid, can_place_entity, place_entity, remove_entity, VOID_CELL
 
 # --- Main Game Loop ---
 def run_game():
@@ -74,7 +35,7 @@ def run_game():
 
 
     grid = create_grid()
-    construct_floor_plan(grid)
+    # construct_floor_plan(grid)
 
     # Load game state if available
     entity_states, camera_offset, _ = savegame.load_game(grid)
@@ -107,6 +68,8 @@ def run_game():
         color = GRID_FILL_COL
         for gy in range(GAME_AREA_HEIGHT):
             for gx in range(GAME_AREA_WIDTH):
+                if grid[gy][gx] is VOID_CELL:
+                    continue  # Skip drawing for void cells
                 rect = pygame.Rect(
                     gx * cell_size + cell_margin,
                     gy * cell_size + cell_margin,

@@ -70,8 +70,10 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
     if ALLOW_GRID_OVERVIEW_PANEL:
         draw_overview_panel(surface, font, overview_panel_x, overview_panel_y, width=OVERVIEW_PANEL_WIDTH, height=OVERVIEW_PANEL_HEIGHT, grid=grid)
 
-    show_details_bg = hovered_entity is not None
-    draw_details_panel(surface, font, entity=hovered_entity, show_bg=show_details_bg)
+    from game_core.grid_creator import VOID_CELL
+    show_details_bg = hovered_entity is not None and hovered_entity is not VOID_CELL
+    entity_to_show = None if hovered_entity is not None and hovered_entity is VOID_CELL else hovered_entity
+    draw_details_panel(surface, font, entity=entity_to_show, show_bg=show_details_bg)
 
     if ALLOW_EXPERIENCE_PANEL:
         draw_experience_panel(surface)

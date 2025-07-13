@@ -1,7 +1,6 @@
 import random
 from game_core.config import GAME_AREA_WIDTH, GAME_AREA_HEIGHT
 from game_core.entity_definitions import Wall
-
 def generate_rooms(area_width, area_height, min_room_size=6, max_room_size=16):
     """
     Recursively divides the area into rectangular rooms.
@@ -35,20 +34,25 @@ def generate_rooms(area_width, area_height, min_room_size=6, max_room_size=16):
     split(0, 0, area_width, area_height)
     return rooms
 
-def construct_floor_plan(grid):
-    """
-    Fills the grid with FloorTile entities for each room.
-    """
+class VoidCellType:
+    interactable = False
+    def update(self, grid):
+        pass
+
+VOID_CELL = VoidCellType()
+
+def create_grid():
+    grid = [[None for _ in range(GAME_AREA_WIDTH)] for _ in range(GAME_AREA_HEIGHT)]
     rooms = generate_rooms(GAME_AREA_WIDTH, GAME_AREA_HEIGHT)
-    # Randomly select some rooms to fill completely with walls
-    num_filled = max(1, len(rooms) // 4)  # About 1/6th of rooms
+    # Use same logic as construct_floor_plan to select filled rooms
+    num_filled = max(1, len(rooms) // 4)
     filled_rooms = set(random.sample(range(len(rooms)), num_filled))
     for idx, room in enumerate(rooms):
         x, y, w, h = room
         if idx in filled_rooms:
             for gx in range(x, x + w):
                 for gy in range(y, y + h):
-                    grid[gy][gx] = Wall(x=gx, y=gy)
+                    grid[gy][gx] = VOID_CELL
             continue
         # Draw bottom walls
         for gx in range(x, x + w):
@@ -94,12 +98,11 @@ def construct_floor_plan(grid):
                 continue
             direction, wall_coord = rooms_are_neighbors(r1, r2)
             if direction == 'vertical':
-                # Find shared vertical wall tiles
                 y_start = max(r1[1], r2[1])
                 y_end = min(r1[1] + r1[3], r2[1] + r2[3])
                 for gy in range(y_start, y_end):
                     gx = wall_coord
-                    if isinstance(grid[gy][gx], Wall):
+                    if isinstance(grid[gy][gx], Wall) or grid[gy][gx] is VOID_CELL:
                         highlighted_walls.append((gx, gy))
                         grid[gy][gx] = Wall(x=gx, y=gy)
             elif direction == 'horizontal':
@@ -107,17 +110,16 @@ def construct_floor_plan(grid):
                 x_end = min(r1[0] + r1[2], r2[0] + r2[2])
                 for gx in range(x_start, x_end):
                     gy = wall_coord
-                    if isinstance(grid[gy][gx], Wall):
+                    if isinstance(grid[gy][gx], Wall) or grid[gy][gx] is VOID_CELL:
                         highlighted_walls.append((gx, gy))
                         grid[gy][gx] = Wall(x=gx, y=gy)
 
-    # Remove corner highlighted walls (with 3 or more neighboring walls)
     def count_wall_neighbors(gx, gy):
         count = 0
         for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
             nx, ny = gx+dx, gy+dy
             if 0 <= nx < GAME_AREA_WIDTH and 0 <= ny < GAME_AREA_HEIGHT:
-                if isinstance(grid[ny][nx], (Wall)):
+                if isinstance(grid[ny][nx], Wall) or grid[ny][nx] is VOID_CELL:
                     count += 1
         return count
 
@@ -126,11 +128,9 @@ def construct_floor_plan(grid):
             grid[gy][gx] = Wall(x=gx, y=gy)
             highlighted_walls.remove((gx, gy))
 
-    # Group highlighted walls into continuous segments and make a hole in the middle of each
-    from collections import defaultdict, deque
+    from collections import deque
     visited = set()
     segments = []
-    # Helper to get neighbors
     def get_neighbors(gx, gy):
         for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
             nx, ny = gx+dx, gy+dy
@@ -141,7 +141,6 @@ def construct_floor_plan(grid):
     for gx, gy in highlighted_walls:
         if (gx, gy) in visited:
             continue
-        # BFS to collect a segment
         segment = []
         queue = deque()
         queue.append((gx, gy))
@@ -155,15 +154,50 @@ def construct_floor_plan(grid):
                     queue.append((nx, ny))
         segments.append(segment)
 
-    # For each segment, make a hole in the middle (only if segment length > 1)
     from game_core.entity_definitions import Door
     for segment in segments:
         if not segment:
             continue
         if len(segment) == 1:
-            continue  # Do not make a door in segments of length 1
-        # Sort segment for consistency (by x then y)
+            continue
         segment_sorted = sorted(segment)
         mid_idx = len(segment_sorted) // 2
         hx, hy = segment_sorted[mid_idx]
-        grid[hy][hx] = Door(x=hx, y=hy)  # Place a Door entity
+        grid[hy][hx] = None
+    return grid
+
+def can_place_entity(grid, entity, x, y):
+    width = getattr(entity, 'width', 1)
+    height = getattr(entity, 'height', 1)
+    for dx in range(width):
+        for dy in range(height):
+            gx, gy = x + dx, y + dy
+            if not (0 <= gx < GAME_AREA_WIDTH and 0 <= gy < GAME_AREA_HEIGHT):
+                return False
+            if grid[gy][gx] is VOID_CELL or grid[gy][gx] is not None:
+                return False
+    return True
+
+def place_entity(grid, entity_states, entity):
+    gx, gy = entity.x, entity.y
+    width = getattr(entity, 'width', 1)
+    height = getattr(entity, 'height', 1)
+    for dx in range(width):
+        for dy in range(height):
+            if grid[gy + dy][gx + dx] is VOID_CELL:
+                continue
+            grid[gy + dy][gx + dx] = entity
+    entity_states.add_entity(entity)
+
+def remove_entity(grid, entity_states, gx, gy):
+    entity = grid[gy][gx]
+    if entity is not None and entity is not VOID_CELL:
+        width = getattr(entity, 'width', 1)
+        height = getattr(entity, 'height', 1)
+        ex, ey = entity.x, entity.y
+        for dx in range(width):
+            for dy in range(height):
+                if 0 <= ey + dy < GAME_AREA_HEIGHT and 0 <= ex + dx < GAME_AREA_WIDTH:
+                    if grid[ey + dy][ex + dx] == entity:
+                        grid[ey + dy][ex + dx] = None
+        entity_states.remove_entity_at(gx, gy)
