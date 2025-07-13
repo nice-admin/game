@@ -2,8 +2,6 @@ from game_ui.profiler_panel import draw_profiler_panel
 from game_ui.hidden_info_panel import draw_hidden_info_panel
 from game_ui.alerts_panel import draw_alert_panel, check_alerts
 import pygame
-from game_ui.resource_panel_general import draw_resource_panel_general, get_baked_panel
-from game_ui.resource_panel_system import draw_resource_panel_system, get_system_panel_bg
 from game_ui.project_overview_panel import draw_project_overview_panel
 from game_core.gameplay_events import power_outage
 from game_ui.construction_panel import draw_construction_panel
@@ -51,19 +49,6 @@ def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=N
         draw_cursor_construction_overlay(surface, selected_entity_class, camera_offset, cell_size, GRID_WIDTH, GRID_HEIGHT, grid)
     power_outage.draw_overlay(surface)
 
-    if ALLOW_RESOURCE_PANEL:
-        baked = get_baked_panel(font)
-        general_width, general_height = baked['total_width'], baked['total_height']
-        system_bg = get_system_panel_bg()
-        system_width, system_height = system_bg.get_width(), system_bg.get_height()
-        panel_gap = 10
-        total_width = general_width + panel_gap + system_width
-        total_height = max(general_height, system_height)
-        x0 = (surface.get_width() - total_width) // 2
-        y0 = 0
-        draw_resource_panel_general(surface.subsurface(pygame.Rect(x0, y0 + (total_height - general_height) // 2, general_width, general_height)),font)
-        draw_resource_panel_system(surface,font,x0 + general_width + panel_gap,y0 + (total_height - system_height) // 2)
-        resource_panel_height = total_height
     if ALLOW_SUPPLIES_PANEL:
         draw_supplies_panel(surface)
     if ALLOW_CONSTRUCTION_PANEL:

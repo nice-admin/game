@@ -182,8 +182,6 @@ def run_game():
 def handle_events(state, game_controls, remove_entity, place_entity):
     font = state.get('font', None)
     screen_width = pygame.display.get_surface().get_width()
-    baked = get_baked_panel(font)
-    resource_panel_height = baked['total_height']
 
     def handle_testing_layout_grid_change():
         state['testing_layout_grid_changed'] = True
@@ -203,8 +201,6 @@ def handle_events(state, game_controls, remove_entity, place_entity):
         if event.type == pygame.USEREVENT + 1:
             from game_other.audio import play_random_music_wav
             play_random_music_wav()
-        # Handle render queue panel click/expand
-        handle_render_queue_panel_event(event, screen_width, resource_panel_height)
         # --- Supplies panel click/slide ---
         handle_supplies_panel_event(event, pygame.display.get_surface())
         # Wire up testing layout async grid change callback
