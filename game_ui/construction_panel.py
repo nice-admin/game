@@ -2,8 +2,8 @@ import pygame
 import inspect
 import hashlib
 from game_core import entity_definitions
+from game_core import entity_definitions
 from game_core.entity_base import *
-from game_core.entity_definitions import *
 from game_core.config import BASE_COL, UI_BG1_COL, adjust_color, FONT1, CURRENCY_SYMBOL
 
 # --- Constants ---
@@ -17,51 +17,16 @@ ENTITY_BUTTON_COUNT = 10  # Default number of entity buttons in the construction
 ONSCREEN_BOTTOM_MARGIN = 0.024  # Ratio for bottom margin placement (10% from the bottom)
 BORDER_WIDTH = 0  # Default border width for construction panel elements
 
-def get_computer_entities():
-    classes = set()
-    for base in (ComputerEntity, LaptopEntity):
-        for name, obj in inspect.getmembers(entity_definitions):
-            if inspect.isclass(obj) and issubclass(obj, base) and obj is not base:
-                classes.add(obj)
-    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
-def monitors_section(extra_classes=TV):
-    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
-            if inspect.isclass(obj) and issubclass(obj, SatisfiableEntity) and (obj.__name__.lower().endswith('monitor') or obj.__name__ == 'TV')]
-    classes = sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
-    if extra_classes:
-        # Accepts a list or single class
-        if isinstance(extra_classes, (list, tuple, set)):
-            classes.extend(extra_classes)
-        else:
-            classes.append(extra_classes)
-    return classes
 
-def get_utility_entities():
-    classes = []
-    # Add Breaker and AirConditioner first
-    classes.append(entity_definitions.Breaker)
-    classes.append(entity_definitions.AirConditioner)
-    classes.append(entity_definitions.Humidifier)
-    classes.append(entity_definitions.Fridge)
-    for base in (UtilityEntity,):
-        for name, obj in inspect.getmembers(entity_definitions):
-            if inspect.isclass(obj) and issubclass(obj, base) and obj is not base and obj is not entity_definitions.Breaker and obj is not entity_definitions.AirConditioner:
-                classes.append(obj)
-    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
-
-def get_management_entities():
-    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
-            if inspect.isclass(obj)
-            and issubclass(obj, SatisfiableEntity)
-            and ('manager' in obj.__name__.lower() or 'project' in obj.__name__.lower())]
-    classes.append(entity_definitions.MarketingDirector)
-    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
-
-def get_decoration_entities():
-    classes = [obj for name, obj in inspect.getmembers(entity_definitions)
-               if inspect.isclass(obj) and issubclass(obj, DecorationEntity) and obj is not DecorationEntity]
-    return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
+# --- Use arrays from entity_definitions for section entities ---
+def get_section_entity_defs():
+    # Use CONSTRUCTION_PANEL_SECTIONS for section arrays, ordered by SECTION_LABELS
+    section_arrays = [
+        entity_definitions.CONSTRUCTION_PANEL_SECTIONS[label]
+        for label in SECTION_LABELS
+    ]
+    return [lambda arr=arr: arr for arr in section_arrays]
 
 def get_production_entities():
     # List your desired production classes here
@@ -259,6 +224,7 @@ class Background:
                 border_bottom_right_radius=0
             )
 
+
 # --- Helper Functions ---
 def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COLOR):
     pygame.draw.rect(surface, color, rect)
@@ -266,25 +232,6 @@ def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COL
         text_surf = font.render(label, True, text_color)
         text_rect = text_surf.get_rect(center=rect.center)
         surface.blit(text_surf, text_rect)
-
-def get_food_entities():
-    # Example: Add Snacks, EspressoMachine, Fridge, etc. Adjust as needed.
-    food_classes = []
-    for name, obj in inspect.getmembers(entity_definitions):
-        if inspect.isclass(obj) and obj.__name__.lower() in ('snacks', 'espressomachine', 'fridge'):
-            food_classes.append(obj)
-    return sorted(food_classes, key=lambda cls: getattr(cls, 'tier', 99))
-
-def get_section_entity_defs():
-    return [
-        lambda: get_computer_entities(),
-        lambda: monitors_section(),
-        lambda: get_utility_entities(),
-        lambda: get_food_entities(),
-        lambda: get_production_entities(),
-        lambda: get_management_entities(),
-        lambda: get_decoration_entities(),
-    ]
 
 def get_entity_labels_icons_costs(entity_classes, num_buttons):
     def get_display_name(cls):

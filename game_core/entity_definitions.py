@@ -10,7 +10,6 @@ class ComputerT1(ComputerEntity):
     power_drain = 200
     upkeep = 50
     heating_multiplier = 2
-    category = 'Computers'
 
 class ComputerT2(ComputerEntity):
     _icon = resource_path("data/graphics/computer-advanced.png")
@@ -20,14 +19,12 @@ class ComputerT2(ComputerEntity):
     power_drain = 400
     upkeep = 100
     heating_multiplier = 1
-    category = 'Computers'
 
 class Macbook(LaptopEntity):
     _icon = resource_path("data/graphics/macbook.png")
     tier = 3
     upkeep = 100
     power_drain = 50
-    category = 'Computers'
 
     def on_sat_check_finish(self):
         from game_core.game_state import GameState
@@ -54,8 +51,6 @@ class TV(BaseEntity):
     tier = 1
     upkeep = 10
     power_drain = 40
-
-# region Humans
 
 class Artist(PersonEntity):
     _icon = resource_path("data/graphics/artist.png")
@@ -151,6 +146,11 @@ class EspressoMachine(UtilityEntity):
     _icon = resource_path("data/graphics/coffee-machine.png")
     purchase_cost = 500
 
+class RecyclingBins(UtilityEntity):
+    _icon = resource_path("data/graphics/entities/recycling-bins.png")
+    purchase_cost = 50
+
+
 class Outlet(UtilityEntity):
     _icon = resource_path("data/graphics/outlet.png")
     has_satisfaction_check = 0
@@ -158,6 +158,7 @@ class Outlet(UtilityEntity):
 
 class Snacks(UtilityEntity):
     _icon = resource_path("data/graphics/snacks.png")
+    upkeep = 100
 
 class Router(UtilityEntity):
     _icon = resource_path("data/graphics/router.png")
@@ -244,6 +245,7 @@ class Breaker(SatisfiableEntity):
             self.is_satisfied = 1
             self.state = "Good"
 
+
 # region Decoration
 
 class FlowerPot(DecorationEntity):
@@ -261,3 +263,18 @@ class Incense(DecorationEntity):
 class Artwork(DecorationEntity):
     _icon = resource_path("data/graphics/entities/artwork.png")
     purchase_cost = 200
+
+class Magazines(DecorationEntity):
+    _icon = resource_path("data/graphics/entities/magazines.png")
+    purchase_cost = 10
+
+# --- Construction Panel Section Mapping ---
+CONSTRUCTION_PANEL_SECTIONS = {
+    "Computers": [ComputerT1, ComputerT2, Macbook],
+    "Monitors": [BasicMonitor, AdvancedMonitor, TV],
+    "Utility": [Outlet, Breaker, Router, VrHeadset, Printer, RecyclingBins, AirConditioner, Humidifier],
+    "Food": [Snacks, EspressoMachine, Fridge],
+    "Production": [Artist, TechnicalDirector],
+    "Management": [ProjectManager, AccountManager, MarketingDirector],
+    "Decoration": [FlowerPot, Cactus, Incense, Artwork, Magazines],
+}
