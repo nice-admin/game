@@ -386,7 +386,6 @@ class SatisfiableEntity(BaseEntity):
 # region Custom classes
 
 class DecorationEntity(BaseEntity):
-    upkeep = 20
     decoration = 5
 
 class UtilityEntity(BaseEntity):

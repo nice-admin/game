@@ -9,7 +9,7 @@ from game_core.config import BASE_COL, UI_BG1_COL, adjust_color, FONT1, CURRENCY
 # --- Constants ---
 BG_COLOR = UI_BG1_COL
 TEXT_COLOR = (255, 255, 255)
-SECTION_LABELS = ["Computers", "Monitors", "Utility", "Production", "Management", "Decoration"]
+SECTION_LABELS = ["Computers", "Monitors", "Utility", "Food", "Production", "Management", "Decoration"]
 BUTTON_SPACING = 8  # Spacing between entity buttons
 SECTION_BUTTONS_TOP_MARGIN = 5  # Top margin for section buttons
 PANEL_Y_OFFSET = 10  # Offset to move the construction panel downwards
@@ -267,12 +267,21 @@ def draw_button(surface, rect, color, label=None, font=None, text_color=TEXT_COL
         text_rect = text_surf.get_rect(center=rect.center)
         surface.blit(text_surf, text_rect)
 
+def get_food_entities():
+    # Example: Add Snacks, EspressoMachine, Fridge, etc. Adjust as needed.
+    food_classes = []
+    for name, obj in inspect.getmembers(entity_definitions):
+        if inspect.isclass(obj) and obj.__name__.lower() in ('snacks', 'espressomachine', 'fridge'):
+            food_classes.append(obj)
+    return sorted(food_classes, key=lambda cls: getattr(cls, 'tier', 99))
+
 def get_section_entity_defs():
     return [
         lambda: get_computer_entities(),
         lambda: monitors_section(),
         lambda: get_utility_entities(),
-        lambda: get_production_entities(),  # Use custom production entities
+        lambda: get_food_entities(),
+        lambda: get_production_entities(),
         lambda: get_management_entities(),
         lambda: get_decoration_entities(),
     ]

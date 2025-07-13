@@ -10,6 +10,7 @@ class ComputerT1(ComputerEntity):
     power_drain = 200
     upkeep = 50
     heating_multiplier = 2
+    category = 'Computers'
 
 class ComputerT2(ComputerEntity):
     _icon = resource_path("data/graphics/computer-advanced.png")
@@ -19,12 +20,14 @@ class ComputerT2(ComputerEntity):
     power_drain = 400
     upkeep = 100
     heating_multiplier = 1
+    category = 'Computers'
 
 class Macbook(LaptopEntity):
     _icon = resource_path("data/graphics/macbook.png")
     tier = 3
     upkeep = 100
     power_drain = 50
+    category = 'Computers'
 
     def on_sat_check_finish(self):
         from game_core.game_state import GameState
@@ -164,6 +167,10 @@ class VrHeadset(UtilityEntity):
     _icon = resource_path("data/graphics/entities/vr-headset.png")
     purchase_cost = 1500
 
+class Printer(UtilityEntity):
+    _icon = resource_path("data/graphics/entities/printer.png")
+    purchase_cost = 800
+
 class AirConditioner(SatisfiableEntity):
     _icon = resource_path("data/graphics/ac.png")
     has_special = 0
@@ -241,7 +248,16 @@ class Breaker(SatisfiableEntity):
 
 class FlowerPot(DecorationEntity):
     _icon = resource_path("data/graphics/flower-pot.png")
-
+    upkeep = 20
 
 class Cactus(DecorationEntity):
     _icon = resource_path("data/graphics/cactus.png")
+    upkeep = 20
+
+class Incense(DecorationEntity):
+    _icon = resource_path("data/graphics/entities/incense.png")
+    upkeep = 20
+
+class Artwork(DecorationEntity):
+    _icon = resource_path("data/graphics/entities/artwork.png")
+    purchase_cost = 200
