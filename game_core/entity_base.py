@@ -403,14 +403,22 @@ class ComputerEntity(SatisfiableEntity):
                 if zx <= self.x < zx + zw and zy <= self.y < zy + zh:
                     in_zone = True
                     break
-            if zones:
-                self.has_special = 1 if in_zone else 0
+            # Only allow special if no zones exist, or if inside a zone_render
+            allow_special = not zones or in_zone
+            if allow_special and (
+                getattr(self, 'special', None) is None and getattr(self, 'special_timer', None) is None
+                and hasattr(gs, 'render_progress_allowed')
+                and hasattr(gs, 'render_progress_current')
+                and gs.render_progress_allowed > gs.render_progress_current
+                and random.random() < getattr(self, 'special_chance', 0.1)
+            ):
+                self.special = 0.0
+                self.special_timer = 0
+                self.on_special_start()
             else:
-                if hasattr(gs, 'render_progress_current') and hasattr(gs, 'render_progress_allowed'):
-                    if gs.render_progress_current == gs.render_progress_allowed:
-                        self.has_special = 0
-                    elif gs.render_progress_allowed > gs.render_progress_current:
-                        self.has_special = 1
+                self.special = None
+                self.special_timer = None
+            self.has_special = 1 if (in_zone or not zones) else 0
             
 
     def on_special_start(self):
