@@ -145,6 +145,10 @@ class PaintBrush:
             elif event.button == self.erase_button:
                 self.erase_active = True
                 if self._in_bounds(gx, gy) and grid[gy][gx] is not None:
+                    entity = grid[gy][gx]
+                    interactable = getattr(entity, 'interactable', True)
+                    if interactable is False:
+                        return None
                     audio.play_build_sound()
                     return gx, gy, None, True
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -163,6 +167,10 @@ class PaintBrush:
                             self.last_placed = (gx, gy)
                             return gx, gy, entity, False
                 if self.erase_active and grid[gy][gx] is not None:
+                    entity = grid[gy][gx]
+                    interactable = getattr(entity, 'interactable', True)
+                    if interactable is False:
+                        return None
                     audio.play_build_sound()
                     return gx, gy, None, True
         return None
@@ -399,7 +407,11 @@ class GameControls:
                 grid = state['grid']
                 entity_states = state['entity_states']
                 if 0 <= gx < state['GRID_WIDTH'] and 0 <= gy < state['GRID_HEIGHT']:
-                    if grid[gy][gx] is not None:
+                    entity = grid[gy][gx]
+                    if entity is not None:
+                        # Prevent deletion if entity is not interactable
+                        if hasattr(entity, 'interactable') and not getattr(entity, 'interactable', True):
+                            return False
                         remove_entity(grid, entity_states, gx, gy)
                         return True
         return False

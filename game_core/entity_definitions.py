@@ -22,6 +22,16 @@ class Wall(BaseEntity):
 
     # No pickup or interaction allowed
 
+# HighlightedWall visually distinct wall for room separation
+class HighlightedWall(Wall):
+    color = (255, 200, 60)  # Yellowish for visual distinction
+    display_name = "Highlighted Wall"
+    def draw(self, surface, cam_offset, cell_size, static_only=False):
+        x = self.x * cell_size + cam_offset[0]
+        y = self.y * cell_size + cam_offset[1]
+        rect = pygame.Rect(x, y, cell_size, cell_size)
+        pygame.draw.rect(surface, self.color, rect)
+
 
 # region Tech
 class ComputerT1(ComputerEntity):
