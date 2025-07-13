@@ -197,6 +197,8 @@ def handle_events(state, game_controls, remove_entity, place_entity):
         # If zone mode is active, skip all entity/game controls for this event
         if _zone_creation_active:
             continue
+        # Handle render queue panel click/expand
+        handle_render_queue_panel_event(event, screen_width, 100)
         # Handle music end event for random music playback
         if event.type == pygame.USEREVENT + 1:
             from game_other.audio import play_random_music_wav

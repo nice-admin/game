@@ -55,6 +55,7 @@ def get_management_entities():
             if inspect.isclass(obj)
             and issubclass(obj, SatisfiableEntity)
             and ('manager' in obj.__name__.lower() or 'project' in obj.__name__.lower())]
+    classes.append(entity_definitions.MarketingDirector)
     return sorted(classes, key=lambda cls: getattr(cls, 'tier', 99))
 
 def get_decoration_entities():

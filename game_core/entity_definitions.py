@@ -131,6 +131,15 @@ class AccountManager(SatisfiableEntity):
     satisfaction_check_type = 'router'
     satisfaction_check_radius = 30
     satisfaction_check_threshold = 1
+    unlock_level = 2
+    upkeep = 2000
+
+class MarketingDirector(SatisfiableEntity):
+    _icon = resource_path("data/graphics/entities/marketing-director.png")
+    satisfaction_check_type = 'router'
+    satisfaction_check_radius = 30
+    satisfaction_check_threshold = 1
+    unlock_level = 2
     upkeep = 2000
 
 # region Utility
@@ -150,6 +159,10 @@ class Snacks(UtilityEntity):
 class Router(UtilityEntity):
     _icon = resource_path("data/graphics/router.png")
     purchase_cost = 100
+
+class VrHeadset(UtilityEntity):
+    _icon = resource_path("data/graphics/entities/vr-headset.png")
+    purchase_cost = 1500
 
 class AirConditioner(SatisfiableEntity):
     _icon = resource_path("data/graphics/ac.png")

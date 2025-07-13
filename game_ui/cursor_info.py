@@ -66,9 +66,11 @@ class EntityInfo:
         self.rect_h = self.text_height + 2 * self.pad_y
 
     def draw(self, surface, icon_x, icon_y):
-        # Place the rectangle so its top left corner matches the icon's bottom right corner
-        rect_x = icon_x + self.cell_size
-        rect_y = icon_y + self.cell_size
+        # Place the rectangle so its top left corner matches the icon's bottom right corner of the entity
+        width = getattr(self.entity, 'width', 1)
+        height = getattr(self.entity, 'height', 1)
+        rect_x = icon_x + self.cell_size * width
+        rect_y = icon_y + self.cell_size * height
         # Create a temporary surface for alpha blending
         temp_surf = pygame.Surface((self.rect_w, self.rect_h), pygame.SRCALPHA)
         pygame.draw.rect(temp_surf, self.BG_COL, temp_surf.get_rect(), border_radius=self.BG_ROUNDING)

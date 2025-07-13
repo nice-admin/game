@@ -12,7 +12,7 @@ ZONE_BUTTON_HEIGHT = ZONE_BUTTON_WIDTH
 ZONE_BUTTON_RADIUS = 5
 ZONE_BUTTON_IMAGE_PATH = resource_path("data/graphics/tool_panel/zone.png")
 BUTTON_X = 0.749
-BUTTON_Y = 0.86
+BUTTON_Y = 0.866
 
 class ZoneButton:
     WIDTH = ZONE_BUTTON_WIDTH

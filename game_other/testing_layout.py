@@ -94,7 +94,7 @@ def handle_testing_layout(event, grid, entity_states, GRID_WIDTH, GRID_HEIGHT, o
         class_list.append(AirConditioner)
         class_list.append(Router)
         class_list.append(EspressoMachine)
-
+        RandomSpawn(class_list, probability=0.01, on_entity_placed=on_entity_placed).spawn(grid, entity_states, GRID_WIDTH, GRID_HEIGHT)
         x_start = (GRID_WIDTH - n) // 2
         y_pm = LineSpawn.start_y + 11  # 2 rows below the base Artist row (start_y + 9)
         for i in range(n):
