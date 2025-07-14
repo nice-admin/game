@@ -1,4 +1,3 @@
-
 from .entity_base import *
 import random
 from game_core.game_state import gs
@@ -32,16 +31,12 @@ class Wall(BaseEntity):
     interactable = False  # Prevent interaction/pickup
 
     def draw(self, surface, cam_offset, cell_size, static_only=False):
-        # Use icon only, no color fill
-        if self._icon:
-            from game_core.entity_base import get_icon_surface
-            icon_surface = get_icon_surface(self._icon)
-            if icon_surface:
-                x = self.x * cell_size + cam_offset[0]
-                y = self.y * cell_size + cam_offset[1]
-                icon = pygame.transform.smoothscale(icon_surface, (cell_size, cell_size))
-                surface.blit(icon, (x, y))
-
+        # Draw a solid grey rectangle instead of an icon
+        x = self.x * cell_size + cam_offset[0]
+        y = self.y * cell_size + cam_offset[1]
+        grey = (128, 128, 128)
+        import pygame
+        pygame.draw.rect(surface, grey, (x, y, cell_size, cell_size))
 
 
 

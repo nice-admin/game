@@ -20,18 +20,19 @@ from game_ui.experience_panel import draw_experience_panel, PANEL_HEIGHT as EXPE
 from game_ui.zone_panel import draw_zone_panel, set_zone_panel_grid_params, draw_zone_info_overlay
 from game_ui.top_panel import TopPanel
 
-ALLOW_HIDDEN_INFO_PANEL = 1
-ALLOW_RESOURCE_PANEL = 0
-ALLOW_ALERTS_PANEL = 0
-ALLOW_GRID_OVERVIEW_PANEL = 0
-ALLOW_ARROW_POINTER = 0
-ALLOW_PROJECT_OVERVIEW_PANEL = 1
-ALLOW_CONSTRUCTION_PANEL = 1
+ALLOW_EVERYTHING = 0
+ALLOW_SAVE_AND_LOAD = 0 * ALLOW_EVERYTHING
+ALLOW_RESOURCE_PANEL = 0* ALLOW_EVERYTHING
+ALLOW_ALERTS_PANEL = 0* ALLOW_EVERYTHING
+ALLOW_GRID_OVERVIEW_PANEL = 0* ALLOW_EVERYTHING
+ALLOW_ARROW_POINTER = 0* ALLOW_EVERYTHING
+ALLOW_PROJECT_OVERVIEW_PANEL = 1 * ALLOW_EVERYTHING
+ALLOW_CONSTRUCTION_PANEL = 1 * ALLOW_EVERYTHING
 ALLOW_SUPPLIES_PANEL = 1
 ALLOW_EXPERIENCE_PANEL = 1
 ALLOW_SOFTWARE_PANEL = 1
 ALLOW_QUEST_PANEL = 1
-ALLOW_SAVE_AND_LOAD = 0
+ALLOW_HIDDEN_INFO_PANEL = 1
 
 def draw_all_panels(surface, selected_index, font, clock=None, draw_call_count=None, tick_count=None, timings=None, grid=None, hovered_entity=None, selected_entity_type=None, camera_offset=None, cell_size=None, GRID_WIDTH=None, GRID_HEIGHT=None, selected_section=0, selected_item=0, panel_btn_rects=None, entity_buttons=None, controls=None):
     
